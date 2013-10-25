@@ -1,4 +1,5 @@
 #include <gtkmm.h>
+#include <gtksourceviewmm.h>
 
 #include "window.h"
 #include "base/os.h"
@@ -20,6 +21,8 @@ protected:
         for(int i = 0; i < argc; ++i) {
             args_.push_back(argv[i]);
         }
+
+        Gsv::init();
     }
 
 private:
@@ -49,18 +52,8 @@ public:
             return;
         }
 
-        if(files.size() > 1) {
-            //If we have more than one file, open them in the same window
-            auto window = std::make_shared<delimit::Window>(delimit::WINDOW_TYPE_FILE, files[0]->get_path());
-            add_window(window);
-
-            for(int i = 1; i < files.size(); ++i) {
-                window->open_buffer(files[i]->get_path());
-            }
-        } else {
-            //Otherwise pass through to start up and handle a single file/folder
-            _start_up(files[0]->get_path());
-        }
+        auto window = std::make_shared<delimit::Window>(files);
+        add_window(window);
     }
 
     void on_signal_startup() {
@@ -68,23 +61,6 @@ public:
     }
 
 private:
-    void _start_up(const unicode& path) {
-        if(path.empty()) {
-            //Open a new blank buffer
-            auto window = std::make_shared<delimit::Window>();
-            add_window(window);
-        } else {
-            if(os::path::is_file(path)) {
-                auto window = std::make_shared<delimit::Window>(delimit::WINDOW_TYPE_FILE, path);
-                add_window(window);
-            } else {
-                L_INFO(_u("Opening window in folder mode for path {0}").format(path));
-                auto window = std::make_shared<delimit::Window>(delimit::WINDOW_TYPE_FOLDER, path);
-                add_window(window);
-            }
-        }
-    }
-
     std::vector<Window::ptr> windows_;
 };
 

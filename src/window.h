@@ -22,13 +22,13 @@ public:
     typedef std::shared_ptr<Window> ptr;
 
     Window();
-    Window(WindowType type, const unicode& path);
+    Window(const std::vector<Glib::RefPtr<Gio::File>>& files);
 
     void split();
     void unsplit();
 
     void new_buffer(const unicode& name);
-    void open_buffer(const unicode& path);
+    void open_buffer(const Glib::RefPtr<Gio::File>& path);
 
     WindowType type() const { return type_; }
 

@@ -19,16 +19,17 @@ Window::Window() {
     new_buffer("Untitled");
 }
 
-Window::Window(WindowType type, const unicode &path):
-    type_(type),
-    path_(path) {
-
-    L_DEBUG("Creating window for path");
-
+Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files) {
     build_widgets();
 
-    if(type == WINDOW_TYPE_FILE) {
-        open_buffer(path);
+    if(files.size() == 1 && files[0]->query_file_type() == Gio::FILE_TYPE_DIRECTORY) {
+        type_ = WINDOW_TYPE_FOLDER;
+    } else {
+        type_ = WINDOW_TYPE_FILE;
+
+        for(auto file: files) {
+            open_buffer(file);
+        }
     }
 }
 
@@ -74,16 +75,16 @@ void Window::new_buffer(const unicode& name) {
     frames_[current_frame_]->set_buffer(buffer.get());
 }
 
-void Window::open_buffer(const unicode &path) {
+void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {
     assert(current_frame_ >= 0 && current_frame_ < (int32_t) frames_.size());
 
-    if(!os::path::exists(path)) {
-        throw IOError(_u("Path does not exist: {0}").format(path));
+    if(!file->query_exists()) {
+        throw IOError(_u("Path does not exist: {0}").format(file->get_path()));
     }
 
-    unicode name = os::path::split(path).second;
+    unicode name = os::path::split(file->get_path()).second;
 
-    Buffer::ptr buffer = std::make_shared<Buffer>(*this, name, path);
+    Buffer::ptr buffer = std::make_shared<Buffer>(*this, name, file);
     open_buffers_.push_back(buffer);
 
     frames_[current_frame_]->set_buffer(buffer.get());
