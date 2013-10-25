@@ -1,0 +1,3 @@
+[submodule "submodules/kazbase"]
+	path = submodules/kazbase
+	url = https://github.com/Kazade/kazbase.git
