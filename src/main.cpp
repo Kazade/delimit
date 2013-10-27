@@ -64,10 +64,12 @@ public:
         auto manager = Gsv::StyleSchemeManager::get_default();
         std::string ui_file = fdo::xdg::find_data_file("delimit/schemes").encode();
         manager->prepend_search_path(ui_file);
+
     }
 
 private:
     std::vector<Window::ptr> windows_;
+
 };
 
 }

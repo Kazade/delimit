@@ -192,6 +192,8 @@ void Window::rebuild_file_tree(const unicode& path) {
     file_tree_store_->clear();
 
     dirwalk(path, nullptr);
+
+    window_file_tree_->expand_row(Gtk::TreeModel::Path("0"), false);
 }
 
 void Window::rebuild_open_list() {

@@ -41,9 +41,7 @@ public:
         name_(name),
         gio_file_(file) {
 
-        is_saved_ = file->query_exists();
-
-        if(is_saved_) {
+        if(gio_file_) {
             Glib::RefPtr<Gsv::LanguageManager> lm = Gsv::LanguageManager::get_default();
             Glib::RefPtr<Gsv::Language> lang = lm->guess_language(file->get_path(), Glib::ustring());
 
@@ -67,6 +65,24 @@ public:
         return "";
     }
 
+    bool modified() const { return gtk_buffer_->get_modified(); }
+
+    void save(const unicode& path) {
+/*
+        auto start_iter = _gtk_buffer()->get_start_iter();
+        auto end_iter = _gtk_buffer()->get_end_iter();
+
+        Glib::ustring text = gtk_buffer()->get_text(start_iter, end_iter, false);
+        _gtk_buffer()->set_modified(false);
+
+        if(gio_file_) {
+            gio_file_->replace_contents(text);
+        } else {
+            gio_file_ = Gio::File::create_for_path(path);
+            gio_file_->replace_contents(text);
+        }*/
+    }
+
 private:        
     Window& parent_;
     unicode name_;
@@ -74,9 +90,8 @@ private:
 
     Glib::RefPtr<Gsv::Buffer> gtk_buffer_;
 
-    bool is_saved() const { return is_saved_; }
+    bool is_saved() const { return bool(gio_file_); }
 
-    bool is_saved_ = false;
 };
 
 }
