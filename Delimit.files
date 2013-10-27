@@ -34,3 +34,4 @@ src/base/os/core.cpp
 src/base/os/path.cpp
 src/base/os/stat.cpp
 src/utils/sigc_lambda.h
+src/settings.h

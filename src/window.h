@@ -17,6 +17,21 @@ enum WindowType {
     WINDOW_TYPE_FILE
 };
 
+class FileTreeColumns : public Gtk::TreeModelColumnRecord {
+public:
+    FileTreeColumns() {
+        add(name);
+        add(full_path);
+        add(image);
+        add(is_folder);
+    }
+
+    Gtk::TreeModelColumn<Glib::ustring> name;
+    Gtk::TreeModelColumn<Glib::ustring> full_path;
+    Gtk::TreeModelColumn<Glib::RefPtr<Gdk::Pixbuf>> image;
+    Gtk::TreeModelColumn<bool> is_folder;
+};
+
 class Window {
 public:
     typedef std::shared_ptr<Window> ptr;
@@ -36,10 +51,17 @@ public:
 
 private:
     void build_widgets();
+    void rebuild_file_tree(const unicode &path);
+    void dirwalk(const unicode& path, const Gtk::TreeRow *node);
+
+    void on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column);
 
     Gtk::Window* gtk_window_ = nullptr;
     Gtk::Alignment* gtk_container_ = nullptr;
     Gtk::TreeView* window_file_tree_ = nullptr;
+
+    FileTreeColumns file_tree_columns_;
+    Glib::RefPtr<Gtk::TreeStore> file_tree_store_;
 
     //Toolbar
     Gtk::ToolButton* buffer_undo_ = nullptr;

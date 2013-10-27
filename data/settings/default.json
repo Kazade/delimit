@@ -1,0 +1,9 @@
+{
+    "show_line_numbers": true,
+    "trim_trailing_whitespace": true,
+    "draw_whitespace": "all",
+    "insert_spaces_instead_of_tabs": true,
+    "tab_width": 4,
+    "colour_scheme": "Delimit"
+}
+

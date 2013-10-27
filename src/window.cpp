@@ -15,15 +15,21 @@ const unicode UI_FILE = "delimit/ui/delimit.glade";
 Window::Window() {
     L_DEBUG("Creating window with empty buffer");
 
+    file_tree_store_ = Gtk::TreeStore::create(file_tree_columns_);
+
     build_widgets();
     new_buffer("Untitled");
 }
 
 Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files) {
+    file_tree_store_ = Gtk::TreeStore::create(file_tree_columns_);
+
     build_widgets();
 
     if(files.size() == 1 && files[0]->query_file_type() == Gio::FILE_TYPE_DIRECTORY) {
         type_ = WINDOW_TYPE_FOLDER;
+
+        rebuild_file_tree(files[0]->get_path());
     } else {
         type_ = WINDOW_TYPE_FILE;
 
@@ -40,6 +46,11 @@ void Window::build_widgets() {
     builder->get_widget("window_container", gtk_container_);
     builder->get_widget("window_file_tree", window_file_tree_);
 
+    window_file_tree_->set_model(file_tree_store_);
+    //window_file_tree_->append_column("Icon", file_tree_columns_.image);
+    window_file_tree_->append_column("Name", file_tree_columns_.name);
+    window_file_tree_->signal_row_activated().connect(sigc::mem_fun(this, &Window::on_signal_row_activated));
+
     builder->get_widget("buffer_undo", buffer_undo_);
     builder->get_widget("buffer_undo", buffer_redo_);
 
@@ -53,7 +64,82 @@ void Window::build_widgets() {
 
         //FIXME: Replace with an open file listing instead
     }
+}
 
+void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column) {
+    auto row = *(file_tree_store_->get_iter(path));
+
+    if(!row[file_tree_columns_.is_folder]) {
+        Glib::ustring full_path = row[file_tree_columns_.full_path];
+        open_buffer(Gio::File::create_for_path(full_path));
+    }
+}
+
+void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
+    auto files = os::path::list_dir(path);
+    std::sort(files.begin(), files.end());
+
+    std::vector<unicode> directories;
+
+    for(auto it = files.begin(); it != files.end();) {
+        if(os::path::is_dir(os::path::join(path, *it))) {
+            directories.push_back((*it));
+            it = files.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    directories.insert(directories.end(), files.begin(), files.end());
+    files = directories;
+
+    if(os::path::is_dir(path) && !node) {
+        auto image = Gtk::IconTheme::get_default()->load_icon("folder", Gtk::ICON_SIZE_MENU);
+
+        node = &(*file_tree_store_->append());
+        node->set_value(file_tree_columns_.name, Glib::ustring(os::path::split(path).second.encode()));
+        node->set_value(file_tree_columns_.full_path, Glib::ustring(path.encode()));
+        node->set_value(file_tree_columns_.image, image);
+        node->set_value(file_tree_columns_.is_folder, true);
+    }
+
+    for(auto f: files) {
+        if(f == "." || f == "..") continue;
+
+        unicode full_name = os::path::join(path, f);
+
+        bool is_folder = os::path::is_dir(full_name);
+
+        auto image = Gtk::IconTheme::get_default()->load_icon(
+            (is_folder) ? "folder" : "document",
+            Gtk::ICON_SIZE_MENU
+        );
+
+
+        const Gtk::TreeModel::Row* row;
+        if(node) {
+            L_DEBUG(_u("Appending child node for {0}").format(f));
+            row = &(*file_tree_store_->append(node->children()));
+        } else {
+            L_DEBUG(_u("Appending node for {0}").format(f));
+            row = &(*file_tree_store_->append());
+        }
+
+        row->set_value(file_tree_columns_.name, Glib::ustring(f.encode()));
+        row->set_value(file_tree_columns_.full_path, Glib::ustring(full_name.encode()));
+        row->set_value(file_tree_columns_.image, image);
+        row->set_value(file_tree_columns_.is_folder, is_folder);
+
+        if(is_folder) {
+            dirwalk(full_name, row);
+        }
+    }
+}
+
+void Window::rebuild_file_tree(const unicode& path) {
+    file_tree_store_->clear();
+
+    dirwalk(path, nullptr);
 }
 
 

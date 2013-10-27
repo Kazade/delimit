@@ -32,6 +32,7 @@ private:
     Window& parent_;
 
     Gtk::Box container_;
+    Gtk::ScrolledWindow scrolled_window_;
     Gsv::View source_view_;
 
     Buffer* buffer_ = nullptr;
