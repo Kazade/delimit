@@ -24,6 +24,7 @@ public:
     }
 
     void set_buffer(Buffer* buffer);
+    Buffer* buffer() { return buffer_; }
 
     Gtk::Box& _gtk_box() { return container_; }
 

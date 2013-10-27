@@ -71,12 +71,13 @@ void Window::build_widgets() {
 
     builder->get_widget("buffer_new", buffer_new_);
     builder->get_widget("buffer_open", buffer_open_);
+    builder->get_widget("buffer_save", buffer_save_);
     builder->get_widget("buffer_undo", buffer_undo_);
-    builder->get_widget("buffer_undo", buffer_redo_);
+    builder->get_widget("buffer_redo", buffer_redo_);
 
     buffer_new_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_new_clicked));
     buffer_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_clicked));
-
+    buffer_save_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_save_clicked));
     assert(gtk_window_);
 
     create_frame(); //Create the default frame
@@ -123,6 +124,30 @@ void Window::toolbutton_open_clicked() {
             open_buffer(Gio::File::create_for_path(filename));
         } default:
             break;
+    }
+}
+
+void Window::toolbutton_save_clicked() {
+    Gtk::FileChooserDialog dialog(_gtk_window(), _("Save a file"), Gtk::FILE_CHOOSER_ACTION_SAVE);
+    dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
+    dialog.add_button(Gtk::Stock::SAVE, Gtk::RESPONSE_OK);
+
+    Buffer* buffer = frames_[current_frame_]->buffer();
+    assert(buffer);
+
+    if(buffer) {
+        unicode path = buffer->path();
+        if(path.empty()) {
+            int result = dialog.run();
+            switch(result) {
+                case Gtk::RESPONSE_OK:
+                    path = dialog.get_filename();
+                    break;
+                default:
+                    return;
+            }
+        }
+        buffer->save(path);
     }
 }
 

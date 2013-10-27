@@ -62,19 +62,19 @@ bool Buffer::modified() const {
 }
 
 void Buffer::save(const unicode& path) {
-/*
-    auto start_iter = _gtk_buffer()->get_start_iter();
-    auto end_iter = _gtk_buffer()->get_end_iter();
-
-    Glib::ustring text = gtk_buffer()->get_text(start_iter, end_iter, false);
+    Glib::ustring text = _gtk_buffer()->get_text();
     _gtk_buffer()->set_modified(false);
 
+    std::string new_etag;
     if(gio_file_) {
-        gio_file_->replace_contents(text);
+        //FIXME: Use entity tag arguments to make sure that the file
+        //didn't change since the last time we saved
+        gio_file_->replace_contents(std::string(text.c_str()), "", new_etag);
     } else {
-        gio_file_ = Gio::File::create_for_path(path);
-        gio_file_->replace_contents(text);
-    }*/
+        gio_file_ = Gio::File::create_for_path(path.encode());
+        gio_file_->create_file();
+        gio_file_->replace_contents(text, "", new_etag);
+    }
 }
 
 
