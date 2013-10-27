@@ -59,4 +59,5 @@ void Application::on_signal_startup() {
         add_window(window);
     }
 }
+
 }

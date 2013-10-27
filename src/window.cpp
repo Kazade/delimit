@@ -133,7 +133,8 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
     std::vector<unicode> directories;
 
     for(auto it = files.begin(); it != files.end();) {
-        if(os::path::is_dir(os::path::join(path, *it))) {
+        unicode real_path = os::path::real_path(os::path::join(path, *it));
+        if(os::path::is_dir(real_path)) {
             directories.push_back((*it));
             it = files.erase(it);
         } else {
@@ -174,10 +175,8 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
 
         const Gtk::TreeModel::Row* row;
         if(node) {
-            L_DEBUG(_u("Appending child node for {0}").format(f));
             row = &(*file_tree_store_->append(node->children()));
         } else {
-            L_DEBUG(_u("Appending node for {0}").format(f));
             row = &(*file_tree_store_->append());
         }
 

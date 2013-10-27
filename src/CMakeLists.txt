@@ -5,6 +5,7 @@ set(
     application.cpp
     window.cpp
     frame.cpp
+    buffer.cpp
     base/unicode.cpp
     base/string.cpp
     base/os/path.cpp
