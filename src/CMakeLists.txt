@@ -2,6 +2,7 @@
 set(
     DELIMIT_SOURCES
     main.cpp
+    application.cpp
     window.cpp
     frame.cpp
     base/unicode.cpp
