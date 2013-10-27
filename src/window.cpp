@@ -20,6 +20,10 @@ Window::Window() {
 
     build_widgets();
     new_buffer("Untitled");
+
+    //Don't show the folder tree on FILE windows
+    file_tree_scrolled_window_->get_parent()->remove(*file_tree_scrolled_window_);
+    open_file_list_->set_vexpand(true);
 }
 
 Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files) {

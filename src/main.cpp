@@ -65,6 +65,10 @@ public:
         std::string ui_file = fdo::xdg::find_data_file("delimit/schemes").encode();
         manager->prepend_search_path(ui_file);
 
+        if(args_.size() == 1) {
+            auto window = std::make_shared<delimit::Window>();
+            add_window(window);
+        }
     }
 
 private:
