@@ -17,7 +17,8 @@ public:
 
     Frame(Window& parent):
         parent_(parent),
-        container_(Gtk::ORIENTATION_VERTICAL) {
+        container_(Gtk::ORIENTATION_VERTICAL),
+        file_chooser_(true) {
 
         build_widgets();
     }
@@ -32,6 +33,8 @@ private:
     Window& parent_;
 
     Gtk::Box container_;
+    Gtk::Box file_chooser_box_;
+    Gtk::ComboBox file_chooser_;
     Gtk::ScrolledWindow scrolled_window_;
     Gsv::View source_view_;
 

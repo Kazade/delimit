@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<style-scheme id="delimit" _name="Delimit" version="1.0">
+  <author>Luke Benstead</author>
+  <_description>The default theme for the Delimit text editor</_description>
+
+  <style name="bracket-match" bold="true" />
+  <style name="bracket-mismatch" underline="true"/>
+  <style name="current-line" background="#2F2F2F"/>
+  <style name="cursor" foreground="#f8f8f0"/>
+  <style name="def:base-n-integer" foreground="#ae81ff"/>
+  <style name="def:boolean" foreground="#ae81ff"/>
+  <style name="def:builtin" foreground="#ae81ff"/>
+  <style name="def:character" foreground="#ae81ff"/>
+  <style name="def:comment" foreground="#75715e"/>
+  <style name="def:complex" foreground="#ae81ff"/>
+  <style name="def:decimal" foreground="#ae81ff"/>
+  <style name="def:doc-comment" foreground="#75715e"/>
+  <style name="def:doc-comment-element" foreground="#75715e"/>
+  <style name="def:error" foreground="#f8f8f0" background="#F9263B"/>
+  <style name="def:floating-point" foreground="#ae81ff"/>
+  <style name="def:function" foreground="#a6e22e"/>
+  <style name="def:keyword" foreground="#F9263B"/>
+  <style name="def:note" foreground="#75715e"/>
+  <style name="def:number" foreground="#ae81ff"/>
+  <style name="def:operator" foreground="#F9263B"/>
+  <style name="def:preprocessor" foreground="#66A7EF"/>
+  <style name="def:reserved" foreground="#F9263B"/>
+  <style name="def:shebang" foreground="#75715e"/>
+  <style name="def:special-char" foreground="#66A7EF"/>
+  <style name="def:special-constant" foreground="#ae81ff"/>
+  <style name="def:statement" foreground="#F9263B"/>
+  <style name="def:string" foreground="#F6F568"/>
+  <style name="def:type" foreground="#66A7EF" />
+  <style name="draw-spaces" foreground="#3b3a32"/>
+  <style name="line-numbers" foreground="#fcfcfc" background="#2F2F2F"/>
+  <style name="search-match" background="#E8DA50" foreground="#999674"/>
+  <style name="selection" foreground="#fcfcfc" background="#739927"/>
+  <style name="text" foreground="#fcfcfc" background="#191919"/>
+</style-scheme>

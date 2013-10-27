@@ -16,6 +16,7 @@ Window::Window() {
     L_DEBUG("Creating window with empty buffer");
 
     file_tree_store_ = Gtk::TreeStore::create(file_tree_columns_);
+    open_list_store_ = Gtk::ListStore::create(open_list_columns_);
 
     build_widgets();
     new_buffer("Untitled");
@@ -23,6 +24,7 @@ Window::Window() {
 
 Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files) {
     file_tree_store_ = Gtk::TreeStore::create(file_tree_columns_);
+    open_list_store_ = Gtk::ListStore::create(open_list_columns_);
 
     build_widgets();
 
@@ -30,13 +32,19 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files) {
         type_ = WINDOW_TYPE_FOLDER;
 
         rebuild_file_tree(files[0]->get_path());
+        new_buffer("Untitled");
+
     } else {
         type_ = WINDOW_TYPE_FILE;
 
         for(auto file: files) {
             open_buffer(file);
         }
-    }
+
+        //Don't show the folder tree on FILE windows
+        file_tree_scrolled_window_->get_parent()->remove(*file_tree_scrolled_window_);
+        open_file_list_->set_vexpand(true);
+    }    
 }
 
 void Window::build_widgets() {
@@ -45,11 +53,17 @@ void Window::build_widgets() {
     builder->get_widget("main_window", gtk_window_);
     builder->get_widget("window_container", gtk_container_);
     builder->get_widget("window_file_tree", window_file_tree_);
+    builder->get_widget("file_tree_scrolled_window", file_tree_scrolled_window_);
 
     window_file_tree_->set_model(file_tree_store_);
     //window_file_tree_->append_column("Icon", file_tree_columns_.image);
     window_file_tree_->append_column("Name", file_tree_columns_.name);
     window_file_tree_->signal_row_activated().connect(sigc::mem_fun(this, &Window::on_signal_row_activated));
+
+    builder->get_widget("open_file_list", open_file_list_);
+    open_file_list_->set_model(open_list_store_);
+    open_file_list_->append_column("Name", open_list_columns_.name);
+    open_file_list_->signal_row_activated().connect(sigc::mem_fun(this, &Window::on_list_signal_row_activated));
 
     builder->get_widget("buffer_undo", buffer_undo_);
     builder->get_widget("buffer_undo", buffer_redo_);
@@ -57,13 +71,6 @@ void Window::build_widgets() {
     assert(gtk_window_);
 
     create_frame(); //Create the default frame
-
-    if(type_ == WINDOW_TYPE_FILE) {
-        //Don't show the folder tree on FILE windows
-        window_file_tree_->hide();
-
-        //FIXME: Replace with an open file listing instead
-    }
 }
 
 void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column) {
@@ -73,6 +80,13 @@ void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::Tree
         Glib::ustring full_path = row[file_tree_columns_.full_path];
         open_buffer(Gio::File::create_for_path(full_path));
     }
+}
+
+void Window::on_list_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column) {
+    auto row = *(open_list_store_->get_iter(path));
+
+    Buffer::ptr buffer = row[open_list_columns_.buffer];
+    frames_[current_frame_]->set_buffer(buffer.get());
 }
 
 void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
@@ -142,6 +156,17 @@ void Window::rebuild_file_tree(const unicode& path) {
     dirwalk(path, nullptr);
 }
 
+void Window::rebuild_open_list() {
+    open_list_store_->clear();
+
+    for(auto buffer: open_buffers_) {
+        auto row = *(open_list_store_->append());
+
+        row[open_list_columns_.name] = Glib::ustring(buffer->name().encode());
+        row[open_list_columns_.buffer] = buffer;
+    }
+}
+
 
 void Window::split() {
     assert(frames_.size() == 1);
@@ -159,6 +184,8 @@ void Window::new_buffer(const unicode& name) {
     open_buffers_.push_back(buffer);
 
     frames_[current_frame_]->set_buffer(buffer.get());
+
+    rebuild_open_list();
 }
 
 void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {
@@ -168,12 +195,22 @@ void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {
         throw IOError(_u("Path does not exist: {0}").format(file->get_path()));
     }
 
+    for(auto buffer: open_buffers_) {
+        if(buffer->path() == file->get_path()) {
+            //Just activate, don't open!
+            frames_[current_frame_]->set_buffer(buffer.get());
+            return;
+        }
+    }
+
     unicode name = os::path::split(file->get_path()).second;
 
     Buffer::ptr buffer = std::make_shared<Buffer>(*this, name, file);
     open_buffers_.push_back(buffer);
 
     frames_[current_frame_]->set_buffer(buffer.get());
+
+    rebuild_open_list();
 }
 
 void Window::create_frame() {

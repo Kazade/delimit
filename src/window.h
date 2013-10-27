@@ -32,6 +32,17 @@ public:
     Gtk::TreeModelColumn<bool> is_folder;
 };
 
+class OpenListColumns : public Gtk::TreeModelColumnRecord {
+public:
+    OpenListColumns() {
+        add(name);
+        add(buffer);
+    }
+
+    Gtk::TreeModelColumn<Glib::ustring> name;
+    Gtk::TreeModelColumn<Buffer::ptr> buffer;
+};
+
 class Window {
 public:
     typedef std::shared_ptr<Window> ptr;
@@ -52,16 +63,25 @@ public:
 private:
     void build_widgets();
     void rebuild_file_tree(const unicode &path);
+    void rebuild_open_list();
+
     void dirwalk(const unicode& path, const Gtk::TreeRow *node);
 
     void on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column);
+    void on_list_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column);
 
     Gtk::Window* gtk_window_ = nullptr;
     Gtk::Alignment* gtk_container_ = nullptr;
+
+    Gtk::ScrolledWindow* file_tree_scrolled_window_ = nullptr;
     Gtk::TreeView* window_file_tree_ = nullptr;
+    Gtk::TreeView* open_file_list_ = nullptr;
 
     FileTreeColumns file_tree_columns_;
     Glib::RefPtr<Gtk::TreeStore> file_tree_store_;
+
+    OpenListColumns open_list_columns_;
+    Glib::RefPtr<Gtk::ListStore> open_list_store_;
 
     //Toolbar
     Gtk::ToolButton* buffer_undo_ = nullptr;

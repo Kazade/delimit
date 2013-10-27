@@ -60,13 +60,19 @@ public:
 
     Glib::RefPtr<Gsv::Buffer> _gtk_buffer() { return gtk_buffer_; }
 
-private:
-    Glib::RefPtr<Gio::File> gio_file_;
-    Glib::RefPtr<Gsv::Buffer> gtk_buffer_;
+    unicode name() const { return name_; }
+    unicode path() const {
+        if(gio_file_)
+            return gio_file_->get_path();
+        return "";
+    }
 
+private:        
     Window& parent_;
     unicode name_;
-    unicode path_;
+    Glib::RefPtr<Gio::File> gio_file_;
+
+    Glib::RefPtr<Gsv::Buffer> gtk_buffer_;
 
     bool is_saved() const { return is_saved_; }
 

@@ -4,6 +4,7 @@
 #include "window.h"
 #include "base/os.h"
 #include "base/logging.h"
+#include "base/fdo/base_directory.h"
 #include "utils/sigc_lambda.h"
 
 namespace delimit {
@@ -58,6 +59,11 @@ public:
 
     void on_signal_startup() {
         L_INFO(_u("on_signal_startup"));
+
+        //Add our schemes to the list of available ones
+        auto manager = Gsv::StyleSchemeManager::get_default();
+        std::string ui_file = fdo::xdg::find_data_file("delimit/schemes").encode();
+        manager->prepend_search_path(ui_file);
     }
 
 private:
