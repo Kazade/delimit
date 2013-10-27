@@ -1,5 +1,5 @@
 #include <gtkmm.h>
-
+#include <glibmm/i18n.h>
 #include "window.h"
 
 #include "base/exceptions.h"
@@ -65,8 +65,13 @@ void Window::build_widgets() {
     open_file_list_->append_column("Name", open_list_columns_.name);
     open_file_list_->signal_row_activated().connect(sigc::mem_fun(this, &Window::on_list_signal_row_activated));
 
+    builder->get_widget("buffer_new", buffer_new_);
+    builder->get_widget("buffer_open", buffer_open_);
     builder->get_widget("buffer_undo", buffer_undo_);
     builder->get_widget("buffer_undo", buffer_redo_);
+
+    buffer_new_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_new_clicked));
+    buffer_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_clicked));
 
     assert(gtk_window_);
 
@@ -76,9 +81,12 @@ void Window::build_widgets() {
 void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column) {
     auto row = *(file_tree_store_->get_iter(path));
 
-    if(!row[file_tree_columns_.is_folder]) {
+    if(!row[file_tree_columns_.is_folder]) {        
         Glib::ustring full_path = row[file_tree_columns_.full_path];
-        open_buffer(Gio::File::create_for_path(full_path));
+
+        if(Gio::File::create_for_path(full_path)->query_file_type() == Gio::FILE_TYPE_REGULAR) {
+            open_buffer(Gio::File::create_for_path(full_path));
+        }
     }
 }
 
@@ -87,6 +95,31 @@ void Window::on_list_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk:
 
     Buffer::ptr buffer = row[open_list_columns_.buffer];
     frames_[current_frame_]->set_buffer(buffer.get());
+}
+
+void Window::toolbutton_new_clicked() {
+    new_buffer("Untitled");
+}
+
+void Window::toolbutton_open_clicked() {
+    Gtk::FileChooserDialog dialog(_gtk_window(), _("Open a file..."));
+
+    dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
+    dialog.add_button(Gtk::Stock::OPEN, Gtk::RESPONSE_OK);
+
+    Glib::RefPtr<Gtk::FileFilter> filter_any = Gtk::FileFilter::create();
+    filter_any->set_name("Any files");
+    filter_any->add_pattern("*");
+    dialog.add_filter(filter_any);
+
+    int result = dialog.run();
+    switch(result) {
+        case Gtk::RESPONSE_OK: {
+            std::string filename = dialog.get_filename();
+            open_buffer(Gio::File::create_for_path(filename));
+        } default:
+            break;
+    }
 }
 
 void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
@@ -119,6 +152,11 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
 
     for(auto f: files) {
         if(f == "." || f == "..") continue;
+
+        if(f.starts_with(".")) {
+            //Ignore hidden files and folders
+            continue;
+        }
 
         unicode full_name = os::path::join(path, f);
 

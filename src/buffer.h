@@ -22,12 +22,13 @@ public:
         gtk_buffer_ = Gsv::Buffer::create();
     }
 
-    void _finish_read(Glib::RefPtr<Gio::FileInputStream> stream, Glib::RefPtr<Gio::AsyncResult> res) {
-        auto bytes = stream->read_bytes_finish(res);
-        gsize size = bytes->get_size();
-        const char* str = (const char*)bytes->get_data(size);
+    void _finish_read(Glib::RefPtr<Gio::File> file, Glib::RefPtr<Gio::AsyncResult> res) {
+        char* output;
+        gsize size;
 
-        Glib::ustring result(str);
+        file->load_contents_finish(res, output, size);
+
+        Glib::ustring result(output);
 
         Glib::signal_idle().connect([=]() -> bool {
             gtk_buffer_->set_text(result);
@@ -48,9 +49,8 @@ public:
 
             gtk_buffer_ = Gsv::Buffer::create(lang);
 
-            auto stream = file->read();
-            std::function<void (Glib::RefPtr<Gio::AsyncResult>)> func = std::bind(&Buffer::_finish_read, this, stream, std::placeholders::_1);
-            stream->read_bytes_async(gsize(1000000), func);
+            std::function<void (Glib::RefPtr<Gio::AsyncResult>)> func = std::bind(&Buffer::_finish_read, this, file, std::placeholders::_1);
+            file->load_contents_async(func);
         } else {
             gtk_buffer_ = Gsv::Buffer::create();
         }

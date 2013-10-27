@@ -84,8 +84,13 @@ private:
     Glib::RefPtr<Gtk::ListStore> open_list_store_;
 
     //Toolbar
+    Gtk::ToolButton* buffer_new_ = nullptr;
+    Gtk::ToolButton* buffer_open_ = nullptr;
     Gtk::ToolButton* buffer_undo_ = nullptr;
     Gtk::ToolButton* buffer_redo_ = nullptr;
+
+    void toolbutton_new_clicked();
+    void toolbutton_open_clicked();
 
     void create_frame();
 
