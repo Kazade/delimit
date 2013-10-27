@@ -35,6 +35,6 @@
   <style name="draw-spaces" foreground="#3b3a32"/>
   <style name="line-numbers" foreground="#fcfcfc" background="#2F2F2F"/>
   <style name="search-match" background="#E8DA50" foreground="#999674"/>
-  <style name="selection" foreground="#fcfcfc" background="#739927"/>
+  <style name="selection" foreground="#fcfcfc" background="#6C838D"/>
   <style name="text" foreground="#fcfcfc" background="#191919"/>
 </style-scheme>

@@ -21,6 +21,8 @@ void Frame::build_widgets() {
     source_view_.set_auto_indent(true);
     source_view_.set_insert_spaces_instead_of_tabs(true);
     source_view_.set_draw_spaces(Gsv::DRAW_SPACES_SPACE | Gsv::DRAW_SPACES_TAB);
+    source_view_.set_left_margin(4);
+    source_view_.set_right_margin(4);
 }
 
 void Frame::set_buffer(Buffer *buffer) {
