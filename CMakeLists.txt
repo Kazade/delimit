@@ -15,7 +15,7 @@ link_libraries(
 )
 
 add_definitions("-Wall -g")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -pthread")
 
 FILE(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data/ui DESTINATION ${CMAKE_BINARY_DIR}/delimit)
 FILE(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data/schemes DESTINATION ${CMAKE_BINARY_DIR}/delimit)

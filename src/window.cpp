@@ -12,7 +12,19 @@ namespace delimit {
 const int FRAME_LIMIT = 2;
 const unicode UI_FILE = "delimit/ui/delimit.glade";
 
-Window::Window() {
+Window::Window():
+    gtk_window_(nullptr),
+    gtk_container_(nullptr),
+    file_tree_scrolled_window_(nullptr),
+    window_file_tree_(nullptr),
+    open_file_list_(nullptr),
+    buffer_new_(nullptr),
+    buffer_open_(nullptr),
+    buffer_save_(nullptr),
+    buffer_undo_(nullptr),
+    buffer_search_(nullptr),
+    type_(WINDOW_TYPE_FILE) {
+
     L_DEBUG("Creating window with empty buffer");
 
     file_tree_store_ = Gtk::TreeStore::create(file_tree_columns_);
@@ -26,7 +38,19 @@ Window::Window() {
     open_file_list_->set_vexpand(true);
 }
 
-Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files) {
+Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
+    gtk_window_(nullptr),
+    gtk_container_(nullptr),
+    file_tree_scrolled_window_(nullptr),
+    window_file_tree_(nullptr),
+    open_file_list_(nullptr),
+    buffer_new_(nullptr),
+    buffer_open_(nullptr),
+    buffer_save_(nullptr),
+    buffer_undo_(nullptr),
+    buffer_search_(nullptr),
+    type_(WINDOW_TYPE_FILE) {
+
     file_tree_store_ = Gtk::TreeStore::create(file_tree_columns_);
     open_list_store_ = Gtk::ListStore::create(open_list_columns_);
 
@@ -48,7 +72,7 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files) {
         //Don't show the folder tree on FILE windows
         file_tree_scrolled_window_->get_parent()->remove(*file_tree_scrolled_window_);
         open_file_list_->set_vexpand(true);
-    }    
+    }
 }
 
 void Window::build_widgets() {
@@ -90,7 +114,7 @@ void Window::build_widgets() {
 void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column) {
     auto row = *(file_tree_store_->get_iter(path));
 
-    if(!row[file_tree_columns_.is_folder]) {        
+    if(!row[file_tree_columns_.is_folder]) {
         Glib::ustring full_path = row[file_tree_columns_.full_path];
 
         if(Gio::File::create_for_path(full_path)->query_file_type() == Gio::FILE_TYPE_REGULAR) {

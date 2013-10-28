@@ -70,12 +70,12 @@ private:
     void on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column);
     void on_list_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column);
 
-    Gtk::Window* gtk_window_ = nullptr;
-    Gtk::Alignment* gtk_container_ = nullptr;
+    Gtk::Window* gtk_window_;
+    Gtk::Alignment* gtk_container_;
 
-    Gtk::ScrolledWindow* file_tree_scrolled_window_ = nullptr;
-    Gtk::TreeView* window_file_tree_ = nullptr;
-    Gtk::TreeView* open_file_list_ = nullptr;
+    Gtk::ScrolledWindow* file_tree_scrolled_window_;
+    Gtk::TreeView* window_file_tree_;
+    Gtk::TreeView* open_file_list_;
 
     FileTreeColumns file_tree_columns_;
     Glib::RefPtr<Gtk::TreeStore> file_tree_store_;
@@ -84,12 +84,12 @@ private:
     Glib::RefPtr<Gtk::ListStore> open_list_store_;
 
     //Toolbar
-    Gtk::ToolButton* buffer_new_ = nullptr;
-    Gtk::ToolButton* buffer_open_ = nullptr;
-    Gtk::ToolButton* buffer_save_ = nullptr;
-    Gtk::ToolButton* buffer_undo_ = nullptr;
-    Gtk::ToolButton* buffer_redo_ = nullptr;
-    Gtk::ToggleToolButton* buffer_search_ = nullptr;
+    Gtk::ToolButton* buffer_new_;
+    Gtk::ToolButton* buffer_open_;
+    Gtk::ToolButton* buffer_save_;
+    Gtk::ToolButton* buffer_undo_;
+    Gtk::ToolButton* buffer_redo_;
+    Gtk::ToggleToolButton* buffer_search_;
 
     void toolbutton_new_clicked();
     void toolbutton_open_clicked();
@@ -98,7 +98,7 @@ private:
 
     void create_frame();
 
-    WindowType type_ = WINDOW_TYPE_FILE;
+    WindowType type_;
     unicode path_;
 
     std::vector<Buffer::ptr> open_buffers_;

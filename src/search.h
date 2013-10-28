@@ -11,7 +11,8 @@ class Buffer;
 
 class Search : public Gtk::Box {
 public:
-    Search() {
+    Search():
+        buffer_(nullptr) {
         build_widgets();
     }
 
@@ -28,7 +29,7 @@ private:
 
     void build_widgets();
 
-    Buffer* buffer_ = nullptr;
+    Buffer* buffer_;
 };
 
 }

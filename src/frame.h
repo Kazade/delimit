@@ -20,7 +20,8 @@ public:
     Frame(Window& parent):
         parent_(parent),
         container_(Gtk::ORIENTATION_VERTICAL),
-        file_chooser_(true) {
+        file_chooser_(true),
+        buffer_(nullptr) {
 
         build_widgets();
     }
@@ -51,7 +52,7 @@ private:
 
     delimit::Search search_;
 
-    Buffer* buffer_ = nullptr;
+    Buffer* buffer_;
 };
 
 }
