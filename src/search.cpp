@@ -8,8 +8,11 @@ const Glib::ustring SEARCH_HIGHLIGHT_TAG = "search_highlight";
 void Search::set_buffer(Buffer *buffer)  {
     buffer_ = buffer;
     if(buffer_) {
-        auto tag = buffer_->_gtk_buffer()->create_tag (SEARCH_HIGHLIGHT_TAG);
-        tag->property_background() = "#B3BF6F";
+        //Create the buffer tag if necessary
+        if(!buffer_->_gtk_buffer()->get_tag_table()->lookup(SEARCH_HIGHLIGHT_TAG)) {
+            auto tag = buffer_->_gtk_buffer()->create_tag (SEARCH_HIGHLIGHT_TAG);
+            tag->property_background() = "#B3BF6F";
+        }
     }
 }
 
