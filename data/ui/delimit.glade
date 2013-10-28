@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.16.0 on Mon Oct 28 10:00:15 2013 -->
 <interface>
-  <!-- interface-requires gtk+ 3.6 -->
+  <!-- interface-requires gtk+ 3.8 -->
   <object class="GtkTreeStore" id="file_tree_store">
     <columns>
       <!-- column-name name -->
@@ -105,6 +106,19 @@
               <object class="GtkSeparatorToolItem" id="toolbutton3">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="homogeneous">True</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkToggleToolButton" id="buffer_search">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Search</property>
+                <property name="use_underline">True</property>
+                <property name="icon_name">find</property>
               </object>
               <packing>
                 <property name="expand">False</property>

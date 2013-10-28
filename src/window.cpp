@@ -55,6 +55,7 @@ void Window::build_widgets() {
     std::string ui_file = fdo::xdg::find_data_file(UI_FILE).encode();
     auto builder = Gtk::Builder::create_from_file(ui_file);
     builder->get_widget("main_window", gtk_window_);
+
     builder->get_widget("window_container", gtk_container_);
     builder->get_widget("window_file_tree", window_file_tree_);
     builder->get_widget("file_tree_scrolled_window", file_tree_scrolled_window_);
@@ -74,10 +75,13 @@ void Window::build_widgets() {
     builder->get_widget("buffer_save", buffer_save_);
     builder->get_widget("buffer_undo", buffer_undo_);
     builder->get_widget("buffer_redo", buffer_redo_);
+    builder->get_widget("buffer_search", buffer_search_);
 
     buffer_new_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_new_clicked));
     buffer_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_clicked));
     buffer_save_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_save_clicked));
+    buffer_search_->signal_toggled().connect(sigc::mem_fun(this, &Window::toolbutton_search_toggled));
+
     assert(gtk_window_);
 
     create_frame(); //Create the default frame
@@ -149,6 +153,10 @@ void Window::toolbutton_save_clicked() {
         }
         buffer->save(path);
     }
+}
+
+void Window::toolbutton_search_toggled() {
+    frames_[current_frame_]->set_search_visible(buffer_search_->get_active());
 }
 
 void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
@@ -289,6 +297,7 @@ void Window::create_frame() {
     //FIXME: Add frame to the container
     gtk_container_->add(frame->_gtk_box());
     frame->_gtk_box().show_all();
+    frame->set_search_visible(false);
 
     frames_.push_back(frame);
 }

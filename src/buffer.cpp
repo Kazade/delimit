@@ -25,8 +25,6 @@ Buffer::Buffer(Window& parent, const unicode& name, const Glib::RefPtr<Gio::File
     } else {
         gtk_buffer_ = Gsv::Buffer::create();
     }
-
-
 }
 
 void Buffer::_finish_read(Glib::RefPtr<Gio::File> file, Glib::RefPtr<Gio::AsyncResult> res) {

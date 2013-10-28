@@ -6,6 +6,8 @@
 
 #include <memory>
 
+#include "search.h"
+
 namespace delimit {
 
 class Window;
@@ -28,6 +30,14 @@ public:
 
     Gtk::Box& _gtk_box() { return container_; }
 
+    void set_search_visible(bool value) {
+        if(value) {
+            search_.show();
+        } else {
+            search_.hide();
+        }
+    }
+
 private:
     void build_widgets();
 
@@ -38,6 +48,8 @@ private:
     Gtk::ComboBox file_chooser_;
     Gtk::ScrolledWindow scrolled_window_;
     Gsv::View source_view_;
+
+    delimit::Search search_;
 
     Buffer* buffer_ = nullptr;
 };

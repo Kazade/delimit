@@ -38,3 +38,5 @@ src/settings.h
 src/application.h
 src/application.cpp
 src/buffer.cpp
+src/search.h
+src/search.cpp

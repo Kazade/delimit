@@ -89,10 +89,12 @@ private:
     Gtk::ToolButton* buffer_save_ = nullptr;
     Gtk::ToolButton* buffer_undo_ = nullptr;
     Gtk::ToolButton* buffer_redo_ = nullptr;
+    Gtk::ToggleToolButton* buffer_search_ = nullptr;
 
     void toolbutton_new_clicked();
     void toolbutton_open_clicked();
     void toolbutton_save_clicked();
+    void toolbutton_search_toggled();
 
     void create_frame();
 
