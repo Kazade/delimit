@@ -56,4 +56,11 @@ int Search::highlight_all(const unicode& string) {
     return highlighted;
 }
 
+void Search::clear_highlight() {
+    if(buffer_) {
+        auto buffer = buffer_->_gtk_buffer();
+        buffer->remove_tag_by_name(SEARCH_HIGHLIGHT_TAG, buffer->begin(), buffer->end());
+    }
+}
+
 }
