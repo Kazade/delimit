@@ -26,6 +26,16 @@ void Frame::build_widgets() {
     source_view_.set_right_margin(4);   
 }
 
+void Frame::set_search_visible(bool value) {
+    //I have no idea why I need to do this in idle(), but it won't work on start up otherwise
+    //At least this way we're thread safe!
+    if(value) {
+        Glib::signal_idle().connect_once(sigc::mem_fun(search_, &Search::show));
+    } else {
+        Glib::signal_idle().connect_once(sigc::mem_fun(search_, &Search::hide));
+    }
+}
+
 void Frame::set_buffer(Buffer *buffer) {
     buffer_ = buffer;
 
