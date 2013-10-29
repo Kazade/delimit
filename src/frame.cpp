@@ -2,6 +2,7 @@
 
 #include "frame.h"
 #include "buffer.h"
+#include "window.h"
 
 namespace delimit {
 
@@ -23,16 +24,22 @@ void Frame::build_widgets() {
     source_view_.set_insert_spaces_instead_of_tabs(true);
     source_view_.set_draw_spaces(Gsv::DRAW_SPACES_SPACE | Gsv::DRAW_SPACES_TAB);
     source_view_.set_left_margin(4);
-    source_view_.set_right_margin(4);   
+    source_view_.set_right_margin(4);
+
+    search_.signal_close_requested().connect([&]() {
+        parent_.buffer_search_button().set_active(false);
+    });
+
+    //I have no idea why I need to do this in idle(), but it won't work on start up otherwise
+    //At least this way we're thread safe!
+    Glib::signal_idle().connect_once(sigc::bind(sigc::mem_fun(this, &Frame::set_search_visible), false));
 }
 
 void Frame::set_search_visible(bool value) {
-    //I have no idea why I need to do this in idle(), but it won't work on start up otherwise
-    //At least this way we're thread safe!
     if(value) {
-        Glib::signal_idle().connect_once(sigc::mem_fun(search_, &Search::show));
+        search_.show();
     } else {
-        Glib::signal_idle().connect_once(sigc::mem_fun(search_, &Search::hide));
+        search_.hide();
     }
 }
 

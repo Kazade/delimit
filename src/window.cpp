@@ -1,5 +1,7 @@
 #include <gtkmm.h>
 #include <glibmm/i18n.h>
+#include <gdkmm.h>
+
 #include "window.h"
 
 #include "base/exceptions.h"
@@ -75,6 +77,16 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
     }
 }
 
+void Window::init_actions() {
+    auto accel_group = Gtk::AccelGroup::create();
+    buffer_new_->add_accelerator("clicked", accel_group, GDK_KEY_N, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    buffer_save_->add_accelerator("clicked", accel_group, GDK_KEY_S, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    window_split_->add_accelerator("clicked", accel_group, GDK_KEY_T, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    buffer_search_->add_accelerator("clicked", accel_group, GDK_KEY_F, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+
+    _gtk_window().add_accel_group(accel_group);
+}
+
 void Window::build_widgets() {
     std::string ui_file = fdo::xdg::find_data_file(UI_FILE).encode();
     auto builder = Gtk::Builder::create_from_file(ui_file);
@@ -100,15 +112,19 @@ void Window::build_widgets() {
     builder->get_widget("buffer_undo", buffer_undo_);
     builder->get_widget("buffer_redo", buffer_redo_);
     builder->get_widget("buffer_search", buffer_search_);
+    builder->get_widget("window_split", window_split_);
 
     buffer_new_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_new_clicked));
     buffer_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_clicked));
     buffer_save_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_save_clicked));
+    search_clicked_conn_ = buffer_search_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_search_clicked));
     buffer_search_->signal_toggled().connect(sigc::mem_fun(this, &Window::toolbutton_search_toggled));
 
     assert(gtk_window_);
 
     create_frame(); //Create the default frame
+
+    init_actions();
 }
 
 void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column) {
@@ -179,8 +195,22 @@ void Window::toolbutton_save_clicked() {
     }
 }
 
+void Window::toolbutton_search_clicked() {
+    L_DEBUG("Clicked");
+    //buffer_search_->get_active() ? buffer_search_->set_active(false) : buffer_search_->set_active(true);
+
+    if(!ignore_next_) {
+        search_clicked_conn_.block();
+        buffer_search_->set_active(!buffer_search_->get_active());
+        search_clicked_conn_.unblock();
+    }
+    ignore_next_ = false;
+}
+
 void Window::toolbutton_search_toggled() {
+    L_DEBUG("Toggled");
     frames_[current_frame_]->set_search_visible(buffer_search_->get_active());
+    ignore_next_ = true;
 }
 
 void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
@@ -321,7 +351,6 @@ void Window::create_frame() {
     //FIXME: Add frame to the container
     gtk_container_->add(frame->_gtk_box());
     frame->_gtk_box().show_all();
-    frame->set_search_visible(false);
 
     frames_.push_back(frame);
 }

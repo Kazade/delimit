@@ -4,6 +4,17 @@
     "draw_whitespace": "all",
     "insert_spaces_instead_of_tabs": true,
     "tab_width": 4,
-    "colour_scheme": "Delimit"
+    "colour_scheme": "Delimit",
+
+    "build_working_directory": "{PROJECT_ROOT}/build",    
+    "build_commands" : [
+        "cmake ..",
+        "make -j2"
+    ],
+    
+    "run_working_directory": "{PROJECT_ROOT}/build/src",
+    "run_commands": [
+        "./delimit"
+    ]
 }
 
