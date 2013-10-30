@@ -9,6 +9,8 @@ namespace delimit {
 Application::Application(int& argc, char**& argv, const Glib::ustring& application_id, Gio::ApplicationFlags flags):
     Gtk::Application(argc, argv, application_id, flags) {
 
+    Glib::set_application_name("Delimit");
+
     logging::get_logger("/")->add_handler(logging::Handler::ptr(new logging::StdIOHandler));
 
     signal_startup().connect(sigc::mem_fun(this, &Application::on_signal_startup));
@@ -44,6 +46,21 @@ void Application::on_signal_open(const Gio::Application::type_vec_files& files, 
 
     auto window = std::make_shared<delimit::Window>(files);
     add_window(window);
+}
+
+void Application::action_open_folder() {
+
+}
+
+void Application::on_startup() {
+    Gtk::Application::on_startup();
+
+    //Create the application menu
+    add_action("delimit.open_folder", sigc::mem_fun(this, &Application::action_open_folder));
+
+    app_menu_ = Gio::Menu::create();
+    app_menu_->append("Open Folder...", "delimit.open_folder");
+    set_app_menu(app_menu_);
 }
 
 void Application::on_signal_startup() {

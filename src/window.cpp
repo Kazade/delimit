@@ -241,7 +241,7 @@ bool Window::on_tree_test_expand_row(const Gtk::TreeModel::iterator& iter, const
 }
 
 void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
-    auto files = os::path::list_dir(path);
+    auto files = os::path::list_dir(os::path::real_path(path));
     std::sort(files.begin(), files.end());
 
     std::vector<unicode> directories;
@@ -280,7 +280,7 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
 
         unicode full_name = os::path::join(path, f);
 
-        bool is_folder = os::path::is_dir(full_name);
+        bool is_folder = os::path::is_dir(os::path::real_path(full_name));
 
         auto image = Gtk::IconTheme::get_default()->load_icon(
             (is_folder) ? "folder" : "document",
