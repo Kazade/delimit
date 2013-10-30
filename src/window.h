@@ -60,8 +60,16 @@ public:
 
     Gtk::Window& _gtk_window() { assert(gtk_window_); return *gtk_window_; }
 
+    void new_buffer_thing() {
+        new_buffer("Thing");
+    }
+
+    Gtk::ToggleToolButton& buffer_search_button() { return *buffer_search_; }
+
 private:
+    void activate_buffer(Buffer::ptr buffer);
     void build_widgets();
+    void init_actions();
     void rebuild_file_tree(const unicode &path);
     void rebuild_open_list();
 
@@ -69,6 +77,7 @@ private:
 
     void on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column);
     void on_list_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column);
+    void on_buffer_modified(Buffer::ptr buffer);
 
     Gtk::Window* gtk_window_;
     Gtk::Alignment* gtk_container_;
@@ -90,11 +99,18 @@ private:
     Gtk::ToolButton* buffer_undo_;
     Gtk::ToolButton* buffer_redo_;
     Gtk::ToggleToolButton* buffer_search_;
+    Gtk::ToggleToolButton* window_split_;
+
+    Glib::RefPtr<Gtk::ActionGroup> actions_;
 
     void toolbutton_new_clicked();
     void toolbutton_open_clicked();
     void toolbutton_save_clicked();
+    void toolbutton_search_clicked();
     void toolbutton_search_toggled();
+
+    sigc::connection search_clicked_conn_;
+    bool ignore_next_ = false;
 
     void create_frame();
 

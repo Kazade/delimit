@@ -1,5 +1,7 @@
 #include <gtkmm.h>
 #include <glibmm/i18n.h>
+#include <gdkmm.h>
+
 #include "window.h"
 
 #include "base/exceptions.h"
@@ -60,6 +62,8 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
         type_ = WINDOW_TYPE_FOLDER;
 
         rebuild_file_tree(files[0]->get_path());
+        path_ = files[0]->get_path();
+
         new_buffer("Untitled");
 
     } else {
@@ -73,6 +77,16 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
         file_tree_scrolled_window_->get_parent()->remove(*file_tree_scrolled_window_);
         open_file_list_->set_vexpand(true);
     }
+}
+
+void Window::init_actions() {
+    auto accel_group = Gtk::AccelGroup::create();
+    buffer_new_->add_accelerator("clicked", accel_group, GDK_KEY_N, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    buffer_save_->add_accelerator("clicked", accel_group, GDK_KEY_S, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    window_split_->add_accelerator("clicked", accel_group, GDK_KEY_T, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    buffer_search_->add_accelerator("clicked", accel_group, GDK_KEY_F, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+
+    _gtk_window().add_accel_group(accel_group);
 }
 
 void Window::build_widgets() {
@@ -100,15 +114,22 @@ void Window::build_widgets() {
     builder->get_widget("buffer_undo", buffer_undo_);
     builder->get_widget("buffer_redo", buffer_redo_);
     builder->get_widget("buffer_search", buffer_search_);
+    builder->get_widget("window_split", window_split_);
 
     buffer_new_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_new_clicked));
     buffer_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_clicked));
     buffer_save_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_save_clicked));
+    search_clicked_conn_ = buffer_search_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_search_clicked));
     buffer_search_->signal_toggled().connect(sigc::mem_fun(this, &Window::toolbutton_search_toggled));
 
     assert(gtk_window_);
 
     create_frame(); //Create the default frame
+
+    init_actions();
+
+    std::string icon_file = fdo::xdg::find_data_file("delimit/delimit.svg").encode();
+    gtk_window_->set_icon_from_file(icon_file);
 }
 
 void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column) {
@@ -127,7 +148,7 @@ void Window::on_list_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk:
     auto row = *(open_list_store_->get_iter(path));
 
     Buffer::ptr buffer = row[open_list_columns_.buffer];
-    frames_[current_frame_]->set_buffer(buffer.get());
+    activate_buffer(buffer);
 }
 
 void Window::toolbutton_new_clicked() {
@@ -179,8 +200,22 @@ void Window::toolbutton_save_clicked() {
     }
 }
 
+void Window::toolbutton_search_clicked() {
+    L_DEBUG("Clicked");
+    //buffer_search_->get_active() ? buffer_search_->set_active(false) : buffer_search_->set_active(true);
+
+    if(!ignore_next_) {
+        search_clicked_conn_.block();
+        buffer_search_->set_active(!buffer_search_->get_active());
+        search_clicked_conn_.unblock();
+    }
+    ignore_next_ = false;
+}
+
 void Window::toolbutton_search_toggled() {
+    L_DEBUG("Toggled");
     frames_[current_frame_]->set_search_visible(buffer_search_->get_active());
+    ignore_next_ = true;
 }
 
 void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
@@ -278,19 +313,45 @@ void Window::unsplit() {
     frames_.pop_back(); //Destroy the second frame
 }
 
+void Window::on_buffer_modified(Buffer::ptr buffer) {
+    buffer_save_->set_sensitive(buffer->modified());
+
+    unicode to_display = (buffer->path().empty()) ? buffer->name() : buffer->path();
+
+    if(type_ == WINDOW_TYPE_FOLDER && !path_.empty() && !buffer->path().empty()) {
+        to_display = os::path::rel_path(to_display, path_);
+    }
+
+    _gtk_window().set_title(
+        _u("Delimit - {0}{1}").format(
+            to_display, buffer->modified() ? "*": ""
+        ).encode().c_str()
+    );
+}
+
+void Window::activate_buffer(Buffer::ptr buffer) {
+    assert(current_frame_ >= 0 && current_frame_ < (int32_t) frames_.size());
+    frames_[current_frame_]->set_buffer(buffer.get());
+    on_buffer_modified(buffer);
+}
+
 void Window::new_buffer(const unicode& name) {
     Buffer::ptr buffer = std::make_shared<Buffer>(*this, name);
 
+    //Watch for changes to the buffer
+    buffer->signal_modified_changed().connect(
+        sigc::bind(sigc::mem_fun(this, &Window::on_buffer_modified), buffer)
+    );
+
+    buffer->set_modified(true); //New file, mark as modified
+
     open_buffers_.push_back(buffer);
 
-    frames_[current_frame_]->set_buffer(buffer.get());
-
+    activate_buffer(buffer);
     rebuild_open_list();
 }
 
-void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {
-    assert(current_frame_ >= 0 && current_frame_ < (int32_t) frames_.size());
-
+void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {    
     if(!file->query_exists()) {
         throw IOError(_u("Path does not exist: {0}").format(file->get_path()));
     }
@@ -298,7 +359,7 @@ void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {
     for(auto buffer: open_buffers_) {
         if(buffer->path() == file->get_path()) {
             //Just activate, don't open!
-            frames_[current_frame_]->set_buffer(buffer.get());
+            activate_buffer(buffer);
             return;
         }
     }
@@ -306,10 +367,15 @@ void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {
     unicode name = os::path::split(file->get_path()).second;
 
     Buffer::ptr buffer = std::make_shared<Buffer>(*this, name, file);
+    buffer->set_modified(false);
+    //Watch for changes to the buffer
+    buffer->signal_modified_changed().connect(
+        sigc::bind(sigc::mem_fun(this, &Window::on_buffer_modified), buffer)
+    );
+
     open_buffers_.push_back(buffer);
 
-    frames_[current_frame_]->set_buffer(buffer.get());
-
+    activate_buffer(buffer);
     rebuild_open_list();
 }
 
@@ -321,7 +387,6 @@ void Window::create_frame() {
     //FIXME: Add frame to the container
     gtk_container_->add(frame->_gtk_box());
     frame->_gtk_box().show_all();
-    frame->set_search_visible(false);
 
     frames_.push_back(frame);
 }

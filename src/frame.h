@@ -30,14 +30,7 @@ public:
     Buffer* buffer() { return buffer_; }
 
     Gtk::Box& _gtk_box() { return container_; }
-
-    void set_search_visible(bool value) {
-        if(value) {
-            search_.show();
-        } else {
-            search_.hide();
-        }
-    }
+    void set_search_visible(bool value);
 
 private:
     void build_widgets();
