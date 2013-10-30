@@ -62,6 +62,8 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
         type_ = WINDOW_TYPE_FOLDER;
 
         rebuild_file_tree(files[0]->get_path());
+        path_ = files[0]->get_path();
+
         new_buffer("Untitled");
 
     } else {
@@ -313,6 +315,18 @@ void Window::unsplit() {
 
 void Window::on_buffer_modified(Buffer::ptr buffer) {
     buffer_save_->set_sensitive(buffer->modified());
+
+    unicode to_display = (buffer->path().empty()) ? buffer->name() : buffer->path();
+
+    if(type_ == WINDOW_TYPE_FOLDER && !path_.empty() && !buffer->path().empty()) {
+        to_display = os::path::rel_path(to_display, path_);
+    }
+
+    _gtk_window().set_title(
+        _u("Delimit - {0}{1}").format(
+            to_display, buffer->modified() ? "*": ""
+        ).encode().c_str()
+    );
 }
 
 void Window::activate_buffer(Buffer::ptr buffer) {
