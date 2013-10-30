@@ -146,7 +146,7 @@ void Window::on_list_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk:
     auto row = *(open_list_store_->get_iter(path));
 
     Buffer::ptr buffer = row[open_list_columns_.buffer];
-    frames_[current_frame_]->set_buffer(buffer.get());
+    activate_buffer(buffer);
 }
 
 void Window::toolbutton_new_clicked() {
@@ -316,6 +316,7 @@ void Window::on_buffer_modified(Buffer::ptr buffer) {
 }
 
 void Window::activate_buffer(Buffer::ptr buffer) {
+    assert(current_frame_ >= 0 && current_frame_ < (int32_t) frames_.size());
     frames_[current_frame_]->set_buffer(buffer.get());
     on_buffer_modified(buffer);
 }
@@ -336,9 +337,7 @@ void Window::new_buffer(const unicode& name) {
     rebuild_open_list();
 }
 
-void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {
-    assert(current_frame_ >= 0 && current_frame_ < (int32_t) frames_.size());
-
+void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {    
     if(!file->query_exists()) {
         throw IOError(_u("Path does not exist: {0}").format(file->get_path()));
     }
@@ -346,7 +345,7 @@ void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {
     for(auto buffer: open_buffers_) {
         if(buffer->path() == file->get_path()) {
             //Just activate, don't open!
-            frames_[current_frame_]->set_buffer(buffer.get());
+            activate_buffer(buffer);
             return;
         }
     }
@@ -354,6 +353,12 @@ void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {
     unicode name = os::path::split(file->get_path()).second;
 
     Buffer::ptr buffer = std::make_shared<Buffer>(*this, name, file);
+    buffer->set_modified(false);
+    //Watch for changes to the buffer
+    buffer->signal_modified_changed().connect(
+        sigc::bind(sigc::mem_fun(this, &Window::on_buffer_modified), buffer)
+    );
+
     open_buffers_.push_back(buffer);
 
     activate_buffer(buffer);

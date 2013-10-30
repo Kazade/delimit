@@ -7,6 +7,7 @@ Buffer::Buffer(Window& parent, const unicode& name):
     name_(name) {
 
     gtk_buffer_ = Gsv::Buffer::create();
+    gtk_buffer_->signal_changed().connect(sigc::mem_fun(this, &Buffer::on_buffer_changed));
 }
 
 Buffer::Buffer(Window& parent, const unicode& name, const Glib::RefPtr<Gio::File>& file):
@@ -25,6 +26,7 @@ Buffer::Buffer(Window& parent, const unicode& name, const Glib::RefPtr<Gio::File
     } else {
         gtk_buffer_ = Gsv::Buffer::create();
     }
+    gtk_buffer_->signal_changed().connect(sigc::mem_fun(this, &Buffer::on_buffer_changed));
 }
 
 void Buffer::_finish_read(Glib::RefPtr<Gio::File> file, Glib::RefPtr<Gio::AsyncResult> res) {
@@ -37,6 +39,7 @@ void Buffer::_finish_read(Glib::RefPtr<Gio::File> file, Glib::RefPtr<Gio::AsyncR
 
     Glib::signal_idle().connect([=]() -> bool {
         gtk_buffer_->set_text(result);
+        gtk_buffer_->set_modified(false);
         return false;
     });
 }
@@ -75,6 +78,9 @@ void Buffer::save(const unicode& path) {
     }        
 }
 
+void Buffer::on_buffer_changed() {
+    _gtk_buffer()->set_modified(true);
+}
 
 
 }

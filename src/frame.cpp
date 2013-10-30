@@ -44,8 +44,7 @@ void Frame::set_search_visible(bool value) {
 }
 
 void Frame::set_buffer(Buffer *buffer) {
-    buffer_ = buffer;
-
+    buffer_ = buffer;    
     source_view_.set_buffer(buffer_->_gtk_buffer());
     search_.set_buffer(buffer);
 

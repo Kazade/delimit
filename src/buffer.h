@@ -39,6 +39,7 @@ private:
 
     bool is_saved() const { return bool(gio_file_); }
 
+    void on_buffer_changed();
 };
 
 }
