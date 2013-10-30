@@ -24,12 +24,14 @@ public:
         add(full_path);
         add(image);
         add(is_folder);
+        add(is_dummy);
     }
 
     Gtk::TreeModelColumn<Glib::ustring> name;
     Gtk::TreeModelColumn<Glib::ustring> full_path;
     Gtk::TreeModelColumn<Glib::RefPtr<Gdk::Pixbuf>> image;
     Gtk::TreeModelColumn<bool> is_folder;
+    Gtk::TreeModelColumn<bool> is_dummy;
 };
 
 class OpenListColumns : public Gtk::TreeModelColumnRecord {
@@ -74,6 +76,8 @@ private:
     void rebuild_open_list();
 
     void dirwalk(const unicode& path, const Gtk::TreeRow *node);
+
+    bool on_tree_test_expand_row(const Gtk::TreeModel::iterator& iter, const Gtk::TreeModel::Path& path);
 
     void on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column);
     void on_list_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column);
