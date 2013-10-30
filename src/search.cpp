@@ -47,7 +47,7 @@ void Search::build_widgets() {
     pack_end(close_button_, false, false);
     pack_end(case_sensitive_, false, false);
 
-    set_margin_bottom(5);
+    set_margin_top(5);
 
     find_entry_.signal_changed().connect(sigc::mem_fun(this, &Search::on_entry_changed));
     find_entry_.signal_key_press_event().connect(sigc::mem_fun(this, &Search::on_entry_key_press));

@@ -6,13 +6,13 @@
 
 namespace delimit {
 
-void Frame::build_widgets() {    
+void Frame::build_widgets() {
     scrolled_window_.add(source_view_);
 
     //file_chooser_box_.pack_start(file_chooser_, true, false, 0);
     //container_.pack_start(file_chooser_box_, false, false, 0);
-    container_.pack_start(search_, false, false, 0);
     container_.pack_start(scrolled_window_, true, true, 0);
+    container_.pack_start(search_, false, false, 0);
 
     Pango::FontDescription fdesc;
     fdesc.set_family("monospace");
@@ -44,7 +44,7 @@ void Frame::set_search_visible(bool value) {
 }
 
 void Frame::set_buffer(Buffer *buffer) {
-    buffer_ = buffer;    
+    buffer_ = buffer;
     source_view_.set_buffer(buffer_->_gtk_buffer());
     search_.set_buffer(buffer);
 

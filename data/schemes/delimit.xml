@@ -4,7 +4,7 @@
   <author>Luke Benstead</author>
   <_description>The default theme for the Delimit text editor</_description>
 
-  <style name="bracket-match" bold="true" />
+  <style name="bracket-match" foreground="#00f000" />
   <style name="bracket-mismatch" underline="true"/>
   <style name="current-line" background="#2F2F2F"/>
   <style name="cursor" foreground="#f8f8f0"/>
