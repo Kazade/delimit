@@ -25,6 +25,7 @@ Window::Window():
     buffer_save_(nullptr),
     buffer_undo_(nullptr),
     buffer_search_(nullptr),
+    ignore_next_(false),
     type_(WINDOW_TYPE_FILE) {
 
     L_DEBUG("Creating window with empty buffer");
@@ -51,6 +52,7 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
     buffer_save_(nullptr),
     buffer_undo_(nullptr),
     buffer_search_(nullptr),
+    ignore_next_(false),
     type_(WINDOW_TYPE_FILE) {
 
     file_tree_store_ = Gtk::TreeStore::create(file_tree_columns_);
@@ -351,7 +353,7 @@ void Window::new_buffer(const unicode& name) {
     rebuild_open_list();
 }
 
-void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {    
+void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {
     if(!file->query_exists()) {
         throw IOError(_u("Path does not exist: {0}").format(file->get_path()));
     }

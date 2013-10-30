@@ -110,7 +110,7 @@ private:
     void toolbutton_search_toggled();
 
     sigc::connection search_clicked_conn_;
-    bool ignore_next_ = false;
+    bool ignore_next_;
 
     void create_frame();
 

@@ -29,7 +29,8 @@ void Search::build_widgets() {
     case_sensitive_.set_label("Match case?");
     case_sensitive_.set_margin_right(5);
 
-    close_button_.set_image_from_icon_name("gtk-close", Gtk::ICON_SIZE_MENU);
+    Gtk::Image* image = Gtk::manage(new Gtk::Image(Gtk::IconTheme::get_default()->load_icon("gtk-close", Gtk::ICON_SIZE_MENU)));
+    close_button_.set_image(*image);
     close_button_.set_relief(Gtk::RELIEF_NONE);
     close_button_.set_border_width(0);
     close_button_.set_focus_on_click(false);
@@ -37,8 +38,8 @@ void Search::build_widgets() {
 
     replace_entry_.set_margin_left(5);
 
-    pack_start(find_entry_, false, false);    
-    pack_start(find_next_button_, false, false);    
+    pack_start(find_entry_, false, false);
+    pack_start(find_next_button_, false, false);
 
     pack_start(replace_entry_, false, false);
     pack_start(replace_button_, false, false);
@@ -135,7 +136,7 @@ void Search::clear_highlight() {
     if(buffer_) {
         auto buffer = buffer_->_gtk_buffer();
         buffer->remove_tag_by_name(SEARCH_HIGHLIGHT_TAG, buffer->begin(), buffer->end());
-    }    
+    }
 }
 
 }
