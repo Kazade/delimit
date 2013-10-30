@@ -22,11 +22,14 @@ public:
     unicode path() const;
 
     bool modified() const;
+    void set_modified(bool value) { gtk_buffer_->set_modified(value); }
+
     void save(const unicode& path);
 
     void _finish_read(Glib::RefPtr<Gio::File> file, Glib::RefPtr<Gio::AsyncResult> res);
     Glib::RefPtr<Gsv::Buffer> _gtk_buffer();
 
+    Glib::SignalProxy0<void> signal_modified_changed() { return _gtk_buffer()->signal_modified_changed(); }
 private:        
     Window& parent_;
     unicode name_;

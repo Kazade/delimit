@@ -125,6 +125,9 @@ void Window::build_widgets() {
     create_frame(); //Create the default frame
 
     init_actions();
+
+    std::string icon_file = fdo::xdg::find_data_file("delimit/delimit.svg").encode();
+    gtk_window_->set_icon_from_file(icon_file);
 }
 
 void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column) {
@@ -308,13 +311,28 @@ void Window::unsplit() {
     frames_.pop_back(); //Destroy the second frame
 }
 
+void Window::on_buffer_modified(Buffer::ptr buffer) {
+    buffer_save_->set_sensitive(buffer->modified());
+}
+
+void Window::activate_buffer(Buffer::ptr buffer) {
+    frames_[current_frame_]->set_buffer(buffer.get());
+    on_buffer_modified(buffer);
+}
+
 void Window::new_buffer(const unicode& name) {
     Buffer::ptr buffer = std::make_shared<Buffer>(*this, name);
 
+    //Watch for changes to the buffer
+    buffer->signal_modified_changed().connect(
+        sigc::bind(sigc::mem_fun(this, &Window::on_buffer_modified), buffer)
+    );
+
+    buffer->set_modified(true); //New file, mark as modified
+
     open_buffers_.push_back(buffer);
 
-    frames_[current_frame_]->set_buffer(buffer.get());
-
+    activate_buffer(buffer);
     rebuild_open_list();
 }
 
@@ -338,8 +356,7 @@ void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {
     Buffer::ptr buffer = std::make_shared<Buffer>(*this, name, file);
     open_buffers_.push_back(buffer);
 
-    frames_[current_frame_]->set_buffer(buffer.get());
-
+    activate_buffer(buffer);
     rebuild_open_list();
 }
 

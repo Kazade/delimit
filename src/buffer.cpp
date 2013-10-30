@@ -72,7 +72,7 @@ void Buffer::save(const unicode& path) {
         gio_file_ = Gio::File::create_for_path(path.encode());
         gio_file_->create_file();
         gio_file_->replace_contents(text, "", new_etag);
-    }
+    }        
 }
 
 
