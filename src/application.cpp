@@ -1,3 +1,4 @@
+#include <glibmm/i18n.h>
 #include "base/logging.h"
 #include "base/fdo/base_directory.h"
 
@@ -8,6 +9,8 @@ namespace delimit {
 
 Application::Application(int& argc, char**& argv, const Glib::ustring& application_id, Gio::ApplicationFlags flags):
     Gtk::Application(argc, argv, application_id, flags) {
+
+    Glib::set_application_name("Delimit");
 
     logging::get_logger("/")->add_handler(logging::Handler::ptr(new logging::StdIOHandler));
 
@@ -44,6 +47,70 @@ void Application::on_signal_open(const Gio::Application::type_vec_files& files, 
 
     auto window = std::make_shared<delimit::Window>(files);
     add_window(window);
+}
+
+void Application::action_open_folder() {
+    Gtk::FileChooserDialog dialog(_("Open a folder..."), Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER);
+
+    dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
+    dialog.add_button(Gtk::Stock::OPEN, Gtk::RESPONSE_OK);
+
+    int result = dialog.run();
+    switch(result) {
+        case Gtk::RESPONSE_OK: {
+            std::string filename = dialog.get_filename();
+
+            Gio::Application::type_vec_files files;
+            files.push_back(Gio::File::create_for_path(filename));
+            auto window = std::make_shared<delimit::Window>(files);
+            add_window(window);
+        } default:
+            break;
+    }
+}
+
+void Application::action_open_file() {
+    Gtk::FileChooserDialog dialog(_("Open a file..."));
+
+    dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
+    dialog.add_button(Gtk::Stock::OPEN, Gtk::RESPONSE_OK);
+
+    Glib::RefPtr<Gtk::FileFilter> filter_any = Gtk::FileFilter::create();
+    filter_any->set_name("Any files");
+    filter_any->add_pattern("*");
+    dialog.add_filter(filter_any);
+
+    int result = dialog.run();
+    switch(result) {
+        case Gtk::RESPONSE_OK: {
+            std::string filename = dialog.get_filename();
+
+            Gio::Application::type_vec_files files;
+            files.push_back(Gio::File::create_for_path(filename));
+            auto window = std::make_shared<delimit::Window>(files);
+            add_window(window);
+        } default:
+            break;
+    }
+}
+
+void Application::action_quit() {
+    quit();
+}
+
+void Application::on_startup() {
+    Gtk::Application::on_startup();
+
+    //Create the application menu
+    app_menu_ = Gio::Menu::create();
+    app_menu_->append(_("_Open File..."), "app.open_file");
+    app_menu_->append(_("Open _Folder..."), "app.open_folder");
+    app_menu_->append(_("_Quit"), "app.quit");
+    set_app_menu(app_menu_);
+
+    add_action("open_file", sigc::mem_fun(this, &Application::action_open_file));
+    add_action("open_folder", sigc::mem_fun(this, &Application::action_open_folder));
+    add_action("quit", sigc::mem_fun(this, &Application::action_quit));
 }
 
 void Application::on_signal_startup() {

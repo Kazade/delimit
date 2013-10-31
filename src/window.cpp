@@ -104,6 +104,7 @@ void Window::build_widgets() {
     //window_file_tree_->append_column("Icon", file_tree_columns_.image);
     window_file_tree_->append_column("Name", file_tree_columns_.name);
     window_file_tree_->signal_row_activated().connect(sigc::mem_fun(this, &Window::on_signal_row_activated));
+    window_file_tree_->signal_test_expand_row().connect(sigc::mem_fun(this, &Window::on_tree_test_expand_row));
 
     builder->get_widget("open_file_list", open_file_list_);
     open_file_list_->set_model(open_list_store_);
@@ -132,6 +133,8 @@ void Window::build_widgets() {
 
     std::string icon_file = fdo::xdg::find_data_file("delimit/delimit.svg").encode();
     gtk_window_->set_icon_from_file(icon_file);
+
+    gtk_window_->maximize();
 }
 
 void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column) {
@@ -220,8 +223,27 @@ void Window::toolbutton_search_toggled() {
     ignore_next_ = true;
 }
 
+bool Window::on_tree_test_expand_row(const Gtk::TreeModel::iterator& iter, const Gtk::TreeModel::Path& path) {
+    Gtk::TreeRow row = (*iter);
+
+    bool is_empty = row->children().empty();
+    bool is_dummy = !is_empty && row->children()[0][file_tree_columns_.is_dummy];
+
+    if(is_dummy) {
+        //this node contains a dummy, so delete it
+        Gtk::TreeIter to_remove = row->children()[0];
+
+        //Then build the node
+        dirwalk(Glib::ustring(row[file_tree_columns_.full_path]).c_str(), &row);
+
+        file_tree_store_->erase(to_remove); //Erase the dummy
+    }
+
+    return false;
+}
+
 void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
-    auto files = os::path::list_dir(path);
+    auto files = os::path::list_dir(os::path::real_path(path));
     std::sort(files.begin(), files.end());
 
     std::vector<unicode> directories;
@@ -247,6 +269,7 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
         node->set_value(file_tree_columns_.full_path, Glib::ustring(path.encode()));
         node->set_value(file_tree_columns_.image, image);
         node->set_value(file_tree_columns_.is_folder, true);
+        node->set_value(file_tree_columns_.is_dummy, false);
     }
 
     for(auto f: files) {
@@ -259,7 +282,7 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
 
         unicode full_name = os::path::join(path, f);
 
-        bool is_folder = os::path::is_dir(full_name);
+        bool is_folder = os::path::is_dir(os::path::real_path(full_name));
 
         auto image = Gtk::IconTheme::get_default()->load_icon(
             (is_folder) ? "folder" : "document",
@@ -278,9 +301,12 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
         row->set_value(file_tree_columns_.full_path, Glib::ustring(full_name.encode()));
         row->set_value(file_tree_columns_.image, image);
         row->set_value(file_tree_columns_.is_folder, is_folder);
+        row->set_value(file_tree_columns_.is_dummy, false);
 
         if(is_folder) {
-            dirwalk(full_name, row);
+            //Add a dummy node under the folder
+            const Gtk::TreeRow* dummy = &(*file_tree_store_->append(row->children()));
+            dummy->set_value(file_tree_columns_.is_dummy, true);
         }
     }
 }

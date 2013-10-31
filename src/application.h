@@ -26,8 +26,19 @@ public:
     void on_signal_open(const Gio::Application::type_vec_files& files, const Glib::ustring& line);
     void on_signal_startup();
 
+protected:
+    virtual void on_startup();
+
 private:
+
+    void action_open_folder();
+    void action_open_file();
+    void action_quit();
+
     std::vector<std::shared_ptr<Window>> windows_;
+
+    Glib::RefPtr<Gio::Menu> app_menu_;
+    Glib::RefPtr<Gio::SimpleAction> action_open_folder_;
 
 };
 
