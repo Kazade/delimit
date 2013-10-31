@@ -133,6 +133,8 @@ void Window::build_widgets() {
 
     std::string icon_file = fdo::xdg::find_data_file("delimit/delimit.svg").encode();
     gtk_window_->set_icon_from_file(icon_file);
+
+    gtk_window_->maximize();
 }
 
 void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column) {

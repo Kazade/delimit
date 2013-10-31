@@ -83,7 +83,7 @@ private:
     void on_list_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column);
     void on_buffer_modified(Buffer::ptr buffer);
 
-    Gtk::Window* gtk_window_;
+    Gtk::ApplicationWindow* gtk_window_;
     Gtk::Alignment* gtk_container_;
 
     Gtk::ScrolledWindow* file_tree_scrolled_window_;

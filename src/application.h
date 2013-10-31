@@ -32,6 +32,8 @@ protected:
 private:
 
     void action_open_folder();
+    void action_open_file();
+    void action_quit();
 
     std::vector<std::shared_ptr<Window>> windows_;
 
