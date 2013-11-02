@@ -25,7 +25,6 @@ Window::Window():
     buffer_save_(nullptr),
     buffer_undo_(nullptr),
     buffer_search_(nullptr),
-    ignore_next_(false),
     type_(WINDOW_TYPE_FILE) {
 
     L_DEBUG("Creating window with empty buffer");
@@ -52,7 +51,6 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
     buffer_save_(nullptr),
     buffer_undo_(nullptr),
     buffer_search_(nullptr),
-    ignore_next_(false),
     type_(WINDOW_TYPE_FILE) {
 
     file_tree_store_ = Gtk::TreeStore::create(file_tree_columns_);
@@ -86,7 +84,10 @@ void Window::init_actions() {
     buffer_new_->add_accelerator("clicked", accel_group, GDK_KEY_N, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
     buffer_save_->add_accelerator("clicked", accel_group, GDK_KEY_S, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
     window_split_->add_accelerator("clicked", accel_group, GDK_KEY_T, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-    buffer_search_->add_accelerator("clicked", accel_group, GDK_KEY_F, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+
+    buffer_search_->get_child()->add_accelerator(
+        "clicked", accel_group, GDK_KEY_F, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE
+    );
 
     _gtk_window().add_accel_group(accel_group);
 }
@@ -122,7 +123,6 @@ void Window::build_widgets() {
     buffer_new_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_new_clicked));
     buffer_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_clicked));
     buffer_save_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_save_clicked));
-    search_clicked_conn_ = buffer_search_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_search_clicked));
     buffer_search_->signal_toggled().connect(sigc::mem_fun(this, &Window::toolbutton_search_toggled));
 
     assert(gtk_window_);
@@ -205,22 +205,9 @@ void Window::toolbutton_save_clicked() {
     }
 }
 
-void Window::toolbutton_search_clicked() {
-    L_DEBUG("Clicked");
-    //buffer_search_->get_active() ? buffer_search_->set_active(false) : buffer_search_->set_active(true);
-
-    if(!ignore_next_) {
-        search_clicked_conn_.block();
-        buffer_search_->set_active(!buffer_search_->get_active());
-        search_clicked_conn_.unblock();
-    }
-    ignore_next_ = false;
-}
 
 void Window::toolbutton_search_toggled() {
-    L_DEBUG("Toggled");
     frames_[current_frame_]->set_search_visible(buffer_search_->get_active());
-    ignore_next_ = true;
 }
 
 bool Window::on_tree_test_expand_row(const Gtk::TreeModel::iterator& iter, const Gtk::TreeModel::Path& path) {

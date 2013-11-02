@@ -110,11 +110,7 @@ private:
     void toolbutton_new_clicked();
     void toolbutton_open_clicked();
     void toolbutton_save_clicked();
-    void toolbutton_search_clicked();
     void toolbutton_search_toggled();
-
-    sigc::connection search_clicked_conn_;
-    bool ignore_next_;
 
     void create_frame();
 
