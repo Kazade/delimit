@@ -59,6 +59,7 @@ public:
     void open_buffer(const Glib::RefPtr<Gio::File>& path);
     void close_buffer(Buffer* buffer);
     void close_buffer(const Glib::RefPtr<Gio::File>& file);
+    void close_active_buffer();
 
     WindowType type() const { return type_; }
 
@@ -106,6 +107,8 @@ private:
     Gtk::ToolButton* buffer_redo_;
     Gtk::ToggleToolButton* buffer_search_;
     Gtk::ToggleToolButton* window_split_;
+
+    Gtk::ToolButton* buffer_close_;
 
     Glib::RefPtr<Gtk::ActionGroup> actions_;
 

@@ -25,6 +25,7 @@ Window::Window():
     buffer_save_(nullptr),
     buffer_undo_(nullptr),
     buffer_search_(nullptr),
+    buffer_close_(nullptr),
     type_(WINDOW_TYPE_FILE) {
 
     L_DEBUG("Creating window with empty buffer");
@@ -51,6 +52,7 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
     buffer_save_(nullptr),
     buffer_undo_(nullptr),
     buffer_search_(nullptr),
+    buffer_close_(nullptr),
     type_(WINDOW_TYPE_FILE) {
 
     file_tree_store_ = Gtk::TreeStore::create(file_tree_columns_);
@@ -84,6 +86,7 @@ void Window::init_actions() {
     buffer_new_->add_accelerator("clicked", accel_group, GDK_KEY_N, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
     buffer_save_->add_accelerator("clicked", accel_group, GDK_KEY_S, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
     window_split_->add_accelerator("clicked", accel_group, GDK_KEY_T, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    buffer_close_->add_accelerator("clicked", accel_group, GDK_KEY_W, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
 
     buffer_search_->get_child()->add_accelerator(
         "clicked", accel_group, GDK_KEY_F, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE
@@ -119,11 +122,13 @@ void Window::build_widgets() {
     builder->get_widget("buffer_redo", buffer_redo_);
     builder->get_widget("buffer_search", buffer_search_);
     builder->get_widget("window_split", window_split_);
+    builder->get_widget("buffer_close", buffer_close_);
 
     buffer_new_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_new_clicked));
     buffer_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_clicked));
     buffer_save_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_save_clicked));
     buffer_search_->signal_toggled().connect(sigc::mem_fun(this, &Window::toolbutton_search_toggled));
+    buffer_close_->signal_clicked().connect(sigc::mem_fun(this, &Window::close_active_buffer));
 
     assert(gtk_window_);
 
@@ -366,21 +371,41 @@ void Window::new_buffer(const unicode& name) {
     rebuild_open_list();
 }
 
+void Window::close_active_buffer() {
+    close_buffer(frames_[current_frame_]->buffer());
+}
+
 void Window::close_buffer(Buffer* buffer) {
     Buffer::ptr prev, this_buf;
-    for(auto buf: open_buffers_) {
+    for(uint32_t i = 0; i < open_buffers_.size(); ++i) {
+        auto buf = open_buffers_[i];
+
         if(buf.get() == buffer) {
             this_buf = buf;
+            if(!prev && i + 1 < open_buffers_.size()) {
+                //We closed the first file in the list, so point to the following one
+                //if we can
+                prev = open_buffers_[i + 1];
+            }
             break;
         }
 
         prev = buf;
     }
 
-    activate_buffer(prev);
+    if(prev) {
+        activate_buffer(prev);
+    }
 
     //erase the buffer from the open buffers
     open_buffers_.erase(std::remove(open_buffers_.begin(), open_buffers_.end(), this_buf), open_buffers_.end());
+
+    //Make sure we always have a document
+    if(open_buffers_.empty()) {
+        //Close the window... maybe revisit this
+        gtk_window_->close();
+        return;
+    }
 
     rebuild_open_list();
 }
