@@ -31,9 +31,9 @@ protected:
 
 private:
 
-    void action_open_folder();
-    void action_open_file();
-    void action_quit();
+    void action_open_folder(const Glib::VariantBase&);
+    void action_open_file(const Glib::VariantBase&);
+    void action_quit(const Glib::VariantBase&);
 
     std::vector<std::shared_ptr<Window>> windows_;
 

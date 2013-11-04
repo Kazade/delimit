@@ -49,7 +49,7 @@ void Application::on_signal_open(const Gio::Application::type_vec_files& files, 
     add_window(window);
 }
 
-void Application::action_open_folder() {
+void Application::action_open_folder(const Glib::VariantBase&) {
     Gtk::FileChooserDialog dialog(_("Open a folder..."), Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER);
 
     dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
@@ -69,7 +69,7 @@ void Application::action_open_folder() {
     }
 }
 
-void Application::action_open_file() {
+void Application::action_open_file(const Glib::VariantBase&) {
     Gtk::FileChooserDialog dialog(_("Open a file..."));
 
     dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
@@ -94,7 +94,7 @@ void Application::action_open_file() {
     }
 }
 
-void Application::action_quit() {
+void Application::action_quit(const Glib::VariantBase&) {
     quit();
 }
 
@@ -108,9 +108,18 @@ void Application::on_startup() {
     app_menu_->append(_("_Quit"), "app.quit");
     set_app_menu(app_menu_);
 
-    add_action("open_file", sigc::mem_fun(this, &Application::action_open_file));
-    add_action("open_folder", sigc::mem_fun(this, &Application::action_open_folder));
-    add_action("quit", sigc::mem_fun(this, &Application::action_quit));
+    auto open_file_action = Gio::SimpleAction::create("open_file");
+    open_file_action->signal_activate().connect(sigc::mem_fun(this, &Application::action_open_file));
+
+    auto open_folder_action = Gio::SimpleAction::create("open_folder");
+    open_folder_action->signal_activate().connect(sigc::mem_fun(this, &Application::action_open_folder));
+
+    auto quit_action = Gio::SimpleAction::create("quit");
+    quit_action->signal_activate().connect(sigc::mem_fun(this, &Application::action_quit));
+
+    add_action(open_file_action);
+    add_action(open_folder_action);
+    add_action(quit_action);
 }
 
 void Application::on_signal_startup() {
