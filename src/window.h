@@ -57,6 +57,8 @@ public:
 
     void new_buffer(const unicode& name);
     void open_buffer(const Glib::RefPtr<Gio::File>& path);
+    void close_buffer(Buffer* buffer);
+    void close_buffer(const Glib::RefPtr<Gio::File>& file);
 
     WindowType type() const { return type_; }
 
@@ -110,11 +112,7 @@ private:
     void toolbutton_new_clicked();
     void toolbutton_open_clicked();
     void toolbutton_save_clicked();
-    void toolbutton_search_clicked();
     void toolbutton_search_toggled();
-
-    sigc::connection search_clicked_conn_;
-    bool ignore_next_;
 
     void create_frame();
 

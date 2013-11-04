@@ -11,6 +11,8 @@ namespace delimit {
 
 class Window;
 
+typedef Glib::RefPtr<Gio::File> GioFilePtr;
+
 class Buffer {
 public:
     typedef std::shared_ptr<Buffer> ptr;
@@ -30,12 +32,23 @@ public:
     Glib::RefPtr<Gsv::Buffer> _gtk_buffer();
 
     Glib::SignalProxy0<void> signal_modified_changed() { return _gtk_buffer()->signal_modified_changed(); }
-private:        
+
+    sigc::signal<void, GioFilePtr, GioFilePtr, Gio::FileMonitorEvent>& signal_file_changed() { return signal_file_changed_; }
+
+private:
+    void set_gio_file(const GioFilePtr& file, bool reload=true);
+    void file_changed(const GioFilePtr& file, const GioFilePtr& other_file, Gio::FileMonitorEvent event) {
+        signal_file_changed_(file, other_file, event);
+    }
+
+    sigc::signal<void, GioFilePtr, GioFilePtr, Gio::FileMonitorEvent> signal_file_changed_;
+
     Window& parent_;
     unicode name_;
     Glib::RefPtr<Gio::File> gio_file_;
+    Glib::RefPtr<Gio::FileMonitor> gio_file_monitor_;
 
-    Glib::RefPtr<Gsv::Buffer> gtk_buffer_;
+    Glib::RefPtr<Gsv::Buffer> gtk_buffer_;    
 
     bool is_saved() const { return bool(gio_file_); }
 
