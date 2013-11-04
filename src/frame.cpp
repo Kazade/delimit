@@ -50,6 +50,39 @@ void Frame::set_buffer(Buffer *buffer) {
 
     auto manager = Gsv::StyleSchemeManager::get_default();
     source_view_.get_source_buffer()->set_style_scheme(manager->get_scheme("delimit"));
+
+    buffer_->signal_file_changed().connect(sigc::mem_fun(this, &Frame::file_changed_outside_editor));
+}
+
+void Frame::file_changed_outside_editor(const Glib::RefPtr<Gio::File>& file,
+    const Glib::RefPtr<Gio::File>& other_file, Gio::FileMonitorEvent event) {
+
+    if(event == Gio::FILE_MONITOR_EVENT_CHANGED ||
+        event == Gio::FILE_MONITOR_EVENT_DELETED ||
+        event == Gio::FILE_MONITOR_EVENT_CREATED ||
+        event == Gio::FILE_MONITOR_EVENT_ATTRIBUTE_CHANGED) {
+
+        Gtk::MessageDialog dialog(parent_._gtk_window(), "File Changed", true, Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_YES_NO, true);
+
+        dialog.set_message(_u("The file <i>{0}</i> has changed outside Delimit").format(os::path::split(file->get_path()).second).encode());
+        dialog.set_secondary_text("Do you want to reload?");
+        dialog.add_button("Close", Gtk::RESPONSE_CLOSE);
+
+        int response = dialog.run();
+
+        switch(response) {
+            case Gtk::RESPONSE_YES:
+                //RELOAD
+            break;
+            case Gtk::RESPONSE_CLOSE:
+                //Close
+                parent_.close_buffer(file);
+            break;
+            case Gtk::RESPONSE_NO:
+                return;
+            break;
+        }
+    }
 }
 
 }

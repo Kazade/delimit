@@ -366,6 +366,33 @@ void Window::new_buffer(const unicode& name) {
     rebuild_open_list();
 }
 
+void Window::close_buffer(Buffer* buffer) {
+    Buffer::ptr prev, this_buf;
+    for(auto buf: open_buffers_) {
+        if(buf.get() == buffer) {
+            this_buf = buf;
+            break;
+        }
+
+        prev = buf;
+    }
+
+    activate_buffer(prev);
+
+    //erase the buffer from the open buffers
+    open_buffers_.erase(std::remove(open_buffers_.begin(), open_buffers_.end(), this_buf), open_buffers_.end());
+
+    rebuild_open_list();
+}
+
+void Window::close_buffer(const Glib::RefPtr<Gio::File>& file) {
+    for(auto buffer: open_buffers_) {
+        if(buffer->path() == file->get_path()) {
+            close_buffer(buffer.get());
+        }
+    }
+}
+
 void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {
     if(!file->query_exists()) {
         throw IOError(_u("Path does not exist: {0}").format(file->get_path()));

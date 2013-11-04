@@ -57,6 +57,8 @@ public:
 
     void new_buffer(const unicode& name);
     void open_buffer(const Glib::RefPtr<Gio::File>& path);
+    void close_buffer(Buffer* buffer);
+    void close_buffer(const Glib::RefPtr<Gio::File>& file);
 
     WindowType type() const { return type_; }
 
