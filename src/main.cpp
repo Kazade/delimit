@@ -18,5 +18,7 @@ int main(int argc, char* argv[]) {
 
     assert(app);
 
+    assert(!glob::match_cs("/home/kazade/files", "/banana/*"));
+
     return app->run();
 }

@@ -16,6 +16,7 @@ set(
     base/os/core.cpp
     base/fdo/base_directory.cpp
     base/logging.cpp
+    base/file_utils.cpp
 )
 
 link_directories(${GTKMM_LIBRARY_DIRS} ${GTKSOURCEVIEWMM_LIBRARY_DIRS})

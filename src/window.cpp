@@ -8,6 +8,8 @@
 #include "base/unicode.h"
 #include "base/fdo/base_directory.h"
 #include "base/logging.h"
+#include "base/glob.h"
+#include "base/file_utils.h"
 
 namespace delimit {
 
@@ -65,6 +67,21 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
 
         rebuild_file_tree(files[0]->get_path());
         path_ = files[0]->get_path();
+
+        //Look for a .gitignore file in the directory
+        auto ignore_file = os::path::join(path_, ".gitignore");
+        L_DEBUG(_u("Checking for .gitignore at {0}...").format(ignore_file));
+        if(os::path::exists(ignore_file)) {
+            auto lines = file_utils::read_lines(ignore_file);
+            for(auto line: lines) {
+                if(!line.strip().empty()) {
+                    L_DEBUG(_u("Adding ignore glob: '{0}', length: {1}").format(int(line.strip()[0]), line.strip().length()));
+                    ignored_globs_.insert(line.strip());
+                }
+            }
+        } else {
+            L_DEBUG("not found.");
+        }
 
         new_buffer("Untitled");
 
@@ -274,6 +291,21 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
 
         unicode full_name = os::path::join(path, f);
 
+        bool ignore = false;
+        for(auto glob: ignored_globs_) {
+            L_DEBUG(_u("Checking {0} against {1}").format(full_name, glob));
+            if(glob::match(full_name, glob)) {
+                //Ignore this file/folder if it matches the ignored globs
+                L_DEBUG("Ignoring file");
+                ignore = true;
+                break;
+            }
+        }
+
+        if(ignore) {
+            continue;
+        }
+
         bool is_folder = os::path::is_dir(os::path::real_path(full_name));
 
         auto image = Gtk::IconTheme::get_default()->load_icon(
@@ -403,7 +435,9 @@ void Window::close_buffer(Buffer* buffer) {
     //Make sure we always have a document
     if(open_buffers_.empty()) {
         //Close the window... maybe revisit this
-        gtk_window_->close();
+        //FIXME: Gtk 3.10 supports actual closing rather than ugly killing
+//        gtk_window_->close();
+        gtk_widget_destroy(GTK_WIDGET(gtk_window_->gobj()));
         return;
     }
 

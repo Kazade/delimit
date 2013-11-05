@@ -3,6 +3,7 @@
 
 #include <map>
 #include <vector>
+#include <set>
 
 #include "base/unicode.h"
 #include <gtkmm.h>
@@ -125,6 +126,8 @@ private:
     std::vector<Buffer::ptr> open_buffers_;
     std::vector<Frame::ptr> frames_;
     int32_t current_frame_;
+
+    std::set<unicode> ignored_globs_; //For file tree
 };
 
 }
