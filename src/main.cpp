@@ -8,6 +8,8 @@
 
 #include "application.h"
 
+#include "base/glob.h"
+
 int main(int argc, char* argv[]) {
     Glib::RefPtr<Gtk::Application> app =
         delimit::Application::create(argc, argv, "uk.co.kazade.Delimit",

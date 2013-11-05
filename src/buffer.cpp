@@ -84,21 +84,24 @@ void Buffer::save(const unicode& path) {
     _gtk_buffer()->set_modified(false);
 
     std::string new_etag;
+
+    if(gio_file_ || gio_file_monitor_) {
+        //We're saving so wipe out the monitor until we're done
+        gio_file_monitor_ = Glib::RefPtr<Gio::FileMonitor>();
+    }
+
     if(gio_file_ && gio_file_->get_path() == path.encode()) {
         //FIXME: Use entity tag arguments to make sure that the file
         //didn't change since the last time we saved
         gio_file_->replace_contents(std::string(text.c_str()), "", new_etag);
+        set_gio_file(gio_file_, false); //Don't reload the file, reconnect the monitor
     } else {
-        if(gio_file_ || gio_file_monitor_) {
-            //We're saving under a different filename, so wipe out the monitor
-            gio_file_monitor_ = Glib::RefPtr<Gio::FileMonitor>();
-        }
-
         auto file = Gio::File::create_for_path(path.encode());
         file->create_file();
         file->replace_contents(text, "", new_etag);
-        set_gio_file(file, false); //Don't reload the file
+        set_gio_file(file, false); //Don't reload the file, reconnect the monitor
     }
+    
 }
 
 void Buffer::on_buffer_changed() {

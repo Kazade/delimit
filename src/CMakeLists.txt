@@ -9,6 +9,8 @@ set(
     search.cpp
     base/unicode.cpp
     base/string.cpp
+    base/glob.cpp
+    base/regex.cpp
     base/os/path.cpp
     base/os/stat.cpp
     base/os/core.cpp

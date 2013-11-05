@@ -64,7 +64,7 @@ void Frame::file_changed_outside_editor(const Glib::RefPtr<Gio::File>& file,
 
         Gtk::MessageDialog dialog(parent_._gtk_window(), "File Changed", true, Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_YES_NO, true);
 
-        dialog.set_message(_u("The file <i>{0}</i> has changed outside Delimit").format(os::path::split(file->get_path()).second).encode());
+        dialog.set_message(_u("The file <i>{0}</i> has changed outside Delimit").format(os::path::split(file->get_path()).second).encode(), true);
         dialog.set_secondary_text("Do you want to reload?");
         dialog.add_button("Close", Gtk::RESPONSE_CLOSE);
 
