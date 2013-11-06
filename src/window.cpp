@@ -75,7 +75,7 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
             auto lines = file_utils::read_lines(ignore_file);
             for(auto line: lines) {
                 if(!line.strip().empty()) {
-                    L_DEBUG(_u("Adding ignore glob: '{0}', length: {1}").format(int(line.strip()[0]), line.strip().length()));
+                    L_DEBUG(_u("Adding ignore glob: '{0}', length: {1}").format(line.strip(), line.strip().length()));
                     ignored_globs_.insert(line.strip());
                 }
             }
@@ -293,10 +293,8 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
 
         bool ignore = false;
         for(auto glob: ignored_globs_) {
-            L_DEBUG(_u("Checking {0} against {1}").format(full_name, glob));
             if(glob::match(full_name, glob)) {
                 //Ignore this file/folder if it matches the ignored globs
-                L_DEBUG("Ignoring file");
                 ignore = true;
                 break;
             }
