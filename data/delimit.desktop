@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Delimit
+Name[en]=Delimit
+Name[en_GB]=Delimit
+GenericName=Opinionated Code Editor
+Exec=delimit
+Icon=delimit
+Type=Application
+Terminal=False
+Categories=Development;IDE;
