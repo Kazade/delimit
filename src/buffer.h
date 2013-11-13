@@ -35,6 +35,11 @@ public:
 
     sigc::signal<void, GioFilePtr, GioFilePtr, Gio::FileMonitorEvent>& signal_file_changed() { return signal_file_changed_; }
 
+    void reload() {
+        gio_file_monitor_.reset();
+        set_gio_file(gio_file_, true);
+    }
+
 private:
     void set_gio_file(const GioFilePtr& file, bool reload=true);
     void file_changed(const GioFilePtr& file, const GioFilePtr& other_file, Gio::FileMonitorEvent event) {

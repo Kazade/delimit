@@ -1,16 +1,27 @@
 #include "search.h"
 #include "buffer.h"
+#include "frame.h"
 
 namespace delimit {
 
 const Glib::ustring SEARCH_HIGHLIGHT_TAG = "search_highlight";
 
-void Search::set_buffer(Buffer *buffer)  {
-    buffer_ = buffer;
-    if(buffer_) {
+Search::Search(Frame* parent):
+    frame_(parent) {
+
+    build_widgets();
+    frame_->signal_buffer_changed().connect(sigc::mem_fun(this, &Search::on_buffer_changed));
+}
+
+Buffer* Search::buffer() {
+    return frame_->buffer();
+}
+
+void Search::on_buffer_changed(Buffer *buffer)  {
+    if(buffer) {
         //Create the buffer tag if necessary
-        if(!buffer_->_gtk_buffer()->get_tag_table()->lookup(SEARCH_HIGHLIGHT_TAG)) {
-            auto tag = buffer_->_gtk_buffer()->create_tag (SEARCH_HIGHLIGHT_TAG);
+        if(!buffer->_gtk_buffer()->get_tag_table()->lookup(SEARCH_HIGHLIGHT_TAG)) {
+            auto tag = buffer->_gtk_buffer()->create_tag (SEARCH_HIGHLIGHT_TAG);
             tag->property_background() = "#B3BF6F";
         }
     }
@@ -51,6 +62,8 @@ void Search::build_widgets() {
 
     find_entry_.signal_changed().connect(sigc::mem_fun(this, &Search::on_entry_changed));
     find_entry_.signal_key_press_event().connect(sigc::mem_fun(this, &Search::on_entry_key_press));
+
+    find_next_button_.signal_clicked().connect(sigc::mem_fun(this, &Search::on_find_next_clicked));
 
     close_button_.signal_clicked().connect([&]() {
         signal_close_requested_();
@@ -106,16 +119,40 @@ bool Search::on_entry_key_press(GdkEventKey* event) {
     return false;
 }
 
+void Search::on_find_next_clicked() {
+    if(!buffer()) {
+        return;
+    }
+
+    auto buf = buffer()->_gtk_buffer();
+    Gtk::TextIter start, end;
+    buf->get_selection_bounds(start, end);
+
+    auto text = unicode(find_entry_.get_text().c_str());
+
+    bool case_sensitive = case_sensitive_.get_active();
+    bool found = start.forward_search(
+        text.encode(),
+        (case_sensitive) ? Gtk::TextSearchFlags(0) : Gtk::TEXT_SEARCH_CASE_INSENSITIVE,
+        start, end
+    );
+
+    if(found) {
+        buf->select_range(start, end);
+        //frame_->view().scroll_to_iter(start, 0, false, 0, 0);
+    }
+}
+
 int Search::highlight_all(const unicode& string) {
-    auto buffer = buffer_->_gtk_buffer();
-    auto start = buffer->begin();
-    auto end_of_file = buffer->end();
+    auto buf = buffer()->_gtk_buffer();
+    auto start = buf->begin();
+    auto end_of_file = buf->end();
     auto end = start;
 
     bool case_sensitive = case_sensitive_.get_active();
 
     //Remove any existing highlights
-    buffer->remove_tag_by_name(SEARCH_HIGHLIGHT_TAG, start, end_of_file);
+    buf->remove_tag_by_name(SEARCH_HIGHLIGHT_TAG, start, end_of_file);
 
     if(string.empty()) {
         return 0;
@@ -125,17 +162,17 @@ int Search::highlight_all(const unicode& string) {
     while(start.forward_search(
               string.encode(), (case_sensitive) ? Gtk::TextSearchFlags(0) : Gtk::TEXT_SEARCH_CASE_INSENSITIVE,
               start, end)) {
-        buffer->apply_tag_by_name(SEARCH_HIGHLIGHT_TAG, start, end);
-        start = buffer->get_iter_at_offset(end.get_offset());
+        buf->apply_tag_by_name(SEARCH_HIGHLIGHT_TAG, start, end);
+        start = buf->get_iter_at_offset(end.get_offset());
         ++highlighted;
     }
     return highlighted;
 }
 
 void Search::clear_highlight() {
-    if(buffer_) {
-        auto buffer = buffer_->_gtk_buffer();
-        buffer->remove_tag_by_name(SEARCH_HIGHLIGHT_TAG, buffer->begin(), buffer->end());
+    if(buffer()) {
+        auto buf = buffer()->_gtk_buffer();
+        buf->remove_tag_by_name(SEARCH_HIGHLIGHT_TAG, buf->begin(), buf->end());
     }
 }
 

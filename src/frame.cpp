@@ -14,8 +14,12 @@ void Frame::build_widgets() {
     container_.pack_start(scrolled_window_, true, true, 0);
     container_.pack_start(search_, false, false, 0);
 
+
+    auto settings = Gio::Settings::create("org.gnome.desktop.interface");
+    auto font_name = settings->get_string("monospace-font-name");
+
     Pango::FontDescription fdesc;
-    fdesc.set_family("monospace");
+    fdesc.set_family(font_name);
     source_view_.override_font(fdesc);
 
     source_view_.set_show_line_numbers(true);
@@ -44,9 +48,13 @@ void Frame::set_search_visible(bool value) {
 }
 
 void Frame::set_buffer(Buffer *buffer) {
+    if(buffer == buffer_) {
+        return;
+    }
+
     buffer_ = buffer;
-    source_view_.set_buffer(buffer_->_gtk_buffer());
-    search_.set_buffer(buffer);
+    source_view_.set_buffer(buffer_->_gtk_buffer());    
+    signal_buffer_changed_(buffer_);
 
     auto manager = Gsv::StyleSchemeManager::get_default();
     source_view_.get_source_buffer()->set_style_scheme(manager->get_scheme("delimit"));
@@ -72,7 +80,7 @@ void Frame::file_changed_outside_editor(const Glib::RefPtr<Gio::File>& file,
 
         switch(response) {
             case Gtk::RESPONSE_YES:
-                //RELOAD
+                buffer()->reload();
             break;
             case Gtk::RESPONSE_CLOSE:
                 //Close

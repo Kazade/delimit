@@ -21,6 +21,7 @@ public:
         parent_(parent),
         container_(Gtk::ORIENTATION_VERTICAL),
         file_chooser_(true),
+        search_(this),
         buffer_(nullptr) {
 
         build_widgets();
@@ -28,10 +29,13 @@ public:
 
     void set_buffer(Buffer* buffer);
     Buffer* buffer() { return buffer_; }
+    Gsv::View& view() { return source_view_; }
+
 
     Gtk::Box& _gtk_box() { return container_; }
     void set_search_visible(bool value);
 
+    sigc::signal<void, Buffer*>& signal_buffer_changed() { return signal_buffer_changed_; }
 private:
     void build_widgets();
     void file_changed_outside_editor(
@@ -51,6 +55,8 @@ private:
     delimit::Search search_;
 
     Buffer* buffer_;
+
+    sigc::signal<void, Buffer*> signal_buffer_changed_;
 };
 
 }

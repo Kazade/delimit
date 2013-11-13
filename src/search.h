@@ -7,16 +7,12 @@
 
 namespace delimit {
 
+class Frame;
 class Buffer;
 
 class Search : public Gtk::Box {
 public:
-    Search():
-        buffer_(nullptr) {
-        build_widgets();
-    }
-
-    void set_buffer(Buffer* buffer);
+    Search(Frame* parent);
 
     void on_entry_changed();
     void on_find_next_clicked();
@@ -68,8 +64,11 @@ private:
     Gtk::CheckButton case_sensitive_;
 
     void build_widgets();
+    void on_buffer_changed(Buffer* buffer);
 
-    Buffer* buffer_;
+    Buffer* buffer();
+
+    Frame* frame_;
 
     sigc::signal<void> signal_close_requested_;
 };
