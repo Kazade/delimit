@@ -42,3 +42,9 @@ src/search.h
 src/search.cpp
 src/base/glob.h
 src/base/glob.cpp
+src/autocomplete/base.h
+src/autocomplete/base.cpp
+src/autocomplete/datastore.h
+src/autocomplete/datastore.cpp
+src/autocomplete/indexer.h
+src/autocomplete/indexer.cpp
