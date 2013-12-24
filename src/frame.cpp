@@ -16,10 +16,15 @@ void Frame::build_widgets() {
 
 
     auto settings = Gio::Settings::create("org.gnome.desktop.interface");
-    auto font_name = settings->get_string("monospace-font-name");
+    auto font_name = _u(settings->get_string("monospace-font-name").raw());
+
+    auto parts = font_name.split(" ");
+    unicode family = parts[0];
+    int size = parts[1].to_int();
 
     Pango::FontDescription fdesc;
-    fdesc.set_family(font_name);
+    fdesc.set_family(family.encode());
+    fdesc.set_absolute_size(size * Pango::SCALE);
     source_view_.override_font(fdesc);
 
     source_view_.set_show_line_numbers(true);

@@ -125,7 +125,7 @@ private:
 
     std::vector<Buffer::ptr> open_buffers_;
     std::vector<Frame::ptr> frames_;
-    int32_t current_frame_;
+    int32_t current_frame_ = 0;
 
     std::set<unicode> ignored_globs_; //For file tree
 };

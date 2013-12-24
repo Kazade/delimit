@@ -37,6 +37,7 @@ public:
 
     sigc::signal<void> signal_close_requested() { return signal_close_requested_; }
 
+    void _connect_signals();
 private:
     int highlight_all(const unicode& string);
     void clear_highlight();

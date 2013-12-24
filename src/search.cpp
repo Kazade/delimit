@@ -10,6 +10,10 @@ Search::Search(Frame* parent):
     frame_(parent) {
 
     build_widgets();
+}
+
+void Search::_connect_signals() {
+    assert(frame_);
     frame_->signal_buffer_changed().connect(sigc::mem_fun(this, &Search::on_buffer_changed));
 }
 
