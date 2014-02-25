@@ -24,6 +24,8 @@ public:
         search_(this),
         buffer_(nullptr) {
 
+        search_._connect_signals();
+
         build_widgets();
     }
 
