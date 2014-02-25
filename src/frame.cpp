@@ -76,11 +76,7 @@ void Frame::set_buffer(Buffer *buffer) {
 void Frame::file_changed_outside_editor(const Glib::RefPtr<Gio::File>& file,
     const Glib::RefPtr<Gio::File>& other_file, Gio::FileMonitorEvent event) {
 
-    if(event == Gio::FILE_MONITOR_EVENT_CHANGED ||
-        event == Gio::FILE_MONITOR_EVENT_DELETED ||
-        event == Gio::FILE_MONITOR_EVENT_CREATED ||
-        event == Gio::FILE_MONITOR_EVENT_ATTRIBUTE_CHANGED) {
-
+    if(event == Gio::FILE_MONITOR_EVENT_CHANGED) {
         Gtk::MessageDialog dialog(parent_._gtk_window(), "File Changed", true, Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_YES_NO, true);
 
         dialog.set_message(_u("The file <i>{0}</i> has changed outside Delimit").format(os::path::split(file->get_path()).second).encode(), true);
