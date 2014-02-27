@@ -20,6 +20,7 @@ public:
         on_entry_changed();
     }
 
+    void on_entry_activated();
     bool on_entry_key_press(GdkEventKey* event);
 
     void show() {
@@ -40,6 +41,7 @@ public:
     void _connect_signals();
 private:
     int highlight_all(const unicode& string);
+    int highlight_all(const unicode& string, std::vector<Gtk::TextBuffer::iterator>& start_iters);
     void clear_highlight();
 
     void toggle_replace(bool show) {

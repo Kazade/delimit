@@ -65,6 +65,7 @@ void Search::build_widgets() {
     set_margin_top(5);
 
     find_entry_.signal_changed().connect(sigc::mem_fun(this, &Search::on_entry_changed));
+    find_entry_.signal_activate().connect(sigc::mem_fun(this, &Search::on_entry_activated));
     find_entry_.signal_key_press_event().connect(sigc::mem_fun(this, &Search::on_entry_key_press));
 
     find_next_button_.signal_clicked().connect(sigc::mem_fun(this, &Search::on_find_next_clicked));
@@ -93,14 +94,20 @@ void Search::on_entry_changed() {
         return;
     }
 
-    int highlighted = highlight_all(text);
+    std::vector<Gtk::TextBuffer::iterator> iters;
+    int highlighted = highlight_all(text, iters);
     if(!highlighted) {
         find_entry_.override_color(Gdk::RGBA("#FF0000"), Gtk::STATE_FLAG_FOCUSED);
     } else {
+        frame_->view().scroll_to(iters.at(0));
         find_entry_.override_color(default_entry_colour_, Gtk::STATE_FLAG_FOCUSED);
     }
 
     toggle_replace(highlighted > 0);
+}
+
+void Search::on_entry_activated() {
+    this->find_next_button_.clicked();
 }
 
 bool Search::on_entry_key_press(GdkEventKey* event) {
@@ -108,11 +115,6 @@ bool Search::on_entry_key_press(GdkEventKey* event) {
         switch(event->keyval) {
             case GDK_KEY_Escape: {
                 signal_close_requested_();
-                return false;
-            }
-            break;
-            case GDK_KEY_Return: {
-                find_next_button_.clicked();
                 return false;
             }
             break;
@@ -135,7 +137,7 @@ void Search::on_find_next_clicked() {
     auto text = unicode(find_entry_.get_text().c_str());
 
     bool case_sensitive = case_sensitive_.get_active();
-    bool found = start.forward_search(
+    bool found = end.forward_search(
         text.encode(),
         (case_sensitive) ? Gtk::TextSearchFlags(0) : Gtk::TEXT_SEARCH_CASE_INSENSITIVE,
         start, end
@@ -143,11 +145,16 @@ void Search::on_find_next_clicked() {
 
     if(found) {
         buf->select_range(start, end);
-        //frame_->view().scroll_to_iter(start, 0, false, 0, 0);
+        frame_->view().scroll_to(start);
     }
 }
 
 int Search::highlight_all(const unicode& string) {
+    std::vector<Gtk::TextBuffer::iterator> trash;
+    return highlight_all(string, trash);
+}
+
+int Search::highlight_all(const unicode& string, std::vector<Gtk::TextBuffer::iterator>& start_iters) {
     auto buf = buffer()->_gtk_buffer();
     auto start = buf->begin();
     auto end_of_file = buf->end();
@@ -166,6 +173,7 @@ int Search::highlight_all(const unicode& string) {
     while(start.forward_search(
               string.encode(), (case_sensitive) ? Gtk::TextSearchFlags(0) : Gtk::TEXT_SEARCH_CASE_INSENSITIVE,
               start, end)) {
+        start_iters.push_back(start);
         buf->apply_tag_by_name(SEARCH_HIGHLIGHT_TAG, start, end);
         start = buf->get_iter_at_offset(end.get_offset());
         ++highlighted;

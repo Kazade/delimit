@@ -28,6 +28,7 @@ Window::Window():
     buffer_undo_(nullptr),
     buffer_search_(nullptr),
     buffer_close_(nullptr),
+    current_frame_(0),
     type_(WINDOW_TYPE_FILE) {
 
     L_DEBUG("Creating window with empty buffer");
