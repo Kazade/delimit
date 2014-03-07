@@ -158,6 +158,15 @@ void Window::build_widgets() {
         }
     });
 
+    buffer_new_->set_icon_name("document-new");
+    buffer_save_->set_icon_name("document-save");
+    buffer_open_->set_icon_name("document-open");
+    buffer_close_->set_icon_name("window-close");
+    buffer_search_->set_icon_name("search");
+    buffer_undo_->set_icon_name("edit-undo");
+    buffer_redo_->set_icon_name("edit-redo");
+    window_split_->set_icon_name("window-new");
+
     assert(gtk_window_);
 
     create_frame(); //Create the default frame
