@@ -21,6 +21,7 @@ From the root of the project:
  - Implement a contextual menu for the folder/file tree with open, rename, delete or new file, new subfolder, rename, delete depending on the type
  - Add close buttons to the open document pane
  - Django detection and support (Django specific code completions, management command buttons)
+ - ST style file/class/function location popup (depends on CC)
  
 ## Submitting patches
 
