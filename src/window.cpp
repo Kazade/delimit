@@ -28,8 +28,8 @@ Window::Window():
     buffer_undo_(nullptr),
     buffer_search_(nullptr),
     buffer_close_(nullptr),
-    current_frame_(0),
-    type_(WINDOW_TYPE_FILE) {
+    type_(WINDOW_TYPE_FILE),
+    current_frame_(0) {
 
     L_DEBUG("Creating window with empty buffer");
 
@@ -147,6 +147,8 @@ void Window::build_widgets() {
     buffer_save_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_save_clicked));
     buffer_search_->signal_toggled().connect(sigc::mem_fun(this, &Window::toolbutton_search_toggled));
     buffer_close_->signal_clicked().connect(sigc::mem_fun(this, &Window::close_active_buffer));
+    buffer_undo_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_undo_clicked));
+    buffer_redo_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_redo_clicked));
 
     assert(gtk_window_);
 
@@ -181,6 +183,18 @@ void Window::on_list_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk:
 
 void Window::toolbutton_new_clicked() {
     new_buffer("Untitled");
+}
+
+void Window::toolbutton_undo_clicked() {
+    if(current_frame_ >= 0 && current_frame_ < (int32_t) frames_.size()) {
+        frames_.at(current_frame_)->buffer()->_gtk_buffer()->undo();
+    }
+}
+
+void Window::toolbutton_redo_clicked() {
+    if(current_frame_ >= 0 && current_frame_ < (int32_t) frames_.size()) {
+        frames_.at(current_frame_)->buffer()->_gtk_buffer()->redo();
+    }
 }
 
 void Window::toolbutton_open_clicked() {
@@ -480,7 +494,7 @@ void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {
 }
 
 void Window::create_frame() {
-    assert(frames_.size() < FRAME_LIMIT);
+    assert(frames_.size() < (uint32_t) FRAME_LIMIT);
 
     Frame::ptr frame = std::make_shared<Frame>(*this);
 
@@ -490,5 +504,14 @@ void Window::create_frame() {
 
     frames_.push_back(frame);
 }
+
+void Window::set_undo_enabled(bool value) {
+    buffer_undo_->set_sensitive(value);
+}
+
+void Window::set_redo_enabled(bool value) {
+    buffer_redo_->set_sensitive(value);
+}
+
 
 }

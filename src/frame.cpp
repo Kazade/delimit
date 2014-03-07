@@ -71,6 +71,13 @@ void Frame::set_buffer(Buffer *buffer) {
     source_view_.get_source_buffer()->set_style_scheme(manager->get_scheme("delimit"));
 
     buffer_->signal_file_changed().connect(sigc::mem_fun(this, &Frame::file_changed_outside_editor));
+    buffer_->_gtk_buffer()->signal_changed().connect(sigc::mem_fun(this, &Frame::check_undoable_actions));
+    check_undoable_actions();
+}
+
+void Frame::check_undoable_actions() {
+    this->parent_.set_undo_enabled(buffer_->_gtk_buffer()->can_undo());
+    this->parent_.set_redo_enabled(buffer_->_gtk_buffer()->can_redo());
 }
 
 void Frame::file_changed_outside_editor(const Glib::RefPtr<Gio::File>& file,

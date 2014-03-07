@@ -72,6 +72,8 @@ public:
 
     Gtk::ToggleToolButton& buffer_search_button() { return *buffer_search_; }
 
+    void set_undo_enabled(bool value);
+    void set_redo_enabled(bool value);
 private:
     void activate_buffer(Buffer::ptr buffer);
     void build_widgets();
@@ -116,6 +118,8 @@ private:
     void toolbutton_new_clicked();
     void toolbutton_open_clicked();
     void toolbutton_save_clicked();
+    void toolbutton_undo_clicked();
+    void toolbutton_redo_clicked();
     void toolbutton_search_toggled();
 
     void create_frame();

@@ -28,8 +28,10 @@ void Buffer::_finish_read(Glib::RefPtr<Gio::File> file, Glib::RefPtr<Gio::AsyncR
     Glib::ustring result(output);
 
     Glib::signal_idle().connect([=]() -> bool {
+        gtk_buffer_->begin_not_undoable_action();
         gtk_buffer_->set_text(result);
         gtk_buffer_->set_modified(false);
+        gtk_buffer_->end_not_undoable_action();
         return false;
     });
 }
