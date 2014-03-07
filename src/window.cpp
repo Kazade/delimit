@@ -150,6 +150,14 @@ void Window::build_widgets() {
     buffer_undo_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_undo_clicked));
     buffer_redo_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_redo_clicked));
 
+    window_split_->signal_toggled().connect([&]() {
+        if(window_split_->get_active()) {
+            split();
+        } else {
+            unsplit();
+        }
+    });
+
     assert(gtk_window_);
 
     create_frame(); //Create the default frame
