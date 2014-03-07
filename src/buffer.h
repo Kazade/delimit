@@ -45,6 +45,9 @@ public:
     }
 
 private:
+    void trim_trailing_newlines();
+    void trim_trailing_whitespace();
+
     void set_gio_file(const GioFilePtr& file, bool reload=true);
     void file_changed(const GioFilePtr& file, const GioFilePtr& other_file, Gio::FileMonitorEvent event) {
         signal_file_changed_(file, other_file, event);

@@ -82,7 +82,29 @@ void Buffer::set_gio_file(const Glib::RefPtr<Gio::File>& file, bool reload) {
     }
 }
 
+void Buffer::trim_trailing_newlines() {
+    auto buffer_end = _gtk_buffer()->end();
+    if(buffer_end.starts_line()) {
+        auto itr = buffer_end;
+        while(itr.backward_line()) {
+            if(!itr.ends_line()) {
+                itr.forward_to_line_end();
+                break;
+            }
+        }
+
+        _gtk_buffer()->erase(itr, buffer_end);
+    }
+}
+
+void Buffer::trim_trailing_whitespace() {
+
+}
+
 void Buffer::save(const unicode& path) {
+    trim_trailing_newlines();
+    trim_trailing_whitespace();
+
     Glib::ustring text = _gtk_buffer()->get_text();
     _gtk_buffer()->set_modified(false);
 
