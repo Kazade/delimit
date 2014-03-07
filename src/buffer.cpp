@@ -1,4 +1,5 @@
 #include "buffer.h"
+#include "window.h"
 
 namespace delimit {
 
@@ -92,6 +93,12 @@ void Buffer::save(const unicode& path) {
         gio_file_monitor_ = Glib::RefPtr<Gio::FileMonitor>();
     }
 
+    //If we are saving the buffer for the first time over an existing path
+    //then create the gio_file_ so we can replace the contents below
+    if(!gio_file_ && os::path::exists(path)) {
+        gio_file_ = Gio::File::create_for_path(path.encode());
+    }
+
     if(gio_file_ && gio_file_->get_path() == path.encode()) {
         //FIXME: Use entity tag arguments to make sure that the file
         //didn't change since the last time we saved
@@ -103,7 +110,9 @@ void Buffer::save(const unicode& path) {
         file->replace_contents(text, "", new_etag);
         set_gio_file(file, false); //Don't reload the file, reconnect the monitor
     }
-    
+
+    set_name(os::path::split(gio_file_->get_path()).second);
+    parent_.rebuild_open_list();
 }
 
 void Buffer::on_buffer_changed() {

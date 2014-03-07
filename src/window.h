@@ -74,12 +74,13 @@ public:
 
     void set_undo_enabled(bool value);
     void set_redo_enabled(bool value);
+
+    void rebuild_file_tree(const unicode &path);
+    void rebuild_open_list();
 private:
     void activate_buffer(Buffer::ptr buffer);
     void build_widgets();
     void init_actions();
-    void rebuild_file_tree(const unicode &path);
-    void rebuild_open_list();
 
     void dirwalk(const unicode& path, const Gtk::TreeRow *node);
 

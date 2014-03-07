@@ -21,6 +21,10 @@ public:
     Buffer(Window& parent, const unicode& name, const Glib::RefPtr<Gio::File>& file);
 
     unicode name() const;
+    void set_name(const unicode& name) {
+        name_ = name;
+    }
+
     unicode path() const;
 
     bool modified() const;
