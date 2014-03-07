@@ -22,6 +22,8 @@ From the root of the project:
  - Add close buttons to the open document pane
  - Django detection and support (Django specific code completions, management command buttons)
  - ST style file/class/function location popup (depends on CC)
+ - Watch the folder tree for changes (e.g. folder/file deletions/renames/creations)
+ - Distinguish between open files of the same name in the open files section
  
 ## Submitting patches
 
