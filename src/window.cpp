@@ -228,6 +228,7 @@ void Window::toolbutton_open_clicked() {
 
 void Window::toolbutton_save_clicked() {
     Gtk::FileChooserDialog dialog(_gtk_window(), _("Save a file"), Gtk::FILE_CHOOSER_ACTION_SAVE);
+    dialog.set_do_overwrite_confirmation(true);
     dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
     dialog.add_button(Gtk::Stock::SAVE, Gtk::RESPONSE_OK);
 
