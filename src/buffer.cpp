@@ -82,7 +82,51 @@ void Buffer::set_gio_file(const Glib::RefPtr<Gio::File>& file, bool reload) {
     }
 }
 
+void Buffer::trim_trailing_newlines() {
+    //FIXME: Don't strip whitespace if the language doesn't like it (e.g. 'diff')
+    auto buffer_end = _gtk_buffer()->end();
+    if(buffer_end.starts_line()) {
+        auto itr = buffer_end;
+        while(itr.backward_line()) {
+            if(!itr.ends_line()) {
+                itr.forward_to_line_end();
+                break;
+            }
+        }
+
+        _gtk_buffer()->erase(itr, buffer_end);
+    }
+}
+
+bool is_whitespace(Gtk::TextIter& iter) {
+    for(auto ch: std::string("\t\v\f ")) {
+        if(iter.get_char() == (gunichar) ch) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void Buffer::trim_trailing_whitespace() {
+    //FIXME: Don't strip whitespace if the language doesn't like it (e.g. 'diff')
+    auto current = _gtk_buffer()->begin();
+
+    while(current != _gtk_buffer()->end()) {
+        current.forward_to_line_end(); //Move to the newline character
+        auto line_end = current; //Store the end of the line
+        while(is_whitespace(--current)) {} //Move backward until we get to non-whitespace
+
+        current = _gtk_buffer()->erase(++current, line_end);
+
+        current.forward_line(); //Move to the next line, or the end of the final line
+    }
+}
+
 void Buffer::save(const unicode& path) {
+    trim_trailing_newlines();
+    trim_trailing_whitespace();
+
     Glib::ustring text = _gtk_buffer()->get_text();
     _gtk_buffer()->set_modified(false);
 
