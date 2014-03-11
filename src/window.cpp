@@ -3,6 +3,7 @@
 #include <gdkmm.h>
 
 #include "window.h"
+#include "application.h"
 
 #include "base/exceptions.h"
 #include "base/unicode.h"
@@ -24,6 +25,7 @@ Window::Window():
     open_file_list_(nullptr),
     buffer_new_(nullptr),
     buffer_open_(nullptr),
+    folder_open_(nullptr),
     buffer_save_(nullptr),
     buffer_undo_(nullptr),
     buffer_search_(nullptr),
@@ -52,11 +54,13 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
     open_file_list_(nullptr),
     buffer_new_(nullptr),
     buffer_open_(nullptr),
+    folder_open_(nullptr),
     buffer_save_(nullptr),
     buffer_undo_(nullptr),
     buffer_search_(nullptr),
     buffer_close_(nullptr),
-    type_(WINDOW_TYPE_FILE) {
+    type_(WINDOW_TYPE_FILE),
+    current_frame_(0) {
 
     file_tree_store_ = Gtk::TreeStore::create(file_tree_columns_);
     open_list_store_ = Gtk::ListStore::create(open_list_columns_);
@@ -135,6 +139,7 @@ void Window::build_widgets() {
 
     builder->get_widget("buffer_new", buffer_new_);
     builder->get_widget("buffer_open", buffer_open_);
+    builder->get_widget("folder_open", folder_open_);
     builder->get_widget("buffer_save", buffer_save_);
     builder->get_widget("buffer_undo", buffer_undo_);
     builder->get_widget("buffer_redo", buffer_redo_);
@@ -145,6 +150,7 @@ void Window::build_widgets() {
     buffer_new_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_new_clicked));
     buffer_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_clicked));
     buffer_save_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_save_clicked));
+    folder_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_folder_clicked));
     buffer_search_->signal_toggled().connect(sigc::mem_fun(this, &Window::toolbutton_search_toggled));
     buffer_close_->signal_clicked().connect(sigc::mem_fun(this, &Window::close_active_buffer));
     buffer_undo_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_undo_clicked));
@@ -161,6 +167,7 @@ void Window::build_widgets() {
     buffer_new_->set_icon_name("document-new");
     buffer_save_->set_icon_name("document-save");
     buffer_open_->set_icon_name("document-open");
+    folder_open_->set_icon_name("folder-open");
     buffer_close_->set_icon_name("window-close");
     buffer_search_->set_icon_name("search");
     buffer_undo_->set_icon_name("edit-undo");
@@ -230,6 +237,27 @@ void Window::toolbutton_open_clicked() {
         case Gtk::RESPONSE_OK: {
             std::string filename = dialog.get_filename();
             open_buffer(Gio::File::create_for_path(filename));
+        } default:
+            break;
+    }
+}
+
+void Window::toolbutton_open_folder_clicked() {
+    Gtk::FileChooserDialog dialog(_("Open a folder..."), Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER);
+
+    dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
+    dialog.add_button(Gtk::Stock::OPEN, Gtk::RESPONSE_OK);
+
+    int result = dialog.run();
+    switch(result) {
+        case Gtk::RESPONSE_OK: {
+            std::string filename = dialog.get_filename();
+
+            Gio::Application::type_vec_files files;
+            files.push_back(Gio::File::create_for_path(filename));
+            auto window = std::make_shared<delimit::Window>(files);
+            Glib::RefPtr<Gtk::Application> app = gtk_window_->get_application();
+            Glib::RefPtr<Application>::cast_dynamic(app)->add_window(window);
         } default:
             break;
     }

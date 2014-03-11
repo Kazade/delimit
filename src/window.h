@@ -106,6 +106,7 @@ private:
     //Toolbar
     Gtk::ToolButton* buffer_new_;
     Gtk::ToolButton* buffer_open_;
+    Gtk::ToolButton* folder_open_;
     Gtk::ToolButton* buffer_save_;
     Gtk::ToolButton* buffer_undo_;
     Gtk::ToolButton* buffer_redo_;
@@ -118,6 +119,7 @@ private:
 
     void toolbutton_new_clicked();
     void toolbutton_open_clicked();
+    void toolbutton_open_folder_clicked();
     void toolbutton_save_clicked();
     void toolbutton_undo_clicked();
     void toolbutton_redo_clicked();
