@@ -44,6 +44,11 @@ public:
         set_gio_file(gio_file_, true);
     }
 
+    void store_adjustment_value(double adjust) {
+        adjustment_ = adjust;
+    }
+    double retrieve_adjustment_value() const { return adjustment_; }
+
 private:
     void trim_trailing_newlines();
     void trim_trailing_whitespace();
@@ -61,6 +66,8 @@ private:
     Glib::RefPtr<Gio::FileMonitor> gio_file_monitor_;
 
     Glib::RefPtr<Gsv::Buffer> gtk_buffer_;    
+
+    double adjustment_;
 
     bool is_saved() const { return bool(gio_file_); }
 
