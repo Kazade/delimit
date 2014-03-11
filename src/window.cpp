@@ -421,6 +421,11 @@ void Window::split() {
 
 void Window::unsplit() {
     assert(frames_.size() == 2);
+
+    gtk_container_->remove();
+    frames_[0]->_gtk_box().reparent(*gtk_container_);
+    gtk_container_->show_all();
+
     frames_.pop_back(); //Destroy the second frame
 }
 
@@ -544,10 +549,24 @@ void Window::create_frame() {
 
     Frame::ptr frame = std::make_shared<Frame>(*this);
 
-    //FIXME: Add frame to the container
-    gtk_container_->add(frame->_gtk_box());
-    frame->_gtk_box().show_all();
+    if(frames_.empty()) {
+        gtk_container_->add(frame->_gtk_box());
+    } else if(frames_.size() == 1) {
+        Gtk::Paned* pane = Gtk::manage(new Gtk::Paned);
+        gtk_container_->remove();
+        gtk_container_->add(*pane);
 
+        pane->show_all();
+
+        pane->add1(frames_[0]->_gtk_box());
+        pane->add2(frame->_gtk_box());
+
+        frame->set_buffer(frames_[0]->buffer());
+    } else {
+        throw std::logic_error("More than two frames not supported");
+    }
+
+    frame->_gtk_box().show_all();
     frames_.push_back(frame);
 }
 
