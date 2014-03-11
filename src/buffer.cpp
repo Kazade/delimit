@@ -96,6 +96,8 @@ void Buffer::trim_trailing_newlines() {
             }
         }
 
+        itr.forward_line(); //This maintains a newline at the end of the file, should probably make this optional
+
         _gtk_buffer()->erase(itr, buffer_end);
     }
 }
