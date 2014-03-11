@@ -63,12 +63,21 @@ void Frame::set_buffer(Buffer *buffer) {
         return;
     }
 
+    if(buffer_) {
+        buffer_->store_adjustment_value(scrolled_window_.get_vadjustment()->get_value());
+    }
+
     buffer_ = buffer;
+
     source_view_.set_buffer(buffer_->_gtk_buffer());    
     signal_buffer_changed_(buffer_);
 
     auto manager = Gsv::StyleSchemeManager::get_default();
     source_view_.get_source_buffer()->set_style_scheme(manager->get_scheme("delimit"));
+
+    Glib::signal_idle().connect_once([&]() {
+        scrolled_window_.get_vadjustment()->set_value(buffer_->retrieve_adjustment_value());
+    });
 
     buffer_->signal_file_changed().connect(sigc::mem_fun(this, &Frame::file_changed_outside_editor));
     buffer_->_gtk_buffer()->signal_changed().connect(sigc::mem_fun(this, &Frame::check_undoable_actions));

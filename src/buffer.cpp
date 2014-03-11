@@ -5,7 +5,8 @@ namespace delimit {
 
 Buffer::Buffer(Window& parent, const unicode& name):
     parent_(parent),
-    name_(name) {
+    name_(name),
+    adjustment_(0) {
 
     gtk_buffer_ = Gsv::Buffer::create();
     gtk_buffer_->signal_changed().connect(sigc::mem_fun(this, &Buffer::on_buffer_changed));
@@ -13,7 +14,8 @@ Buffer::Buffer(Window& parent, const unicode& name):
 
 Buffer::Buffer(Window& parent, const unicode& name, const Glib::RefPtr<Gio::File>& file):
     parent_(parent),
-    name_(name) {
+    name_(name),
+    adjustment_(0) {
 
     set_gio_file(file);
 
