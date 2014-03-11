@@ -47,9 +47,7 @@ void Frame::build_widgets() {
 
     search_.set_no_show_all();
 
-    //I have no idea why I need to do this in idle(), but it won't work on start up otherwise
-    //At least this way we're thread safe!
-    Glib::signal_idle().connect_once(sigc::bind(sigc::mem_fun(this, &Frame::set_search_visible), false));
+    set_search_visible(false);
 }
 
 void Frame::set_search_visible(bool value) {
