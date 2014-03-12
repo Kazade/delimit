@@ -317,7 +317,9 @@ bool Window::on_tree_test_expand_row(const Gtk::TreeModel::iterator& iter, const
 }
 
 void Window::on_folder_changed(const Glib::RefPtr<Gio::File> &file, const Glib::RefPtr<Gio::File> &other, Gio::FileMonitorEvent event_type) {
-    if(event_type == Gio::FILE_MONITOR_EVENT_CHANGES_DONE_HINT) {
+    L_DEBUG("Detected folder event: " + file->get_path());
+
+    if(event_type == Gio::FILE_MONITOR_EVENT_CHANGES_DONE_HINT || event_type == Gio::FILE_MONITOR_EVENT_DELETED) {
         L_INFO("Detected folder change: " + file->get_path());
 
         unicode folder_path = os::path::dir_name(file->get_path());
