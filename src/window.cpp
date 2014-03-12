@@ -312,12 +312,14 @@ bool Window::on_tree_test_expand_row(const Gtk::TreeModel::iterator& iter, const
     return false;
 }
 
-void Window::on_folder_changed(Gtk::TreePath path, const Glib::RefPtr<Gio::File> &file, const Glib::RefPtr<Gio::File> &other, Gio::FileMonitorEvent event_type) {
+void Window::on_folder_changed(const Glib::RefPtr<Gio::File> &file, const Glib::RefPtr<Gio::File> &other, Gio::FileMonitorEvent event_type) {
     if(event_type == Gio::FILE_MONITOR_EVENT_CHANGES_DONE_HINT) {
         L_INFO("Detected folder change: " + file->get_path());
 
-        Gtk::TreeRow node = *(file_tree_store_->get_iter(path));
-        dirwalk(os::path::dir_name(file->get_path()), &node);
+        unicode folder_path = os::path::dir_name(file->get_path());
+
+        Gtk::TreeRow node = *(file_tree_store_->get_iter(tree_row_lookup_.at(folder_path).get_path()));
+        dirwalk(folder_path, &node);
     }
 }
 
@@ -340,11 +342,22 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
     directories.insert(directories.end(), files.begin(), files.end());
     files = directories;
 
+    Gtk::TreeIter root_iter;
+
     if(os::path::is_dir(path) && !node) {
+        L_DEBUG("Adding root node: " + path.encode());
         auto image = Gtk::IconTheme::get_default()->load_icon("folder", Gtk::ICON_SIZE_MENU);
 
-        auto iter = file_tree_store_->append();
-        node = &(*iter);
+        //If the node already exists for this path, don't add it again
+        if(tree_row_lookup_.find(path) != tree_row_lookup_.end()) {
+            root_iter = file_tree_store_->get_iter(tree_row_lookup_[path].get_path());
+        } else {
+            //Add a new node, store a reference against the path
+            root_iter = file_tree_store_->append();
+            tree_row_lookup_[path] = Gtk::TreeRowReference(file_tree_store_, file_tree_store_->get_path(root_iter));
+        }
+
+        node = &(*root_iter);
         node->set_value(file_tree_columns_.name, Glib::ustring(os::path::split(path).second.encode()));
         node->set_value(file_tree_columns_.full_path, Glib::ustring(path.encode()));
         node->set_value(file_tree_columns_.image, image);
@@ -355,7 +368,7 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
         Glib::RefPtr<Gio::File> file = Gio::File::create_for_path(path.encode());
         auto monitor = file->monitor_directory();
         tree_monitors_[path] = monitor;
-        monitor->signal_changed().connect(sigc::bind<0>(sigc::mem_fun(this, &Window::on_folder_changed), file_tree_store_->get_path(iter)));
+        monitor->signal_changed().connect(sigc::mem_fun(this, &Window::on_folder_changed));
     }
 
     for(auto f: files) {
@@ -388,14 +401,24 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
             Gtk::ICON_SIZE_MENU
         );
 
+        Gtk::TreeIter iter;
+        const Gtk::TreeRow* row = nullptr;
 
-        const Gtk::TreeModel::Row* row;
-        if(node) {
-            row = &(*file_tree_store_->append(node->children()));
+        //If the node already exists for this path, don't add it again
+        if(tree_row_lookup_.find(full_name) != tree_row_lookup_.end()) {
+            iter = file_tree_store_->get_iter(tree_row_lookup_[full_name].get_path());
         } else {
-            row = &(*file_tree_store_->append());
+            if(node) {
+                L_DEBUG("Adding child node: " + full_name.encode());
+                iter = file_tree_store_->append(node->children());
+            } else {
+                L_DEBUG("Adding root node: " + full_name.encode());
+                iter = file_tree_store_->append();
+            }
+            tree_row_lookup_[full_name] = Gtk::TreeRowReference(file_tree_store_, file_tree_store_->get_path(iter));
         }
 
+        row = &(*iter);
         row->set_value(file_tree_columns_.name, Glib::ustring(f.encode()));
         row->set_value(file_tree_columns_.full_path, Glib::ustring(full_name.encode()));
         row->set_value(file_tree_columns_.image, image);

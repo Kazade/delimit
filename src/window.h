@@ -136,9 +136,10 @@ private:
 
     std::set<unicode> ignored_globs_; //For file tree
 
-    std::map<unicode, Glib::RefPtr<Gio::FileMonitor>> tree_monitors_;
+    std::map<unicode, Glib::RefPtr<Gio::FileMonitor> > tree_monitors_;
+    std::map<unicode, Gtk::TreeRowReference> tree_row_lookup_;
 
-    void on_folder_changed(Gtk::TreePath node, const Glib::RefPtr<Gio::File>& file, const Glib::RefPtr<Gio::File>& other, Gio::FileMonitorEvent event_type);
+    void on_folder_changed(const Glib::RefPtr<Gio::File>& file, const Glib::RefPtr<Gio::File>& other, Gio::FileMonitorEvent event_type);
 };
 
 }
