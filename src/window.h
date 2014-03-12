@@ -135,6 +135,10 @@ private:
     int32_t current_frame_;
 
     std::set<unicode> ignored_globs_; //For file tree
+
+    std::map<unicode, Glib::RefPtr<Gio::FileMonitor>> tree_monitors_;
+
+    void on_folder_changed(Gtk::TreePath node, const Glib::RefPtr<Gio::File>& file, const Glib::RefPtr<Gio::File>& other, Gio::FileMonitorEvent event_type);
 };
 
 }

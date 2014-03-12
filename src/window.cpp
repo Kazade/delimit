@@ -312,6 +312,15 @@ bool Window::on_tree_test_expand_row(const Gtk::TreeModel::iterator& iter, const
     return false;
 }
 
+void Window::on_folder_changed(Gtk::TreePath path, const Glib::RefPtr<Gio::File> &file, const Glib::RefPtr<Gio::File> &other, Gio::FileMonitorEvent event_type) {
+    if(event_type == Gio::FILE_MONITOR_EVENT_CHANGES_DONE_HINT) {
+        L_INFO("Detected folder change: " + file->get_path());
+
+        Gtk::TreeRow node = *(file_tree_store_->get_iter(path));
+        dirwalk(os::path::dir_name(file->get_path()), &node);
+    }
+}
+
 void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
     auto files = os::path::list_dir(os::path::real_path(path));
     std::sort(files.begin(), files.end());
@@ -334,12 +343,19 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
     if(os::path::is_dir(path) && !node) {
         auto image = Gtk::IconTheme::get_default()->load_icon("folder", Gtk::ICON_SIZE_MENU);
 
-        node = &(*file_tree_store_->append());
+        auto iter = file_tree_store_->append();
+        node = &(*iter);
         node->set_value(file_tree_columns_.name, Glib::ustring(os::path::split(path).second.encode()));
         node->set_value(file_tree_columns_.full_path, Glib::ustring(path.encode()));
         node->set_value(file_tree_columns_.image, image);
         node->set_value(file_tree_columns_.is_folder, true);
         node->set_value(file_tree_columns_.is_dummy, false);
+
+        //Handle updates to the directory
+        Glib::RefPtr<Gio::File> file = Gio::File::create_for_path(path.encode());
+        auto monitor = file->monitor_directory();
+        tree_monitors_[path] = monitor;
+        monitor->signal_changed().connect(sigc::bind<0>(sigc::mem_fun(this, &Window::on_folder_changed), file_tree_store_->get_path(iter)));
     }
 
     for(auto f: files) {
