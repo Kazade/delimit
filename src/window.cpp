@@ -296,17 +296,21 @@ void Window::toolbutton_search_toggled() {
 bool Window::on_tree_test_expand_row(const Gtk::TreeModel::iterator& iter, const Gtk::TreeModel::Path& path) {
     Gtk::TreeRow row = (*iter);
 
-    bool is_empty = row->children().empty();
-    bool is_dummy = !is_empty && row->children()[0][file_tree_columns_.is_dummy];
+    //Remove all dummy rows
+    std::vector<Gtk::TreeRowReference> dummy_nodes;
+    for(auto child: row->children()) {
+        if(child[file_tree_columns_.is_dummy]) {
+            dummy_nodes.push_back(Gtk::TreeRowReference(file_tree_store_, file_tree_store_->get_path(child)));
+        }
+    }
 
-    if(is_dummy) {
-        //this node contains a dummy, so delete it
-        Gtk::TreeIter to_remove = row->children()[0];
-
-        //Then build the node
+    if(!dummy_nodes.empty()) {
+        //Build the node
         dirwalk(Glib::ustring(row[file_tree_columns_.full_path]).c_str(), &row);
 
-        file_tree_store_->erase(to_remove); //Erase the dummy
+        for(auto ref: dummy_nodes) {
+            file_tree_store_->erase(file_tree_store_->get_iter(ref.get_path()));//Erase the dummy
+        }
     }
 
     return false;
@@ -425,7 +429,7 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
         row->set_value(file_tree_columns_.is_folder, is_folder);
         row->set_value(file_tree_columns_.is_dummy, false);
 
-        if(is_folder) {
+        if(is_folder && row->children().empty()) {
             //Add a dummy node under the folder
             const Gtk::TreeRow* dummy = &(*file_tree_store_->append(row->children()));
             dummy->set_value(file_tree_columns_.is_dummy, true);
