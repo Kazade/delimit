@@ -83,6 +83,8 @@ private:
     void init_actions();
 
     void dirwalk(const unicode& path, const Gtk::TreeRow *node);
+    void watch_directory(const unicode& path);
+    void unwatch_directory(const unicode& path);
 
     bool on_tree_test_expand_row(const Gtk::TreeModel::iterator& iter, const Gtk::TreeModel::Path& path);
 

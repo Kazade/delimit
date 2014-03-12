@@ -319,7 +319,7 @@ bool Window::on_tree_test_expand_row(const Gtk::TreeModel::iterator& iter, const
 void Window::on_folder_changed(const Glib::RefPtr<Gio::File> &file, const Glib::RefPtr<Gio::File> &other, Gio::FileMonitorEvent event_type) {
     L_DEBUG("Detected folder event: " + file->get_path());
 
-    if(event_type == Gio::FILE_MONITOR_EVENT_CHANGES_DONE_HINT || event_type == Gio::FILE_MONITOR_EVENT_DELETED) {
+    if(event_type == Gio::FILE_MONITOR_EVENT_CHANGES_DONE_HINT || event_type == Gio::FILE_MONITOR_EVENT_DELETED || event_type == Gio::FILE_MONITOR_EVENT_CREATED) {
         L_INFO("Detected folder change: " + file->get_path());
 
         unicode folder_path = os::path::dir_name(file->get_path());
@@ -327,6 +327,28 @@ void Window::on_folder_changed(const Glib::RefPtr<Gio::File> &file, const Glib::
         Gtk::TreeRow node = *(file_tree_store_->get_iter(tree_row_lookup_.at(folder_path).get_path()));
         dirwalk(folder_path, &node);
     }
+}
+
+void Window::watch_directory(const unicode& path) {
+    if(tree_monitors_.find(path) != tree_monitors_.end()) {
+        return;
+    }
+
+    //Handle updates to the directory
+    Glib::RefPtr<Gio::File> file = Gio::File::create_for_path(path.encode());
+    auto monitor = file->monitor_directory();
+    tree_monitors_[path] = monitor;
+    monitor->signal_changed().connect(sigc::mem_fun(this, &Window::on_folder_changed));
+}
+
+void Window::unwatch_directory(const unicode& path) {
+    if(tree_monitors_.find(path) == tree_monitors_.end()) {
+        return;
+    }
+
+    Glib::RefPtr<Gio::FileMonitor> monitor = tree_monitors_.at(path);
+    monitor->cancel();
+    tree_monitors_.erase(path);
 }
 
 void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
@@ -337,6 +359,8 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
         L_DEBUG("Not walking file: " + path.encode());
         return;
     }
+
+    watch_directory(path);
 
     files = os::path::list_dir(os::path::real_path(path));
     std::sort(files.begin(), files.end());
@@ -377,12 +401,6 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
         node->set_value(file_tree_columns_.image, image);
         node->set_value(file_tree_columns_.is_folder, true);
         node->set_value(file_tree_columns_.is_dummy, false);
-
-        //Handle updates to the directory
-        Glib::RefPtr<Gio::File> file = Gio::File::create_for_path(path.encode());
-        auto monitor = file->monitor_directory();
-        tree_monitors_[path] = monitor;
-        monitor->signal_changed().connect(sigc::mem_fun(this, &Window::on_folder_changed));
     }
 
 
@@ -471,6 +489,7 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
         L_DEBUG("Found file in need of removal: " + file.encode());
         file_tree_store_->erase(file_tree_store_->get_iter(tree_row_lookup_.at(file).get_path()));
         tree_row_lookup_.erase(file);
+        unwatch_directory(file);
     }
 }
 
