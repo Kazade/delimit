@@ -328,7 +328,15 @@ void Window::on_folder_changed(const Glib::RefPtr<Gio::File> &file, const Glib::
 }
 
 void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
-    auto files = os::path::list_dir(os::path::real_path(path));
+    std::vector<unicode> files;
+
+    bool path_is_dir = os::path::is_dir(path);
+    if(!path_is_dir) {
+        L_DEBUG("Not walking file: " + path.encode());
+        return;
+    }
+
+    files = os::path::list_dir(os::path::real_path(path));
     std::sort(files.begin(), files.end());
 
     std::vector<unicode> directories;
@@ -348,7 +356,7 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
 
     Gtk::TreeIter root_iter;
 
-    if(os::path::is_dir(path) && !node) {
+    if(!node) {
         L_DEBUG("Adding root node: " + path.encode());
         auto image = Gtk::IconTheme::get_default()->load_icon("folder", Gtk::ICON_SIZE_MENU);
 
@@ -375,6 +383,23 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
         monitor->signal_changed().connect(sigc::mem_fun(this, &Window::on_folder_changed));
     }
 
+
+    std::vector<unicode> existing_children;
+
+    auto it = tree_row_lookup_.find(path);
+    if(it != tree_row_lookup_.end()) {
+        //This was an existing folder in the tree, so it might have children
+
+        auto ref = (*it).second;
+        for(auto child: (*file_tree_store_->get_iter(ref.get_path())).children()) {
+            //Go through each child node, store any existing children
+            if(!child->get_value(file_tree_columns_.is_dummy)) {
+                //this isn't a dummy, so add the path to the existing_children
+                existing_children.push_back(unicode(child->get_value(file_tree_columns_.full_path)));
+            }
+        }
+    }
+
     for(auto f: files) {
         if(f == "." || f == "..") continue;
 
@@ -384,6 +409,9 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
         }
 
         unicode full_name = os::path::join(path, f);
+
+        //We've found one of the existing children, so remove it from the list
+        existing_children.erase(std::remove(existing_children.begin(), existing_children.end(), full_name), existing_children.end());
 
         bool ignore = false;
         for(auto glob: ignored_globs_) {
@@ -395,6 +423,7 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
         }
 
         if(ignore) {
+            L_DEBUG("Ignoring file as it's in .gitignore or similar: " + full_name.encode());
             continue;
         }
 
@@ -434,6 +463,12 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
             const Gtk::TreeRow* dummy = &(*file_tree_store_->append(row->children()));
             dummy->set_value(file_tree_columns_.is_dummy, true);
         }
+    }
+
+    for(unicode file: existing_children) {
+        L_DEBUG("Found file in need of removal: " + file.encode());
+        file_tree_store_->erase(file_tree_store_->get_iter(tree_row_lookup_.at(file).get_path()));
+        tree_row_lookup_.erase(file);
     }
 }
 
