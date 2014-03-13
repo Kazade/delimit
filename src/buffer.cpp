@@ -1,6 +1,8 @@
 #include "buffer.h"
 #include "window.h"
 
+#include "base/logging.h"
+
 namespace delimit {
 
 Buffer::Buffer(Window& parent, const unicode& name):
@@ -20,6 +22,10 @@ Buffer::Buffer(Window& parent, const unicode& name, const Glib::RefPtr<Gio::File
     set_gio_file(file);
 
     gtk_buffer_->signal_changed().connect(sigc::mem_fun(this, &Buffer::on_buffer_changed));
+}
+
+Buffer::~Buffer() {
+    L_DEBUG("Deleting buffer");
 }
 
 void Buffer::_finish_read(Glib::RefPtr<Gio::File> file, Glib::RefPtr<Gio::AsyncResult> res) {
@@ -127,6 +133,15 @@ void Buffer::trim_trailing_whitespace() {
     }
 }
 
+void Buffer::close() {
+    gio_file_monitor_->cancel();
+    gio_file_monitor_ = Glib::RefPtr<Gio::FileMonitor>();
+
+    signal_closed_(this);
+
+    parent_.close_buffer(this);
+}
+
 void Buffer::save(const unicode& path) {
     trim_trailing_newlines();
     trim_trailing_whitespace();
@@ -136,8 +151,9 @@ void Buffer::save(const unicode& path) {
 
     std::string new_etag;
 
-    if(gio_file_ || gio_file_monitor_) {
+    if(gio_file_monitor_) {
         //We're saving so wipe out the monitor until we're done
+        gio_file_monitor_->cancel();
         gio_file_monitor_ = Glib::RefPtr<Gio::FileMonitor>();
     }
 

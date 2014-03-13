@@ -19,6 +19,7 @@ public:
 
     Buffer(Window& parent, const unicode& name);
     Buffer(Window& parent, const unicode& name, const Glib::RefPtr<Gio::File>& file);
+    ~Buffer();
 
     unicode name() const;
     void set_name(const unicode& name) {
@@ -31,15 +32,18 @@ public:
     void set_modified(bool value) { gtk_buffer_->set_modified(value); }
 
     void save(const unicode& path);
+    void close();
 
     void _finish_read(Glib::RefPtr<Gio::File> file, Glib::RefPtr<Gio::AsyncResult> res);
     Glib::RefPtr<Gsv::Buffer> _gtk_buffer();
 
     Glib::SignalProxy0<void> signal_modified_changed() { return _gtk_buffer()->signal_modified_changed(); }
 
+    sigc::signal<void, Buffer*>& signal_closed() { return signal_closed_; }
     sigc::signal<void, GioFilePtr, GioFilePtr, Gio::FileMonitorEvent>& signal_file_changed() { return signal_file_changed_; }
 
     void reload() {
+        gio_file_monitor_->cancel();
         gio_file_monitor_.reset();
         set_gio_file(gio_file_, true);
     }
@@ -59,6 +63,7 @@ private:
     }
 
     sigc::signal<void, GioFilePtr, GioFilePtr, Gio::FileMonitorEvent> signal_file_changed_;
+    sigc::signal<void, Buffer*> signal_closed_;
 
     Window& parent_;
     unicode name_;
