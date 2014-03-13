@@ -93,7 +93,24 @@ void Frame::check_undoable_actions() {
 void Frame::file_changed_outside_editor(const Glib::RefPtr<Gio::File>& file,
     const Glib::RefPtr<Gio::File>& other_file, Gio::FileMonitorEvent event) {
 
-    if(event == Gio::FILE_MONITOR_EVENT_CHANGED) {
+    L_DEBUG(_u("Open file change event: {0}").format((int)event).encode());
+
+    if(event == Gio::FILE_MONITOR_EVENT_DELETED || !os::path::exists(unicode(file->get_path()))) {
+        Gtk::MessageDialog dialog(parent_._gtk_window(), "File Deleted", true, Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_YES_NO, true);
+        dialog.set_message(_u("The file <i>{0}</i> has been deleted").format(os::path::split(file->get_path()).second).encode(), true);
+        dialog.set_secondary_text("Do you want to close this file?");
+        int response = dialog.run();
+        switch(response) {
+            case Gtk::RESPONSE_YES:
+                parent_.close_buffer(file);
+            break;
+            case Gtk::RESPONSE_NO:
+                buffer()->set_modified(true);
+            break;
+            default:
+                return;
+        }
+    } else if(event == Gio::FILE_MONITOR_EVENT_CHANGES_DONE_HINT) {
         Gtk::MessageDialog dialog(parent_._gtk_window(), "File Changed", true, Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_YES_NO, true);
 
         dialog.set_message(_u("The file <i>{0}</i> has changed outside Delimit").format(os::path::split(file->get_path()).second).encode(), true);
@@ -111,8 +128,10 @@ void Frame::file_changed_outside_editor(const Glib::RefPtr<Gio::File>& file,
                 parent_.close_buffer(file);
             break;
             case Gtk::RESPONSE_NO:
-                return;
+                buffer()->set_modified(true);
             break;
+            default:
+                return;            
         }
     }
 }
