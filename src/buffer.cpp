@@ -10,8 +10,7 @@ Buffer::Buffer(Window& parent, const unicode& name):
     name_(name),
     adjustment_(0) {
 
-    gtk_buffer_ = Gsv::Buffer::create();
-    gtk_buffer_->signal_changed().connect(sigc::mem_fun(this, &Buffer::on_buffer_changed));
+    create_buffer();
 }
 
 Buffer::Buffer(Window& parent, const unicode& name, const Glib::RefPtr<Gio::File>& file):
@@ -20,8 +19,12 @@ Buffer::Buffer(Window& parent, const unicode& name, const Glib::RefPtr<Gio::File
     adjustment_(0) {
 
     set_gio_file(file);
+}
 
+void Buffer::create_buffer(Glib::RefPtr<Gsv::Language> lang) {
+    gtk_buffer_ = Gsv::Buffer::create(lang);
     gtk_buffer_->signal_changed().connect(sigc::mem_fun(this, &Buffer::on_buffer_changed));
+    gtk_buffer_->signal_modified_changed().connect(sigc::mem_fun(this, &Buffer::on_signal_modified_changed));
 }
 
 Buffer::~Buffer() {
@@ -65,9 +68,11 @@ bool Buffer::modified() const {
 
 void Buffer::mark_as_new_file() {
     gio_file_.reset();
-    gio_file_monitor_->cancel();
-    gio_file_monitor_.reset();
-
+    if(gio_file_monitor_) {
+        L_DEBUG("Wiping out file monitor");
+        gio_file_monitor_->cancel();
+        gio_file_monitor_.reset();
+    }
     set_modified(true);
 }
 
@@ -78,6 +83,7 @@ void Buffer::set_gio_file(const Glib::RefPtr<Gio::File>& file, bool reload) {
     //and connect a file monitor
     if(gio_file_) {
         if(!gio_file_monitor_) {
+            L_DEBUG("Connecting file monitor");
             gio_file_monitor_ = gio_file_->monitor_file();
             gio_file_monitor_->signal_changed().connect(sigc::mem_fun(this, &Buffer::file_changed));
         }
@@ -86,14 +92,14 @@ void Buffer::set_gio_file(const Glib::RefPtr<Gio::File>& file, bool reload) {
         Glib::RefPtr<Gsv::Language> lang = lm->guess_language(file->get_path(), Glib::ustring());
 
         if(reload) {
-            gtk_buffer_ = Gsv::Buffer::create(lang);
+            create_buffer(lang);
 
             std::function<void (Glib::RefPtr<Gio::AsyncResult>)> func = std::bind(&Buffer::_finish_read, this, file, std::placeholders::_1);
             file->load_contents_async(func);
         }
     } else {
         if(reload) {
-            gtk_buffer_ = Gsv::Buffer::create();
+            create_buffer();
         }
     }
 }
@@ -169,6 +175,7 @@ void Buffer::close() {
 }
 
 void Buffer::save(const unicode& path) {
+    L_DEBUG("Saving file: " + path.encode());
     trim_trailing_newlines();
     trim_trailing_whitespace();
 
@@ -179,6 +186,8 @@ void Buffer::save(const unicode& path) {
 
     if(gio_file_monitor_) {
         //We're saving so wipe out the monitor until we're done
+        L_DEBUG("Wiping out monitor");
+
         gio_file_monitor_->cancel();
         gio_file_monitor_ = Glib::RefPtr<Gio::FileMonitor>();
     }

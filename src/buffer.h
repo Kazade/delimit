@@ -37,14 +37,15 @@ public:
     void _finish_read(Glib::RefPtr<Gio::File> file, Glib::RefPtr<Gio::AsyncResult> res);
     Glib::RefPtr<Gsv::Buffer> _gtk_buffer();
 
-    Glib::SignalProxy0<void> signal_modified_changed() { return _gtk_buffer()->signal_modified_changed(); }
-
+    sigc::signal<void, Buffer*>& signal_modified_changed() { return signal_modified_changed_; }
     sigc::signal<void, Buffer*>& signal_closed() { return signal_closed_; }
     sigc::signal<void, GioFilePtr, GioFilePtr, Gio::FileMonitorEvent>& signal_file_changed() { return signal_file_changed_; }
 
     void reload() {
-        gio_file_monitor_->cancel();
-        gio_file_monitor_.reset();
+        if(gio_file_monitor_) {
+            gio_file_monitor_->cancel();
+            gio_file_monitor_.reset();
+        }
         set_gio_file(gio_file_, true);
     }
 
@@ -55,6 +56,8 @@ public:
 
     void mark_as_new_file();
 private:
+    void create_buffer(Glib::RefPtr<Gsv::Language> lang=Glib::RefPtr<Gsv::Language>());
+
     void trim_trailing_newlines();
     void trim_trailing_whitespace();
 
@@ -63,8 +66,13 @@ private:
         signal_file_changed_(file, other_file, event);
     }
 
+    void on_signal_modified_changed() {
+        signal_modified_changed_(this);
+    }
+
     sigc::signal<void, GioFilePtr, GioFilePtr, Gio::FileMonitorEvent> signal_file_changed_;
     sigc::signal<void, Buffer*> signal_closed_;
+    sigc::signal<void, Buffer*> signal_modified_changed_;
 
     Window& parent_;
     unicode name_;

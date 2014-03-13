@@ -533,7 +533,7 @@ void Window::unsplit() {
     frames_.pop_back(); //Destroy the second frame
 }
 
-void Window::on_buffer_modified(Buffer::ptr buffer) {
+void Window::on_buffer_modified(Buffer* buffer) {
     buffer_save_->set_sensitive(buffer->modified());
 
     unicode to_display = (buffer->path().empty()) ? buffer->name() : buffer->path();
@@ -552,7 +552,7 @@ void Window::on_buffer_modified(Buffer::ptr buffer) {
 void Window::activate_buffer(Buffer::ptr buffer) {
     assert(current_frame_ >= 0 && current_frame_ < (int32_t) frames_.size());
     frames_[current_frame_]->set_buffer(buffer.get());
-    on_buffer_modified(buffer);
+    on_buffer_modified(buffer.get());
 }
 
 void Window::new_buffer(const unicode& name) {
@@ -560,7 +560,7 @@ void Window::new_buffer(const unicode& name) {
 
     //Watch for changes to the buffer
     buffer->signal_modified_changed().connect(
-        sigc::bind(sigc::mem_fun(this, &Window::on_buffer_modified), buffer)
+        sigc::mem_fun(this, &Window::on_buffer_modified)
     );
 
     buffer->signal_closed().connect(
@@ -643,7 +643,7 @@ void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {
     buffer->set_modified(false);
     //Watch for changes to the buffer
     buffer->signal_modified_changed().connect(
-        sigc::bind(sigc::mem_fun(this, &Window::on_buffer_modified), buffer)
+        sigc::mem_fun(this, &Window::on_buffer_modified)
     );
 
     buffer->signal_closed().connect(
