@@ -58,9 +58,6 @@ public:
 
     void new_buffer(const unicode& name);
     void open_buffer(const Glib::RefPtr<Gio::File>& path);
-    void close_buffer(Buffer* buffer);
-    void close_buffer(const Glib::RefPtr<Gio::File>& file);
-    void close_active_buffer();
 
     WindowType type() const { return type_; }
 
@@ -77,7 +74,13 @@ public:
 
     void rebuild_file_tree(const unicode &path);
     void rebuild_open_list();
+
+    bool toolbutton_save_clicked();
 private:
+    void close_buffer(Buffer* buffer);
+    void close_buffer_for_file(const Glib::RefPtr<Gio::File>& file);
+    void close_active_buffer();
+
     void activate_buffer(Buffer::ptr buffer);
     void build_widgets();
     void init_actions();
@@ -122,7 +125,7 @@ private:
     void toolbutton_new_clicked();
     void toolbutton_open_clicked();
     void toolbutton_open_folder_clicked();
-    void toolbutton_save_clicked();
+
     void toolbutton_undo_clicked();
     void toolbutton_redo_clicked();
     void toolbutton_search_toggled();

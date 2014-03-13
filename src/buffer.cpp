@@ -63,6 +63,14 @@ bool Buffer::modified() const {
     return gtk_buffer_->get_modified();
 }
 
+void Buffer::mark_as_new_file() {
+    gio_file_.reset();
+    gio_file_monitor_->cancel();
+    gio_file_monitor_.reset();
+
+    set_modified(true);
+}
+
 void Buffer::set_gio_file(const Glib::RefPtr<Gio::File>& file, bool reload) {
     gio_file_ = file;
 
@@ -134,12 +142,30 @@ void Buffer::trim_trailing_whitespace() {
 }
 
 void Buffer::close() {
-    gio_file_monitor_->cancel();
-    gio_file_monitor_ = Glib::RefPtr<Gio::FileMonitor>();
+    if(modified()) {
+        Gtk::MessageDialog dialog(parent_._gtk_window(), "Do you want to save your work?", true, Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_YES_NO, true);
+        dialog.set_message(_u("The file <i>{0}</i> has been changed since it was last saved.").format(name()).encode(), true);
+        dialog.set_secondary_text("Do you want to save the file?");
+        int response = dialog.run();
+        switch(response) {
+            case Gtk::RESPONSE_YES: {
+                bool was_saved = parent_.toolbutton_save_clicked();
+                if(!was_saved) {
+                    L_DEBUG("User cancelled saving a file, so we won't close the buffer");
+                    return;
+                }
+            }
+            break;
+            default:
+                break;
+        }
+    }
 
+    if(gio_file_monitor_) {
+        gio_file_monitor_->cancel();
+        gio_file_monitor_ = Glib::RefPtr<Gio::FileMonitor>();
+    }
     signal_closed_(this);
-
-    parent_.close_buffer(this);
 }
 
 void Buffer::save(const unicode& path) {

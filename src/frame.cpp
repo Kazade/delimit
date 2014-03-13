@@ -66,6 +66,8 @@ void Frame::set_buffer(Buffer *buffer) {
 
     if(buffer_) {
         buffer_->store_adjustment_value(scrolled_window_.get_vadjustment()->get_value());
+        file_changed_connection_.disconnect();
+        buffer_changed_connection_.disconnect();
     }
 
     buffer_ = buffer;
@@ -80,8 +82,8 @@ void Frame::set_buffer(Buffer *buffer) {
         scrolled_window_.get_vadjustment()->set_value(buffer_->retrieve_adjustment_value());
     });
 
-    buffer_->signal_file_changed().connect(sigc::mem_fun(this, &Frame::file_changed_outside_editor));
-    buffer_->_gtk_buffer()->signal_changed().connect(sigc::mem_fun(this, &Frame::check_undoable_actions));
+    file_changed_connection_ = buffer_->signal_file_changed().connect(sigc::mem_fun(this, &Frame::file_changed_outside_editor));
+    buffer_changed_connection_ = buffer_->_gtk_buffer()->signal_changed().connect(sigc::mem_fun(this, &Frame::check_undoable_actions));
     check_undoable_actions();
 }
 
@@ -102,10 +104,10 @@ void Frame::file_changed_outside_editor(const Glib::RefPtr<Gio::File>& file,
         int response = dialog.run();
         switch(response) {
             case Gtk::RESPONSE_YES:
-                parent_.close_buffer(file);
+                buffer()->close();
             break;
             case Gtk::RESPONSE_NO:
-                buffer()->set_modified(true);
+                buffer()->mark_as_new_file();
             break;
             default:
                 return;
@@ -125,10 +127,10 @@ void Frame::file_changed_outside_editor(const Glib::RefPtr<Gio::File>& file,
             break;
             case Gtk::RESPONSE_CLOSE:
                 //Close
-                parent_.close_buffer(file);
+                buffer()->close();
             break;
             case Gtk::RESPONSE_NO:
-                buffer()->set_modified(true);
+                buffer()->mark_as_new_file();
             break;
             default:
                 return;            

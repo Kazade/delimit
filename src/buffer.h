@@ -53,6 +53,7 @@ public:
     }
     double retrieve_adjustment_value() const { return adjustment_; }
 
+    void mark_as_new_file();
 private:
     void trim_trailing_newlines();
     void trim_trailing_whitespace();

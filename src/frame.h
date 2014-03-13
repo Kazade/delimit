@@ -59,6 +59,8 @@ private:
     Buffer* buffer_;
 
     sigc::signal<void, Buffer*> signal_buffer_changed_;
+    sigc::connection file_changed_connection_;
+    sigc::connection buffer_changed_connection_;
 
     void check_undoable_actions();
 };

@@ -149,7 +149,7 @@ void Window::build_widgets() {
 
     buffer_new_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_new_clicked));
     buffer_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_clicked));
-    buffer_save_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_save_clicked));
+    buffer_save_->signal_clicked().connect(sigc::hide_return(sigc::mem_fun(this, &Window::toolbutton_save_clicked)));
     folder_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_folder_clicked));
     buffer_search_->signal_toggled().connect(sigc::mem_fun(this, &Window::toolbutton_search_toggled));
     buffer_close_->signal_clicked().connect(sigc::mem_fun(this, &Window::close_active_buffer));
@@ -263,7 +263,9 @@ void Window::toolbutton_open_folder_clicked() {
     }
 }
 
-void Window::toolbutton_save_clicked() {
+bool Window::toolbutton_save_clicked() {
+    bool was_saved = false;
+
     Gtk::FileChooserDialog dialog(_gtk_window(), _("Save a file"), Gtk::FILE_CHOOSER_ACTION_SAVE);
     dialog.set_do_overwrite_confirmation(true);
     dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
@@ -281,11 +283,14 @@ void Window::toolbutton_save_clicked() {
                     path = dialog.get_filename();
                     break;
                 default:
-                    return;
+                    return was_saved;
             }
         }
         buffer->save(path);
+        was_saved = true;
     }
+
+    return was_saved;
 }
 
 
@@ -558,6 +563,10 @@ void Window::new_buffer(const unicode& name) {
         sigc::bind(sigc::mem_fun(this, &Window::on_buffer_modified), buffer)
     );
 
+    buffer->signal_closed().connect(
+        sigc::mem_fun(this, &Window::close_buffer)
+    );
+
     buffer->set_modified(true); //New file, mark as modified
 
     open_buffers_.push_back(buffer);
@@ -567,7 +576,7 @@ void Window::new_buffer(const unicode& name) {
 }
 
 void Window::close_active_buffer() {
-    close_buffer(frames_[current_frame_]->buffer());
+    frames_[current_frame_]->buffer()->close();
 }
 
 void Window::close_buffer(Buffer* buffer) {
@@ -607,10 +616,10 @@ void Window::close_buffer(Buffer* buffer) {
     rebuild_open_list();
 }
 
-void Window::close_buffer(const Glib::RefPtr<Gio::File>& file) {
+void Window::close_buffer_for_file(const Glib::RefPtr<Gio::File>& file) {
     for(auto buffer: open_buffers_) {
         if(buffer->path() == file->get_path()) {
-            close_buffer(buffer.get());
+            buffer->close();
         }
     }
 }
@@ -635,6 +644,10 @@ void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {
     //Watch for changes to the buffer
     buffer->signal_modified_changed().connect(
         sigc::bind(sigc::mem_fun(this, &Window::on_buffer_modified), buffer)
+    );
+
+    buffer->signal_closed().connect(
+        sigc::mem_fun(this, &Window::close_buffer)
     );
 
     open_buffers_.push_back(buffer);
