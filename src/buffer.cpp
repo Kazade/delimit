@@ -91,6 +91,9 @@ void Buffer::set_gio_file(const Glib::RefPtr<Gio::File>& file, bool reload) {
 
     gio_file_ = file;
 
+    file_etag_ = gio_file_->query_info("etag::value")[G_FILE_ATTRIBUTE_ETAG_VALUE];
+    L_DEBUG("File etag: " + file_etag_);
+
     //This will detect the right language on save or load
     //and connect a file monitor
     if(gio_file_) {
@@ -192,8 +195,6 @@ void Buffer::save(const unicode& path) {
     Glib::ustring text = _gtk_buffer()->get_text();
     _gtk_buffer()->set_modified(false);
 
-    std::string new_etag;
-
     //If we are saving the buffer for the first time over an existing path
     //then create the gio_file_ so we can replace the contents below
     if(!gio_file_ && os::path::exists(path)) {
@@ -203,12 +204,12 @@ void Buffer::save(const unicode& path) {
     if(gio_file_ && gio_file_->get_path() == path.encode()) {
         //FIXME: Use entity tag arguments to make sure that the file
         //didn't change since the last time we saved
-        gio_file_->replace_contents(std::string(text.c_str()), "", new_etag);
+        gio_file_->replace_contents(std::string(text.c_str()), "", file_etag_);
         set_gio_file(gio_file_, false); //Don't reload the file, reconnect the monitor
     } else {
         auto file = Gio::File::create_for_path(path.encode());
         file->create_file();
-        file->replace_contents(text, "", new_etag);
+        file->replace_contents(text, "", file_etag_);
         set_gio_file(file, false); //Don't reload the file, reconnect the monitor
     }
 
@@ -236,29 +237,34 @@ void Buffer::on_file_changed(const GioFilePtr& file, const GioFilePtr& other_fil
                 return;
         }
     } else if(event == Gio::FILE_MONITOR_EVENT_CHANGES_DONE_HINT) {
-        Gtk::MessageDialog dialog(parent_._gtk_window(), "File Changed", true, Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_YES_NO, true);
+        std::string etag = file->query_info(G_FILE_ATTRIBUTE_ETAG_VALUE)->get_etag();
 
-        dialog.set_message(_u("The file <i>{0}</i> has changed outside Delimit").format(os::path::split(file->get_path()).second).encode(), true);
-        dialog.set_secondary_text("Do you want to reload?");
-        dialog.add_button("Close", Gtk::RESPONSE_CLOSE);
+        //Ignore the event if the etag matches one that we've saved
+        if(etag != file_etag_) {
+            Gtk::MessageDialog dialog(parent_._gtk_window(), "File Changed", true, Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_YES_NO, true);
 
-        int response = dialog.run();
+            dialog.set_message(_u("The file <i>{0}</i> has changed outside Delimit").format(os::path::split(file->get_path()).second).encode(), true);
+            dialog.set_secondary_text("Do you want to reload?");
+            dialog.add_button("Close", Gtk::RESPONSE_CLOSE);
 
-        switch(response) {
-            case Gtk::RESPONSE_YES:
-                reload();
-            break;
-            case Gtk::RESPONSE_CLOSE:
-                //Close
-                close();
-            break;
-            case Gtk::RESPONSE_NO:
-                //The user didn't want to reload, so mark the file as modified
-                //so that they can see it doesn't match what's on disk
-                set_modified(true);
-            break;
-            default:
-                return;
+            int response = dialog.run();
+
+            switch(response) {
+                case Gtk::RESPONSE_YES:
+                    reload();
+                break;
+                case Gtk::RESPONSE_CLOSE:
+                    //Close
+                    close();
+                break;
+                case Gtk::RESPONSE_NO:
+                    //The user didn't want to reload, so mark the file as modified
+                    //so that they can see it doesn't match what's on disk
+                    set_modified(true);
+                break;
+                default:
+                    return;
+            }
         }
     }
 }

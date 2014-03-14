@@ -77,6 +77,7 @@ private:
     unicode name_;
     Glib::RefPtr<Gio::File> gio_file_;
     Glib::RefPtr<Gio::FileMonitor> gio_file_monitor_;
+    std::string file_etag_;
 
     Glib::RefPtr<Gsv::Buffer> gtk_buffer_;    
 
