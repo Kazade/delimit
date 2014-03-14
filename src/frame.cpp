@@ -66,7 +66,6 @@ void Frame::set_buffer(Buffer *buffer) {
 
     if(buffer_) {
         buffer_->store_adjustment_value(scrolled_window_.get_vadjustment()->get_value());
-        file_changed_connection_.disconnect();
         buffer_changed_connection_.disconnect();
     }
 
@@ -82,7 +81,6 @@ void Frame::set_buffer(Buffer *buffer) {
         scrolled_window_.get_vadjustment()->set_value(buffer_->retrieve_adjustment_value());
     });
 
-    file_changed_connection_ = buffer_->signal_file_changed().connect(sigc::mem_fun(this, &Frame::file_changed_outside_editor));
     buffer_changed_connection_ = buffer_->_gtk_buffer()->signal_changed().connect(sigc::mem_fun(this, &Frame::check_undoable_actions));
     check_undoable_actions();
 }
@@ -92,50 +90,5 @@ void Frame::check_undoable_actions() {
     this->parent_.set_redo_enabled(buffer_->_gtk_buffer()->can_redo());
 }
 
-void Frame::file_changed_outside_editor(const Glib::RefPtr<Gio::File>& file,
-    const Glib::RefPtr<Gio::File>& other_file, Gio::FileMonitorEvent event) {
-
-    L_DEBUG(_u("Open file change event: {0}").format((int)event).encode());
-
-    if(event == Gio::FILE_MONITOR_EVENT_DELETED || !os::path::exists(unicode(file->get_path()))) {
-        Gtk::MessageDialog dialog(parent_._gtk_window(), "File Deleted", true, Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_YES_NO, true);
-        dialog.set_message(_u("The file <i>{0}</i> has been deleted").format(os::path::split(file->get_path()).second).encode(), true);
-        dialog.set_secondary_text("Do you want to close this file?");
-        int response = dialog.run();
-        switch(response) {
-            case Gtk::RESPONSE_YES:
-                buffer()->close();
-            break;
-            case Gtk::RESPONSE_NO:
-                buffer()->mark_as_new_file();
-            break;
-            default:
-                return;
-        }
-    } else if(event == Gio::FILE_MONITOR_EVENT_CHANGES_DONE_HINT) {
-        Gtk::MessageDialog dialog(parent_._gtk_window(), "File Changed", true, Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_YES_NO, true);
-
-        dialog.set_message(_u("The file <i>{0}</i> has changed outside Delimit").format(os::path::split(file->get_path()).second).encode(), true);
-        dialog.set_secondary_text("Do you want to reload?");
-        dialog.add_button("Close", Gtk::RESPONSE_CLOSE);
-
-        int response = dialog.run();
-
-        switch(response) {
-            case Gtk::RESPONSE_YES:
-                buffer()->reload();
-            break;
-            case Gtk::RESPONSE_CLOSE:
-                //Close
-                buffer()->close();
-            break;
-            case Gtk::RESPONSE_NO:
-                buffer()->mark_as_new_file();
-            break;
-            default:
-                return;            
-        }
-    }
-}
 
 }

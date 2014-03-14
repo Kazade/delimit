@@ -40,11 +40,6 @@ public:
     sigc::signal<void, Buffer*>& signal_buffer_changed() { return signal_buffer_changed_; }
 private:
     void build_widgets();
-    void file_changed_outside_editor(
-        const Glib::RefPtr<Gio::File>& file,
-        const Glib::RefPtr<Gio::File>& other_file,
-        Gio::FileMonitorEvent event
-    );
 
     Window& parent_;
 
