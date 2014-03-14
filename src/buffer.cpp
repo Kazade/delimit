@@ -91,7 +91,7 @@ void Buffer::set_gio_file(const Glib::RefPtr<Gio::File>& file, bool reload) {
 
     gio_file_ = file;
 
-    file_etag_ = gio_file_->query_info("etag::value")[G_FILE_ATTRIBUTE_ETAG_VALUE];
+    file_etag_ = gio_file_->query_info(G_FILE_ATTRIBUTE_ETAG_VALUE)->get_etag();
     L_DEBUG("File etag: " + file_etag_);
 
     //This will detect the right language on save or load
@@ -102,8 +102,10 @@ void Buffer::set_gio_file(const Glib::RefPtr<Gio::File>& file, bool reload) {
 
         create_buffer(lang); //Create the buffer if necessary
 
-        std::function<void (Glib::RefPtr<Gio::AsyncResult>)> func = std::bind(&Buffer::_finish_read, this, file, std::placeholders::_1);
-        file->load_contents_async(func);
+        if(reload) {
+            std::function<void (Glib::RefPtr<Gio::AsyncResult>)> func = std::bind(&Buffer::_finish_read, this, file, std::placeholders::_1);
+            file->load_contents_async(func);
+        }
     } else {
         //Create the buffer without specifying a language
         create_buffer();
@@ -241,6 +243,8 @@ void Buffer::on_file_changed(const GioFilePtr& file, const GioFilePtr& other_fil
 
         //Ignore the event if the etag matches one that we've saved
         if(etag != file_etag_) {
+            L_DEBUG("etag doesn't match, so prompting:" + etag + " <> " + file_etag_);
+
             Gtk::MessageDialog dialog(parent_._gtk_window(), "File Changed", true, Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_YES_NO, true);
 
             dialog.set_message(_u("The file <i>{0}</i> has changed outside Delimit").format(os::path::split(file->get_path()).second).encode(), true);
