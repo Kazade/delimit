@@ -42,10 +42,6 @@ public:
     sigc::signal<void, GioFilePtr, GioFilePtr, Gio::FileMonitorEvent>& signal_file_changed() { return signal_file_changed_; }
 
     void reload() {
-        if(gio_file_monitor_) {
-            gio_file_monitor_->cancel();
-            gio_file_monitor_.reset();
-        }
         set_gio_file(gio_file_, true);
     }
 
@@ -62,6 +58,9 @@ private:
     void trim_trailing_whitespace();
 
     void set_gio_file(const GioFilePtr& file, bool reload=true);
+
+    void on_file_changed(const GioFilePtr& file, const GioFilePtr& other_file, Gio::FileMonitorEvent event);
+
     void file_changed(const GioFilePtr& file, const GioFilePtr& other_file, Gio::FileMonitorEvent event) {
         signal_file_changed_(file, other_file, event);
     }
