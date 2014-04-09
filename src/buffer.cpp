@@ -91,12 +91,12 @@ void Buffer::set_gio_file(const Glib::RefPtr<Gio::File>& file, bool reload) {
 
     gio_file_ = file;
 
-    file_etag_ = gio_file_->query_info(G_FILE_ATTRIBUTE_ETAG_VALUE)->get_etag();
-    L_DEBUG("File etag: " + file_etag_);
-
     //This will detect the right language on save or load
     //and connect a file monitor
     if(gio_file_) {
+        file_etag_ = gio_file_->query_info(G_FILE_ATTRIBUTE_ETAG_VALUE)->get_etag();
+        L_DEBUG("File etag: " + file_etag_);
+
         Glib::RefPtr<Gsv::LanguageManager> lm = Gsv::LanguageManager::get_default();
         Glib::RefPtr<Gsv::Language> lang = lm->guess_language(file->get_path(), Glib::ustring());
 
@@ -106,17 +106,18 @@ void Buffer::set_gio_file(const Glib::RefPtr<Gio::File>& file, bool reload) {
             std::function<void (Glib::RefPtr<Gio::AsyncResult>)> func = std::bind(&Buffer::_finish_read, this, file, std::placeholders::_1);
             file->load_contents_async(func);
         }
+
+        if(!gio_file_monitor_) {
+            L_DEBUG("Connecting file monitor");
+            gio_file_monitor_ = gio_file_->monitor_file();
+            gio_file_monitor_->signal_changed().connect(sigc::mem_fun(this, &Buffer::file_changed));
+        }
     } else {
+        file_etag_ = ""; //Wipe out the etag
+
         //Create the buffer without specifying a language
         create_buffer();
     }
-
-    if(!gio_file_monitor_) {
-        L_DEBUG("Connecting file monitor");
-        gio_file_monitor_ = gio_file_->monitor_file();
-        gio_file_monitor_->signal_changed().connect(sigc::mem_fun(this, &Buffer::file_changed));
-    }
-
 }
 
 void Buffer::trim_trailing_newlines() {
@@ -219,12 +220,12 @@ void Buffer::save(const unicode& path) {
     parent_.rebuild_open_list();
 }
 
-void Buffer::on_file_changed(const GioFilePtr& file, const GioFilePtr& other_file, Gio::FileMonitorEvent event) {
-    L_DEBUG(_u("Open file change event: {0}").format((int)event).encode());
+void Buffer::on_file_deleted(const unicode& filename) {
+    L_DEBUG("Processing deleted file");
 
-    if(event == Gio::FILE_MONITOR_EVENT_DELETED || !os::path::exists(unicode(file->get_path()))) {
+    if(!os::path::exists(filename)) {
         Gtk::MessageDialog dialog(parent_._gtk_window(), "File Deleted", true, Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_YES_NO, true);
-        dialog.set_message(_u("The file <i>{0}</i> has been deleted").format(os::path::split(file->get_path()).second).encode(), true);
+        dialog.set_message(_u("The file <i>{0}</i> has been deleted").format(os::path::split(filename).second).encode(), true);
         dialog.set_secondary_text("Do you want to close this file?");
         int response = dialog.run();
         switch(response) {
@@ -238,7 +239,28 @@ void Buffer::on_file_changed(const GioFilePtr& file, const GioFilePtr& other_fil
             default:
                 return;
         }
-    } else if(event == Gio::FILE_MONITOR_EVENT_CHANGES_DONE_HINT) {
+    }
+}
+
+void Buffer::on_file_changed(const GioFilePtr& file, const GioFilePtr& other_file, Gio::FileMonitorEvent event) {
+    unicode event_type;
+    switch((int)event) {
+        case 0: event_type = "CHANGED"; break;
+        case 1: event_type = "CHANGES_DONE_HINT"; break;
+        case 2: event_type = "DELETED"; break;
+        case 3: event_type = "CREATED"; break;
+        case 4: event_type = "ATTRIBUTE_CHANGED"; break;
+        case 5: event_type = "PRE_UNMOUNT"; break;
+        case 6: event_type = "UNMOUNTED"; break;
+        case 7: event_type = "MOVED"; break;
+        default: event_type = "UNKNOWN";
+    }
+
+    L_DEBUG(_u("Open file change event: {0}").format(event_type).encode());
+
+    if(event == Gio::FILE_MONITOR_EVENT_DELETED) {
+        Glib::signal_idle().connect_once(sigc::bind(sigc::mem_fun(this, &Buffer::on_file_deleted), file->get_path()));
+    }  else if(event == Gio::FILE_MONITOR_EVENT_CHANGES_DONE_HINT) {
         std::string etag = file->query_info(G_FILE_ATTRIBUTE_ETAG_VALUE)->get_etag();
 
         //Ignore the event if the etag matches one that we've saved

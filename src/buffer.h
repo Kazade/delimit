@@ -60,6 +60,7 @@ private:
     void set_gio_file(const GioFilePtr& file, bool reload=true);
 
     void on_file_changed(const GioFilePtr& file, const GioFilePtr& other_file, Gio::FileMonitorEvent event);
+    void on_file_deleted(const unicode& filename);
 
     void file_changed(const GioFilePtr& file, const GioFilePtr& other_file, Gio::FileMonitorEvent event) {
         signal_file_changed_(file, other_file, event);
