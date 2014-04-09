@@ -273,7 +273,12 @@ void Buffer::on_file_changed(const GioFilePtr& file, const GioFilePtr& other_fil
             dialog.set_secondary_text("Do you want to reload?");
             dialog.add_button("Close", Gtk::RESPONSE_CLOSE);
 
-            int response = dialog.run();
+            //Only display the dialog if we were modified otherwise default to
+            //reloading automatically
+            int response = Gtk::RESPONSE_YES;
+            if(this->modified()) {
+                response = dialog.run();
+            }
 
             switch(response) {
                 case Gtk::RESPONSE_YES:
