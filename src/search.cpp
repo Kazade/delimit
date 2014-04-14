@@ -17,6 +17,20 @@ void Search::_connect_signals() {
     frame_->signal_buffer_changed().connect(sigc::mem_fun(this, &Search::on_buffer_changed));
 }
 
+void Search::show() {
+    Gtk::Box::show();
+    find_entry_.grab_focus();
+
+    toggle_replace(false);
+
+    //If there is some text selected in the buffer, use that as the default text
+    Gtk::TextIter start, end;
+    if(frame_->buffer()->_gtk_buffer()->get_selection_bounds(start, end)) {
+        find_entry_.set_text(frame_->buffer()->_gtk_buffer()->get_slice(start, end));
+        find_entry_.select_region(0, -1);
+    }
+}
+
 Buffer* Search::buffer() {
     return frame_->buffer();
 }

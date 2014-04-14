@@ -374,15 +374,16 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
 
     for(auto it = files.begin(); it != files.end();) {
         unicode f = (*it);
-        L_DEBUG(_u("Adding file: {0}").format(f));
-
         unicode real_path = os::path::real_path(os::path::join(path, f));
+
         if(real_path.empty()) {
             //Broken symlink or something
             it = files.erase(it);
+            L_DEBUG(_u("Skipping broken file {0}").format(f));
             continue;
         }
 
+        L_DEBUG(_u("Adding file: {0}").format(real_path));
         if(os::path::is_dir(real_path)) {
             directories.push_back((*it));
             it = files.erase(it);
@@ -448,10 +449,10 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
         existing_children.erase(std::remove(existing_children.begin(), existing_children.end(), full_name), existing_children.end());
 
         bool ignore = false;
-        for(auto glob: ignored_globs_) {
-            if(glob::match(full_name, glob)) {
+        for(auto gl: ignored_globs_) {
+            if(glob::match(full_name, gl)) {
                 //Ignore this file/folder if it matches the ignored globs
-                ignore = true;
+                ///// DISABLED UNTIL I FIGURE OUT WHAT BROKE ignore = true;
                 break;
             }
         }

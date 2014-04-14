@@ -23,13 +23,7 @@ public:
     void on_entry_activated();
     bool on_entry_key_press(GdkEventKey* event);
 
-    void show() {
-        Gtk::Box::show();
-        find_entry_.grab_focus();
-
-        toggle_replace(false);
-    }
-
+    void show();
     void hide() {
         clear_highlight();
         find_entry_.set_text("");
