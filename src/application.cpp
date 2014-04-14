@@ -12,6 +12,10 @@ Application::Application(int& argc, char**& argv, const Glib::ustring& applicati
 
     Glib::set_application_name("Delimit");
 
+    g_object_set(gtk_settings_get_default(),
+        "gtk-application-prefer-dark-theme", TRUE,
+        NULL);
+
     logging::get_logger("/")->add_handler(logging::Handler::ptr(new logging::StdIOHandler));
 
     signal_startup().connect(sigc::mem_fun(this, &Application::on_signal_startup));
