@@ -1,5 +1,5 @@
-#include "base/logging.h"
-#include "base/unicode.h"
+#include <kazbase/logging.h>
+#include <kazbase/unicode.h>
 #include "frame.h"
 #include "buffer.h"
 #include "window.h"

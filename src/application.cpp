@@ -1,6 +1,6 @@
 #include <glibmm/i18n.h>
-#include "base/logging.h"
-#include "base/fdo/base_directory.h"
+#include <kazbase/logging.h>
+#include <kazbase/fdo/base_directory.h>
 
 #include "application.h"
 #include "window.h"

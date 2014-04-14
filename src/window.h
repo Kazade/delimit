@@ -5,7 +5,7 @@
 #include <vector>
 #include <set>
 
-#include "base/unicode.h"
+#include <kazbase/unicode.h>
 #include <gtkmm.h>
 
 #include "buffer.h"

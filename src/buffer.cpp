@@ -1,7 +1,7 @@
 #include "buffer.h"
 #include "window.h"
 
-#include "base/logging.h"
+#include <kazbase/logging.h>
 
 namespace delimit {
 

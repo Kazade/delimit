@@ -4,7 +4,7 @@
 #include <gtksourceviewmm.h>
 #include <memory>
 
-#include "base/os.h"
+#include <kazbase/os.h>
 #include "utils/sigc_lambda.h"
 
 namespace delimit {

@@ -3,7 +3,7 @@
 
 #include <gtkmm.h>
 
-#include "base/unicode.h"
+#include <kazbase/unicode.h>
 
 namespace delimit {
 

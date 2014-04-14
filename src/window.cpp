@@ -5,12 +5,12 @@
 #include "window.h"
 #include "application.h"
 
-#include "base/exceptions.h"
-#include "base/unicode.h"
-#include "base/fdo/base_directory.h"
-#include "base/logging.h"
-#include "base/glob.h"
-#include "base/file_utils.h"
+#include <kazbase/exceptions.h>
+#include <kazbase/unicode.h>
+#include <kazbase/fdo/base_directory.h>
+#include <kazbase/logging.h>
+#include <kazbase/glob.h>
+#include <kazbase/file_utils.h>
 
 namespace delimit {
 
@@ -373,7 +373,16 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
     std::vector<unicode> directories;
 
     for(auto it = files.begin(); it != files.end();) {
-        unicode real_path = os::path::real_path(os::path::join(path, *it));
+        unicode f = (*it);
+        L_DEBUG(_u("Adding file: {0}").format(f));
+
+        unicode real_path = os::path::real_path(os::path::join(path, f));
+        if(real_path.empty()) {
+            //Broken symlink or something
+            it = files.erase(it);
+            continue;
+        }
+
         if(os::path::is_dir(real_path)) {
             directories.push_back((*it));
             it = files.erase(it);
