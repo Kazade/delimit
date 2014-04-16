@@ -50,6 +50,8 @@ void Buffer::_finish_read(Glib::RefPtr<Gio::File> file, Glib::RefPtr<Gio::AsyncR
         gtk_buffer_->set_text(result);
         gtk_buffer_->set_modified(false);
         gtk_buffer_->end_not_undoable_action();
+
+        signal_loaded_(this);
         return false;
     });
 }

@@ -6,6 +6,50 @@
 
 namespace delimit {
 
+enum IndentType {
+    INDENT_TABS,
+    INDENT_SPACES
+};
+
+std::pair<IndentType, int> detect_indentation(const unicode& text) {
+    if(text.empty()) {
+        return std::make_pair(INDENT_SPACES, 4);
+    }
+
+    std::vector<unicode> lines = text.split("\n");
+
+    for(auto line: lines) {
+        if(line.empty()) {
+            continue;
+        }
+
+        std::string str = line.encode();
+        auto iter = str.find_first_not_of(" \t\r\n"); //Find the first non-whitespace character
+
+        unicode whitespace(std::string(str.begin(), str.begin() + iter)); //Convert back to unicode which is easier to work with
+
+        if(whitespace.empty()) {
+            continue; //Move onto the next line
+        }
+
+        if(whitespace.starts_with("\t")) {
+            return std::make_pair(INDENT_TABS, 0); //Guess tab indentation
+        } else {
+            int i = 0;
+
+            //Count the spaces
+            while(i < whitespace.length() && whitespace[i] == ' ') {
+                ++i;
+            }
+
+            //Return indent as spaces, then the number
+            return std::make_pair(INDENT_SPACES, i);
+        }
+    }
+
+    return std::make_pair(INDENT_SPACES, 4);
+}
+
 void Frame::build_widgets() {
     scrolled_window_.add(source_view_);
 
@@ -77,8 +121,28 @@ void Frame::set_buffer(Buffer *buffer) {
     auto manager = Gsv::StyleSchemeManager::get_default();
     source_view_.get_source_buffer()->set_style_scheme(manager->get_scheme("delimit"));
 
+    buffer_->signal_loaded().connect([&](Buffer* buffer) {
+          auto indent = detect_indentation(std::string(buffer->_gtk_buffer()->get_text()));
+
+          if(indent.first == INDENT_TABS) {
+              source_view_.set_insert_spaces_instead_of_tabs(false);
+          } else {
+              source_view_.set_indent_width(indent.second);
+              source_view_.set_insert_spaces_instead_of_tabs(true);
+          }
+    });
+
     Glib::signal_idle().connect_once([&]() {
         scrolled_window_.get_vadjustment()->set_value(buffer_->retrieve_adjustment_value());
+
+        auto indent = detect_indentation(std::string(buffer_->_gtk_buffer()->get_text()));
+
+        if(indent.first == INDENT_TABS) {
+            source_view_.set_insert_spaces_instead_of_tabs(false);
+        } else {
+            source_view_.set_indent_width(indent.second);
+            source_view_.set_insert_spaces_instead_of_tabs(true);
+        }
     });
 
     buffer_changed_connection_ = buffer_->_gtk_buffer()->signal_changed().connect(sigc::mem_fun(this, &Frame::check_undoable_actions));

@@ -40,6 +40,7 @@ public:
     sigc::signal<void, Buffer*>& signal_modified_changed() { return signal_modified_changed_; }
     sigc::signal<void, Buffer*>& signal_closed() { return signal_closed_; }
     sigc::signal<void, GioFilePtr, GioFilePtr, Gio::FileMonitorEvent>& signal_file_changed() { return signal_file_changed_; }
+    sigc::signal<void, Buffer*>& signal_loaded() { return signal_loaded_; }
 
     void reload() {
         set_gio_file(gio_file_, true);
@@ -73,6 +74,7 @@ private:
     sigc::signal<void, GioFilePtr, GioFilePtr, Gio::FileMonitorEvent> signal_file_changed_;
     sigc::signal<void, Buffer*> signal_closed_;
     sigc::signal<void, Buffer*> signal_modified_changed_;
+    sigc::signal<void, Buffer*> signal_loaded_;
 
     Window& parent_;
     unicode name_;
