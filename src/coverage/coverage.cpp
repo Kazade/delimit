@@ -42,6 +42,8 @@ void Coverage::apply_to_buffer(delimit::Buffer *buffer) {
     auto result = find_uncovered_lines(buffer->path(), buffer->window().project_path());
     for(auto line: result) {
         auto iter = gbuf->get_iter_at_line(line);
+        assert(iter.get_line() == line);
+
         gbuf->create_source_mark(
             "error", iter
         );
