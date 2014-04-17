@@ -84,12 +84,20 @@ void Frame::build_widgets() {
     source_view_.set_draw_spaces(Gsv::DRAW_SPACES_SPACE | Gsv::DRAW_SPACES_TAB);
     source_view_.set_left_margin(4);
     source_view_.set_right_margin(4);
+    source_view_.set_show_line_marks(true);
+    source_view_.set_smart_home_end(Gsv::SMART_HOME_END_AFTER);
 
     search_.signal_close_requested().connect([&]() {
         parent_.buffer_search_button().set_active(false);
     });
 
     search_.set_no_show_all();
+
+    auto mark_attrs = Gsv::MarkAttributes::create();
+    Gdk::RGBA colour;
+    colour.set_rgba(1.0, 0.5, 0, 0.15);
+    mark_attrs->set_background(colour);
+    source_view_.set_mark_attributes("coverage", mark_attrs, 0);
 
     set_search_visible(false);
 }

@@ -76,6 +76,8 @@ public:
     void rebuild_open_list();
 
     bool toolbutton_save_clicked();
+
+    unicode project_path() const { return path_; }
 private:
     void close_buffer(Buffer* buffer);
     void close_buffer_for_file(const Glib::RefPtr<Gio::File>& file);
