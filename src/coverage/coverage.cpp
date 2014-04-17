@@ -84,10 +84,14 @@ std::vector<int32_t> PythonCoverage::find_uncovered_lines(const unicode &filenam
                 continue;
             }
         } else {
-            int start = high_low.front().to_int() - 1;
-            int end = high_low.back().to_int() - 1;
-            for(int i = start; i <= end; ++i) {
-                ret.push_back(i);
+            try {
+                int start = high_low.front().to_int() - 1;
+                int end = high_low.back().to_int() - 1;
+                for(int i = start; i <= end; ++i) {
+                    ret.push_back(i);
+                }
+            } catch(boost::bad_lexical_cast& e) {
+                continue;
             }
         }
     }

@@ -438,7 +438,7 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
     for(auto f: files) {
         if(f == "." || f == "..") continue;
 
-        if(f.starts_with(".")) {
+        if(f.starts_with(".") || f.ends_with(".pyc")) {
             //Ignore hidden files and folders
             continue;
         }
