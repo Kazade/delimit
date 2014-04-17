@@ -32,21 +32,25 @@ unicode call_command(unicode command, unicode cwd="") {
 void Coverage::clear_buffer(delimit::Buffer* buffer) {
     auto gbuf = buffer->_gtk_buffer();
 
-    gbuf->remove_source_marks(gbuf->begin(), gbuf->end(), "error");
+    gbuf->remove_source_marks(gbuf->begin(), gbuf->end(), Glib::ustring("coverage"));
 }
 
-void Coverage::apply_to_buffer(delimit::Buffer *buffer) {
+void Coverage::apply_to_buffer(delimit::Buffer *buffer) {    
     auto gbuf = buffer->_gtk_buffer();
     clear_buffer(buffer);
 
     auto result = find_uncovered_lines(buffer->path(), buffer->window().project_path());
     for(auto line: result) {
+        assert(line >= 0 && line < gbuf->end().get_line());
+
         auto iter = gbuf->get_iter_at_line(line);
         assert(iter.get_line() == line);
 
-        gbuf->create_source_mark(
-            "error", iter
+        auto mark = gbuf->create_source_mark(
+            Glib::ustring("coverage"), iter
         );
+
+        mark->set_visible(true);
     }
 
     std::cout << "Done adding marks" <<std::endl;
@@ -74,10 +78,14 @@ std::vector<int32_t> PythonCoverage::find_uncovered_lines(const unicode &filenam
 
         auto high_low = batch.split("-");
         if(high_low.size() == 1) {
-            ret.push_back(high_low.front().to_int());
+            try {
+                ret.push_back(high_low.front().to_int() - 1);
+            } catch(boost::bad_lexical_cast& e) {
+                continue;
+            }
         } else {
-            int start = high_low.front().to_int();
-            int end = high_low.back().to_int();
+            int start = high_low.front().to_int() - 1;
+            int end = high_low.back().to_int() - 1;
             for(int i = start; i <= end; ++i) {
                 ret.push_back(i);
             }

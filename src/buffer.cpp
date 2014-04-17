@@ -52,15 +52,17 @@ void Buffer::_finish_read(Glib::RefPtr<Gio::File> file, Glib::RefPtr<Gio::AsyncR
 
     signal_loaded_(this);
 
-    //Check for coverage stats
-    unicode name = unicode(gtk_buffer_->get_language()->get_name());
-    if(name == "Python") {
-        coverage_ = std::make_shared<coverage::PythonCoverage>();
-        coverage_->apply_to_buffer(this);
-    } else if(coverage_) {
-        coverage_->clear_buffer(this);
-        coverage_.reset();
-    }
+    Glib::signal_idle().connect_once([&]() {
+         //Check for coverage stats
+         unicode name = unicode(gtk_buffer_->get_language()->get_name());
+         if(name == "Python") {
+             coverage_ = std::make_shared<coverage::PythonCoverage>();
+             coverage_->apply_to_buffer(this);
+         } else if(coverage_) {
+             coverage_->clear_buffer(this);
+             coverage_.reset();
+         }
+    });
 }
 
 Glib::RefPtr<Gsv::Buffer> Buffer::_gtk_buffer() {
