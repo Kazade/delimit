@@ -23,3 +23,5 @@ src/autocomplete/indexer.h
 src/autocomplete/indexer.cpp
 src/autocomplete/provider.h
 src/autocomplete/provider.cpp
+src/coverage/coverage.h
+src/coverage/coverage.cpp

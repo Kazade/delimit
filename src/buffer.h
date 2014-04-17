@@ -6,6 +6,7 @@
 
 #include <kazbase/os.h>
 #include "utils/sigc_lambda.h"
+#include "coverage/coverage.h"
 
 namespace delimit {
 
@@ -51,6 +52,8 @@ public:
     }
     double retrieve_adjustment_value() const { return adjustment_; }
 
+    const Window& window() const { return parent_; }
+
     void mark_as_new_file();
 private:
     void create_buffer(Glib::RefPtr<Gsv::Language> lang=Glib::RefPtr<Gsv::Language>());
@@ -89,6 +92,8 @@ private:
     bool is_saved() const { return bool(gio_file_); }
 
     void on_buffer_changed();
+
+    coverage::Coverage::ptr coverage_;
 };
 
 }

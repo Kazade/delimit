@@ -114,6 +114,15 @@ void Buffer::set_gio_file(const Glib::RefPtr<Gio::File>& file, bool reload) {
             gio_file_monitor_ = gio_file_->monitor_file();
             gio_file_monitor_->signal_changed().connect(sigc::mem_fun(this, &Buffer::file_changed));
         }
+
+        unicode name = unicode(lang->get_name());
+        if(name == "Python") {
+            coverage_ = std::make_shared<coverage::PythonCoverage>();
+            coverage_->apply_to_buffer(this);
+        } else if(coverage_) {
+            coverage_->clear_buffer(this);
+            coverage_.reset();
+        }
     } else {
         file_etag_ = ""; //Wipe out the etag
 
