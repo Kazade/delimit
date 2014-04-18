@@ -3,31 +3,9 @@
 #include "../frame.h"
 #include "../buffer.h"
 #include "../window.h"
+#include "../utils.h"
 
 using namespace coverage;
-
-unicode call_command(unicode command, unicode cwd="") {
-    char tmpname [L_tmpnam];
-    std::tmpnam ( tmpname );
-    std::string scommand = command.encode();
-    if(!cwd.empty()) {
-        scommand = _u("cd {0}; {1}").format(cwd, scommand).encode();
-    }
-    std::string cmd = scommand + " >> " + tmpname;
-    std::system(cmd.c_str());
-    std::ifstream file(tmpname, std::ios::in );
-    std::vector<unicode> lines;
-    while(file.good()) {
-        std::string line;
-        std::getline(file, line);
-        lines.push_back(line);
-    }
-
-    file.close();
-
-    remove(tmpname);
-    return _u("\n").join(lines);
-}
 
 void Coverage::clear_buffer(delimit::Buffer* buffer) {
     auto gbuf = buffer->_gtk_buffer();

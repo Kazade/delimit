@@ -7,7 +7,9 @@ set(
     frame.cpp
     buffer.cpp
     search.cpp
+    utils.cpp
     coverage/coverage.cpp
+    linter/linter.cpp
 )
 
 link_directories(${GTKMM_LIBRARY_DIRS} ${GTKSOURCEVIEWMM_LIBRARY_DIRS})
@@ -33,6 +35,5 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 INSTALL(PROGRAMS ${EXECUTABLE_OUTPUT_PATH}/delimit DESTINATION bin)
 
 install(PROGRAMS ${CMAKE_SOURCE_DIR}/data/delimit.desktop DESTINATION ${CMAKE_INSTALL_PREFIX}/share/applications)
-install(PROGRAMS ${CMAKE_SOURCE_DIR}/data/dlit DESTINATION bin)
 
 install(FILES ${CMAKE_SOURCE_DIR}/data/delimit.svg DESTINATION ${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/scalable/apps)

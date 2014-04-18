@@ -50,6 +50,20 @@ std::pair<IndentType, int> detect_indentation(const unicode& text) {
     return std::make_pair(INDENT_SPACES, 4);
 }
 
+gchar* get_tooltip(GtkSourceMarkAttributes *attrs,
+                   GtkSourceMark *mark,
+                   GtkSourceView *view) {
+    void* user_data = g_object_get_data(G_OBJECT(mark), "linter_message");
+    if(user_data) {
+        unicode* uniptr = (unicode*) user_data;
+        std::string ret = uniptr->encode();
+        Glib::ustring final = ret;
+        return g_strdup_printf("%s", final.c_str());
+    }
+
+    return g_strdup_printf("No message");
+}
+
 void Frame::build_widgets() {
     scrolled_window_.add(source_view_);
 
@@ -93,12 +107,33 @@ void Frame::build_widgets() {
 
     search_.set_no_show_all();
 
-    auto mark_attrs = Gsv::MarkAttributes::create();
-    Gdk::RGBA colour;
-    colour.set_rgba(1.0, 0.5, 0, 0.05);
-    mark_attrs->set_background(colour);
-    source_view_.set_mark_attributes("coverage", mark_attrs, 0);
+    auto coverage_attrs = Gsv::MarkAttributes::create();
+    Gdk::RGBA coverage_colour;
+    coverage_colour.set_rgba(1.0, 0.5, 0, 0.05);
+    coverage_attrs->set_background(coverage_colour);
+    source_view_.set_mark_attributes("coverage", coverage_attrs, 0);
 
+    auto linter_attrs = Gsv::MarkAttributes::create();
+    Gdk::RGBA linter_colour;
+    linter_colour.set_rgba(1.0, 0.0, 0, 0.15);
+    linter_attrs->set_background(linter_colour);
+    linter_attrs->set_icon_name("dialog-error");
+
+    g_signal_connect(linter_attrs->gobj(), "query-tooltip-markup", G_CALLBACK(get_tooltip), source_view_.gobj());
+
+/*        [](const Glib::RefPtr<Gsv::Mark> mark) {
+            void* user_data = mark->get_data("linter_message");
+            if(user_data) {
+                unicode* uniptr = (unicode*) user_data;
+                std::string ret = uniptr->encode();
+                return Glib::ustring(ret);
+            }
+
+            return "Test";
+        }
+    );
+*/
+    source_view_.set_mark_attributes("linter", linter_attrs, 10);
     set_search_visible(false);
 }
 

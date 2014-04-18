@@ -25,3 +25,7 @@ src/autocomplete/provider.h
 src/autocomplete/provider.cpp
 src/coverage/coverage.h
 src/coverage/coverage.cpp
+src/linter/linter.h
+src/linter/linter.cpp
+src/utils.h
+src/utils.cpp

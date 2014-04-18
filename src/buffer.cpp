@@ -58,10 +58,21 @@ void Buffer::_finish_read(Glib::RefPtr<Gio::File> file, Glib::RefPtr<Gio::AsyncR
          if(name == "Python") {
              coverage_ = std::make_shared<coverage::PythonCoverage>();
              coverage_->apply_to_buffer(this);
-         } else if(coverage_) {
-             coverage_->clear_buffer(this);
-             coverage_.reset();
-         }
+
+             linter_ = std::make_shared<linter::PythonLinter>();
+             linter_->apply_to_buffer(this);
+
+         } else {
+             if(coverage_) {
+                coverage_->clear_buffer(this);
+                coverage_.reset();
+             }
+
+             if(linter_) {
+                linter_->clear_buffer(this);
+                linter_.reset();
+             }
+         }         
     });
 }
 

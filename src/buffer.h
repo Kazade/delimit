@@ -7,6 +7,7 @@
 #include <kazbase/os.h>
 #include "utils/sigc_lambda.h"
 #include "coverage/coverage.h"
+#include "linter/linter.h"
 
 namespace delimit {
 
@@ -94,6 +95,7 @@ private:
     void on_buffer_changed();
 
     coverage::Coverage::ptr coverage_;
+    linter::Linter::ptr linter_;
 };
 
 }
