@@ -45,12 +45,34 @@ void Buffer::_finish_read(Glib::RefPtr<Gio::File> file, Glib::RefPtr<Gio::AsyncR
 
     Glib::ustring result(output);
 
-    Glib::signal_idle().connect([=]() -> bool {
-        gtk_buffer_->begin_not_undoable_action();
-        gtk_buffer_->set_text(result);
-        gtk_buffer_->set_modified(false);
-        gtk_buffer_->end_not_undoable_action();
-        return false;
+    gtk_buffer_->begin_not_undoable_action();
+    gtk_buffer_->set_text(result);
+    gtk_buffer_->set_modified(false);
+    gtk_buffer_->end_not_undoable_action();
+
+    signal_loaded_(this);
+
+    Glib::signal_idle().connect_once([&]() {
+         //Check for coverage stats
+         unicode name = unicode(gtk_buffer_->get_language()->get_name());
+         if(name == "Python") {
+             coverage_ = std::make_shared<coverage::PythonCoverage>();
+             coverage_->apply_to_buffer(this);
+
+             linter_ = std::make_shared<linter::PythonLinter>();
+             linter_->apply_to_buffer(this);
+
+         } else {
+             if(coverage_) {
+                coverage_->clear_buffer(this);
+                coverage_.reset();
+             }
+
+             if(linter_) {
+                linter_->clear_buffer(this);
+                linter_.reset();
+             }
+         }         
     });
 }
 

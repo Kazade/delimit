@@ -6,6 +6,8 @@
 
 #include <kazbase/os.h>
 #include "utils/sigc_lambda.h"
+#include "coverage/coverage.h"
+#include "linter/linter.h"
 
 namespace delimit {
 
@@ -40,6 +42,7 @@ public:
     sigc::signal<void, Buffer*>& signal_modified_changed() { return signal_modified_changed_; }
     sigc::signal<void, Buffer*>& signal_closed() { return signal_closed_; }
     sigc::signal<void, GioFilePtr, GioFilePtr, Gio::FileMonitorEvent>& signal_file_changed() { return signal_file_changed_; }
+    sigc::signal<void, Buffer*>& signal_loaded() { return signal_loaded_; }
 
     void reload() {
         set_gio_file(gio_file_, true);
@@ -49,6 +52,8 @@ public:
         adjustment_ = adjust;
     }
     double retrieve_adjustment_value() const { return adjustment_; }
+
+    const Window& window() const { return parent_; }
 
     void mark_as_new_file();
 private:
@@ -73,6 +78,7 @@ private:
     sigc::signal<void, GioFilePtr, GioFilePtr, Gio::FileMonitorEvent> signal_file_changed_;
     sigc::signal<void, Buffer*> signal_closed_;
     sigc::signal<void, Buffer*> signal_modified_changed_;
+    sigc::signal<void, Buffer*> signal_loaded_;
 
     Window& parent_;
     unicode name_;
@@ -87,6 +93,9 @@ private:
     bool is_saved() const { return bool(gio_file_); }
 
     void on_buffer_changed();
+
+    coverage::Coverage::ptr coverage_;
+    linter::Linter::ptr linter_;
 };
 
 }

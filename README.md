@@ -14,6 +14,20 @@ From the root of the project:
 
 ##TODO
 
+### TOP PRIORITY
+
+ - Detect whitespace from file
+ - Fix bug where redo is lost on save
+ - Linter integration - pyflakes specifically
+ - Wrap find
+ - Make CTRL+F always focus the search box (and never hide it)
+ - Allow having no files open, don't create an empty file on start
+ - Alphabetical open file listing, better descriptions
+ - Better indentation, navigation
+ - Search across files
+
+### OTHER
+
  - Make split view work
  - Implement a code completion framework, initially targetting Python
  - Implement basic VCS integration, initially targetting GIT (show current branch, show add/deletes in gutter, blame)

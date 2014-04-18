@@ -7,6 +7,9 @@ set(
     frame.cpp
     buffer.cpp
     search.cpp
+    utils.cpp
+    coverage/coverage.cpp
+    linter/linter.cpp
 )
 
 link_directories(${GTKMM_LIBRARY_DIRS} ${GTKSOURCEVIEWMM_LIBRARY_DIRS})
