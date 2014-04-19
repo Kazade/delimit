@@ -121,6 +121,10 @@ void Window::init_actions() {
     add_global_action("find", Gtk::AccelKey(GDK_KEY_F, Gdk::CONTROL_MASK), [&]() {
         frames_[current_frame_]->set_search_visible(true);
     });
+
+    add_global_action("back_up", Gtk::AccelKey(GDK_KEY_Escape, Gdk::ModifierType(0)), [&]() {
+        frames_[current_frame_]->set_search_visible(false);
+    });
 }
 
 void Window::add_global_action(const unicode& name, const Gtk::AccelKey& key, std::function<void ()> func) {
