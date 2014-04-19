@@ -147,6 +147,11 @@ private:
     std::map<unicode, Gtk::TreeRowReference> tree_row_lookup_;
 
     void on_folder_changed(const Glib::RefPtr<Gio::File>& file, const Glib::RefPtr<Gio::File>& other, Gio::FileMonitorEvent event_type);
+
+    Glib::RefPtr<Gtk::AccelGroup> accel_group_;
+    Glib::RefPtr<Gtk::ActionGroup> action_group_;
+
+    void add_global_action(const unicode& name, const Gtk::AccelKey& key, std::function<void ()> func);
 };
 
 }
