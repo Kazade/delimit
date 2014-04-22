@@ -7,6 +7,7 @@
 #include <kazbase/os.h>
 #include "utils/sigc_lambda.h"
 #include "coverage/coverage.h"
+#include "linter/linter.h"
 
 namespace delimit {
 
@@ -56,6 +57,8 @@ public:
 
     void mark_as_new_file();
 private:
+    void run_linters_and_stuff();
+
     void create_buffer(Glib::RefPtr<Gsv::Language> lang=Glib::RefPtr<Gsv::Language>());
 
     void trim_trailing_newlines();
@@ -94,6 +97,7 @@ private:
     void on_buffer_changed();
 
     coverage::Coverage::ptr coverage_;
+    linter::Linter::ptr linter_;
 };
 
 }

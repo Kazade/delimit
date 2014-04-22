@@ -23,8 +23,6 @@ public:
 
 private:
     virtual std::vector<int32_t> find_uncovered_lines(const unicode& filename, const unicode& project_root="") = 0;
-
-    std::vector<Glib::RefPtr<Gsv::Mark>> marks_;
 };
 
 class PythonCoverage: public Coverage {

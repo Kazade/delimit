@@ -37,6 +37,29 @@ Buffer::~Buffer() {
     L_DEBUG("Deleting buffer");
 }
 
+void Buffer::run_linters_and_stuff() {
+    //Check for coverage stats
+    unicode name = unicode(gtk_buffer_->get_language()->get_name());
+    if(name == "Python") {
+        coverage_ = std::make_shared<coverage::PythonCoverage>();
+        coverage_->apply_to_buffer(this);
+
+        linter_ = std::make_shared<linter::PythonLinter>();
+        linter_->apply_to_buffer(this);
+
+    } else {
+        if(coverage_) {
+           coverage_->clear_buffer(this);
+           coverage_.reset();
+        }
+
+        if(linter_) {
+           linter_->clear_buffer(this);
+           linter_.reset();
+        }
+    }
+}
+
 void Buffer::_finish_read(Glib::RefPtr<Gio::File> file, Glib::RefPtr<Gio::AsyncResult> res) {
     char* output;
     gsize size;
@@ -52,17 +75,7 @@ void Buffer::_finish_read(Glib::RefPtr<Gio::File> file, Glib::RefPtr<Gio::AsyncR
 
     signal_loaded_(this);
 
-    Glib::signal_idle().connect_once([&]() {
-         //Check for coverage stats
-         unicode name = unicode(gtk_buffer_->get_language()->get_name());
-         if(name == "Python") {
-             coverage_ = std::make_shared<coverage::PythonCoverage>();
-             coverage_->apply_to_buffer(this);
-         } else if(coverage_) {
-             coverage_->clear_buffer(this);
-             coverage_.reset();
-         }
-    });
+    Glib::signal_idle().connect_once(sigc::bind(&Buffer::run_linters_and_stuff, this));
 }
 
 Glib::RefPtr<Gsv::Buffer> Buffer::_gtk_buffer() {
@@ -229,6 +242,7 @@ void Buffer::save(const unicode& path) {
 
     set_name(os::path::split(gio_file_->get_path()).second);
     parent_.rebuild_open_list();
+    run_linters_and_stuff();
 }
 
 void Buffer::on_file_deleted(const unicode& filename) {
