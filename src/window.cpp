@@ -106,6 +106,8 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
 void Window::init_actions() {
     accel_group_ = Gtk::AccelGroup::create();
     buffer_new_->add_accelerator("clicked", accel_group_, GDK_KEY_N, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    buffer_open_->add_accelerator("clicked", accel_group_, GDK_KEY_O, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    folder_open_->add_accelerator("clicked", accel_group_, GDK_KEY_O, Gdk::CONTROL_MASK | Gdk::SHIFT_MASK, Gtk::ACCEL_VISIBLE);
     buffer_save_->add_accelerator("clicked", accel_group_, GDK_KEY_S, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
     window_split_->add_accelerator("clicked", accel_group_, GDK_KEY_T, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
     buffer_close_->add_accelerator("clicked", accel_group_, GDK_KEY_W, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
@@ -114,9 +116,10 @@ void Window::init_actions() {
 
     action_group_ = Gtk::ActionGroup::create("MainActionGroup");
 
-    add_global_action("search", Gtk::AccelKey(GDK_KEY_F, Gdk::CONTROL_MASK | Gdk::SHIFT_MASK), []() {
-
-    });
+    add_global_action("search",
+        Gtk::AccelKey(GDK_KEY_F, Gdk::CONTROL_MASK | Gdk::SHIFT_MASK),
+        std::bind(&Window::begin_search, this)
+    );
 
     add_global_action("find", Gtk::AccelKey(GDK_KEY_F, Gdk::CONTROL_MASK), [&]() {
         frames_[current_frame_]->set_search_visible(true);
@@ -125,6 +128,12 @@ void Window::init_actions() {
     add_global_action("back_up", Gtk::AccelKey(GDK_KEY_Escape, Gdk::ModifierType(0)), [&]() {
         frames_[current_frame_]->set_search_visible(false);
     });
+}
+
+void Window::begin_search() {
+    gtk_search_window_->set_transient_for(*gtk_window_);
+    int response = gtk_search_window_->run();
+    gtk_search_window_->hide();
 }
 
 void Window::add_global_action(const unicode& name, const Gtk::AccelKey& key, std::function<void ()> func) {
@@ -138,6 +147,8 @@ void Window::add_global_action(const unicode& name, const Gtk::AccelKey& key, st
 void Window::build_widgets() {
     std::string ui_file = fdo::xdg::find_data_file(UI_FILE).encode();
     auto builder = Gtk::Builder::create_from_file(ui_file);
+
+    builder->get_widget("search_window", gtk_search_window_);
     builder->get_widget("main_window", gtk_window_);
 
     builder->get_widget("window_container", gtk_container_);

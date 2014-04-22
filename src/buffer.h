@@ -57,6 +57,8 @@ public:
 
     void mark_as_new_file();
 private:
+    void run_linters_and_stuff();
+
     void create_buffer(Glib::RefPtr<Gsv::Language> lang=Glib::RefPtr<Gsv::Language>());
 
     void trim_trailing_newlines();
