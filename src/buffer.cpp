@@ -39,7 +39,8 @@ Buffer::~Buffer() {
 
 void Buffer::run_linters_and_stuff() {
     //Check for coverage stats
-    unicode name = unicode(gtk_buffer_->get_language()->get_name());
+    auto language = gtk_buffer_->get_language();
+    unicode name = (language) ? unicode(language->get_name()) : "";
     if(name == "Python") {
         coverage_ = std::make_shared<coverage::PythonCoverage>();
         coverage_->apply_to_buffer(this);

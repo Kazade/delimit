@@ -109,7 +109,7 @@ void Frame::build_widgets() {
 
     auto coverage_attrs = Gsv::MarkAttributes::create();
     Gdk::RGBA coverage_colour;
-    coverage_colour.set_rgba(1.0, 0.5, 0, 0.05);
+    coverage_colour.set_rgba(1.0, 0.5, 0, 0.15);
     coverage_attrs->set_background(coverage_colour);
     source_view_.set_mark_attributes("coverage", coverage_attrs, 0);
 
