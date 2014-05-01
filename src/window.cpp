@@ -554,10 +554,27 @@ void Window::rebuild_open_list() {
         return lhs->name().lower() < rhs->name().lower();
     });
 
+    std::map<unicode, int> occurrance_count;
+
+    for(auto buffer: tmp) {
+        unicode name = buffer->name();
+        if(occurrance_count.find(name) == occurrance_count.end()) {
+            occurrance_count.insert(std::make_pair(name, 0));
+        }
+
+        occurrance_count[name] += 1;
+    }
+
     for(auto buffer: tmp) {
         auto row = *(open_list_store_->append());
 
-        row[open_list_columns_.name] = Glib::ustring(buffer->name().encode());
+        unicode name = buffer->name();
+
+        if(occurrance_count[name] > 1) {
+            name = _u("{0} ({1})").format(name, os::path::dir_name(buffer->path().replace(path_, "").lstrip("/")));
+        }
+
+        row[open_list_columns_.name] = Glib::ustring(name.encode());
         row[open_list_columns_.buffer] = buffer;
     }
 }
