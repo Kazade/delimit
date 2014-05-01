@@ -54,6 +54,7 @@ public:
     double retrieve_adjustment_value() const { return adjustment_; }
 
     const Window& window() const { return parent_; }
+    Window& window() { return parent_; }
 
     void mark_as_new_file();
 private:

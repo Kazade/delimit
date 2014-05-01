@@ -78,6 +78,8 @@ public:
     bool toolbutton_save_clicked();
 
     unicode project_path() const { return path_; }
+
+    void set_error_count(int32_t count);
 private:
     void close_buffer(Buffer* buffer);
     void close_buffer_for_file(const Glib::RefPtr<Gio::File>& file);
@@ -123,7 +125,8 @@ private:
     Gtk::ToggleToolButton* buffer_search_;
     Gtk::ToggleToolButton* window_split_;
 
-    Gtk::ToolButton* buffer_close_;
+    Gtk::Button* buffer_close_;
+    Gtk::Label* error_counter_;
 
     Glib::RefPtr<Gtk::ActionGroup> actions_;
 

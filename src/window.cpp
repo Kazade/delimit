@@ -175,6 +175,7 @@ void Window::build_widgets() {
     builder->get_widget("buffer_search", buffer_search_);
     builder->get_widget("window_split", window_split_);
     builder->get_widget("buffer_close", buffer_close_);
+    builder->get_widget("error_counter", error_counter_);
 
     buffer_new_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_new_clicked));
     buffer_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_clicked));
@@ -197,7 +198,6 @@ void Window::build_widgets() {
     buffer_save_->set_icon_name("document-save");
     buffer_open_->set_icon_name("document-open");
     folder_open_->set_icon_name("folder-open");
-    buffer_close_->set_icon_name("window-close");
     buffer_search_->set_icon_name("search");
     buffer_undo_->set_icon_name("edit-undo");
     buffer_redo_->set_icon_name("edit-redo");
@@ -208,6 +208,20 @@ void Window::build_widgets() {
     create_frame(); //Create the default frame
 
     init_actions();
+
+    //Style the error counter
+    Glib::ustring style = "GtkLabel#error_counter { color: white; background-color: #ff0000; border-radius: 3px; font-weight: bold; }";
+    auto css = Gtk::CssProvider::create();
+    if(css->load_from_data(style)) {
+        auto screen = Gdk::Screen::get_default();
+        auto ctx = error_counter_->get_style_context();
+        ctx->add_provider_for_screen(screen, css, GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    } else {
+        L_ERROR("Unable to set the correct style for the error counter");
+    }
+
+    error_counter_->set_no_show_all();
+    set_error_count(0);
 
     std::string icon_file = fdo::xdg::find_data_file("delimit/delimit.svg").encode();
     gtk_window_->set_icon_from_file(icon_file);
@@ -348,6 +362,16 @@ bool Window::on_tree_test_expand_row(const Gtk::TreeModel::iterator& iter, const
     }
 
     return false;
+}
+
+void Window::set_error_count(int32_t count) {
+    if(count == 0) {
+        error_counter_->set_text("0");
+        error_counter_->hide();
+    } else {
+        error_counter_->set_text(_u("{0}").format(count).encode());
+        error_counter_->show();
+    }
 }
 
 void Window::on_folder_changed(const Glib::RefPtr<Gio::File> &file, const Glib::RefPtr<Gio::File> &other, Gio::FileMonitorEvent event_type) {
