@@ -548,7 +548,13 @@ void Window::rebuild_file_tree(const unicode& path) {
 void Window::rebuild_open_list() {
     open_list_store_->clear();
 
-    for(auto buffer: open_buffers_) {
+    auto tmp = open_buffers_;
+
+    std::sort(tmp.begin(), tmp.end(), [](Buffer::ptr lhs, Buffer::ptr rhs) {
+        return lhs->name().lower() < rhs->name().lower();
+    });
+
+    for(auto buffer: tmp) {
         auto row = *(open_list_store_->append());
 
         row[open_list_columns_.name] = Glib::ustring(buffer->name().encode());

@@ -9,18 +9,15 @@ From the root of the project:
  - mkdir build
  - cd build
  - cmake ..
- - make 
+ - make
  - sudo make install
 
 ##TODO
 
 ### TOP PRIORITY
 
- - Detect whitespace from file
  - Fix bug where redo is lost on save
- - Linter integration - pyflakes specifically
  - Wrap find
- - Make CTRL+F always focus the search box (and never hide it)
  - Allow having no files open, don't create an empty file on start
  - Alphabetical open file listing, better descriptions
  - Better indentation, navigation
@@ -38,7 +35,7 @@ From the root of the project:
  - ST style file/class/function location popup (depends on CC)
  - Watch the folder tree for changes (e.g. folder/file deletions/renames/creations)
  - Distinguish between open files of the same name in the open files section
- 
+
 ## Submitting patches
 
 Because I'm still not convinced LGPL is the right license for this, if you submit patches please submit them under the MIT license. Thanks!
