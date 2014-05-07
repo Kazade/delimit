@@ -64,14 +64,43 @@ gchar* get_tooltip(GtkSourceMarkAttributes *attrs,
     return g_strdup_printf("No message");
 }
 
+void Frame::show_awesome_bar(bool value) {
+    if(value) {
+        awesome_bar_.show();
+        awesome_bar_.show_all_children();
+        awesome_bar_entry_.grab_focus();
+    } else {
+        awesome_bar_.hide();
+    }
+}
+
 void Frame::build_widgets() {
     scrolled_window_.add(source_view_);
 
     //file_chooser_box_.pack_start(file_chooser_, true, false, 0);
     //container_.pack_start(file_chooser_box_, false, false, 0);
-    container_.pack_start(scrolled_window_, true, true, 0);
-    container_.pack_start(search_, false, false, 0);
+    overlay_main_.pack_start(scrolled_window_, true, true, 0);
+    overlay_main_.pack_start(search_, false, false, 0);
 
+
+    //Create a new overlay
+    overlay_container_ = GTK_OVERLAY(gtk_overlay_new());
+    gtk_container_add(GTK_CONTAINER(overlay_container_), GTK_WIDGET(overlay_main_.gobj()));
+
+    container_.pack_start(*Glib::wrap(GTK_WIDGET(overlay_container_)), true, true, 0);
+
+    awesome_bar_entry_.set_width_chars(100);
+    awesome_bar_.pack_start(awesome_bar_entry_, false, false, 10);
+    awesome_bar_.set_margin_left(20);
+    awesome_bar_.set_margin_right(20);
+    awesome_bar_.set_margin_top(20);
+    awesome_bar_.set_margin_bottom(20);
+    awesome_bar_.set_no_show_all();
+
+    gtk_overlay_add_overlay(overlay_container_, GTK_WIDGET(awesome_bar_.gobj()));
+    awesome_bar_.set_valign(Gtk::ALIGN_START);
+    awesome_bar_.set_halign(Gtk::ALIGN_CENTER);
+    show_awesome_bar(false);
 
     auto settings = Gio::Settings::create("org.gnome.desktop.interface");
     auto font_name = settings->get_string("monospace-font-name");
@@ -157,6 +186,8 @@ void Frame::set_buffer(Buffer *buffer) {
     }
 
     buffer_ = buffer;
+
+    parent_.set_error_count(buffer_->error_count());
 
     source_view_.set_buffer(buffer_->_gtk_buffer());    
     signal_buffer_changed_(buffer_);

@@ -37,17 +37,25 @@ public:
     Gtk::Box& _gtk_box() { return container_; }
     void set_search_visible(bool value);
 
+    void show_awesome_bar(bool value=true);
+    bool is_awesome_bar_visible() const { return awesome_bar_.get_visible(); }
+
     sigc::signal<void, Buffer*>& signal_buffer_changed() { return signal_buffer_changed_; }
 private:
     void build_widgets();
 
     Window& parent_;
 
+    GtkOverlay* overlay_container_;
+    Gtk::VBox overlay_main_;
     Gtk::Box container_;
     Gtk::Box file_chooser_box_;
     Gtk::ComboBox file_chooser_;
     Gtk::ScrolledWindow scrolled_window_;
     Gsv::View source_view_;
+
+    Gtk::HBox awesome_bar_;
+    Gtk::Entry awesome_bar_entry_;
 
     delimit::Search search_;
 

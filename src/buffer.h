@@ -57,7 +57,11 @@ public:
     Window& window() { return parent_; }
 
     void mark_as_new_file();
+    void set_error_count(int32_t count) { error_count_ = count; }
+    int32_t error_count() const { return error_count_; }
 private:
+    int32_t error_count_ = 0;
+
     void run_linters_and_stuff();
 
     void create_buffer(Glib::RefPtr<Gsv::Language> lang=Glib::RefPtr<Gsv::Language>());

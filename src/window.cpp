@@ -125,8 +125,16 @@ void Window::init_actions() {
         frames_[current_frame_]->set_search_visible(true);
     });
 
+    add_global_action("awesome", Gtk::AccelKey(GDK_KEY_K, Gdk::CONTROL_MASK), [&]() {
+        frames_[current_frame_]->show_awesome_bar();
+    });
+
     add_global_action("back_up", Gtk::AccelKey(GDK_KEY_Escape, Gdk::ModifierType(0)), [&]() {
-        frames_[current_frame_]->set_search_visible(false);
+        if(frames_[current_frame_]->is_awesome_bar_visible()) {
+            frames_[current_frame_]->show_awesome_bar(false);
+        } else {
+            frames_[current_frame_]->set_search_visible(false);
+        }
     });
 }
 

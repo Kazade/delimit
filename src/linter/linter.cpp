@@ -43,7 +43,8 @@ void Linter::apply_to_buffer(delimit::Buffer *buffer) {
         mark->set_visible(true);
     }
 
-    buffer->window().set_error_count(result.size());
+    buffer->set_error_count(result.size());
+    buffer->window().set_error_count(buffer->error_count());
 }
 
 LinterResult PythonLinter::find_problematic_lines(const unicode& filename, const unicode& project_root) {
