@@ -29,3 +29,5 @@ src/linter/linter.h
 src/linter/linter.cpp
 src/utils.h
 src/utils.cpp
+src/awesome_bar.h
+src/awesome_bar.cpp

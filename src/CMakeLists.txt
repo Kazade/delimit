@@ -7,6 +7,7 @@ set(
     frame.cpp
     buffer.cpp
     search.cpp
+    awesome_bar.cpp
     utils.cpp
     coverage/coverage.cpp
     linter/linter.cpp

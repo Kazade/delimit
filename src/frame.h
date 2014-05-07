@@ -6,6 +6,7 @@
 
 #include <memory>
 
+#include "awesome_bar.h"
 #include "search.h"
 
 namespace delimit {
@@ -21,7 +22,8 @@ public:
         parent_(parent),
         container_(Gtk::ORIENTATION_VERTICAL),
         file_chooser_(true),
-        search_(this),
+        awesome_bar_(this),
+        search_(this),        
         buffer_(nullptr) {
 
         search_._connect_signals();
@@ -54,9 +56,7 @@ private:
     Gtk::ScrolledWindow scrolled_window_;
     Gsv::View source_view_;
 
-    Gtk::HBox awesome_bar_;
-    Gtk::Entry awesome_bar_entry_;
-
+    delimit::AwesomeBar awesome_bar_;
     delimit::Search search_;
 
     Buffer* buffer_;

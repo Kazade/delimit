@@ -8,7 +8,8 @@ namespace delimit {
 Buffer::Buffer(Window& parent, const unicode& name):
     parent_(parent),
     name_(name),
-    adjustment_(0) {
+    adjustment_(0),
+    error_count_(0) {
 
     create_buffer();
     signal_file_changed().connect(sigc::mem_fun(this, &Buffer::on_file_changed));
@@ -17,7 +18,8 @@ Buffer::Buffer(Window& parent, const unicode& name):
 Buffer::Buffer(Window& parent, const unicode& name, const Glib::RefPtr<Gio::File>& file):
     parent_(parent),
     name_(name),
-    adjustment_(0) {
+    adjustment_(0),
+    error_count_(0) {
 
     set_gio_file(file);
     signal_file_changed().connect(sigc::mem_fun(this, &Buffer::on_file_changed));

@@ -68,7 +68,6 @@ void Frame::show_awesome_bar(bool value) {
     if(value) {
         awesome_bar_.show();
         awesome_bar_.show_all_children();
-        awesome_bar_entry_.grab_focus();
     } else {
         awesome_bar_.hide();
     }
@@ -89,17 +88,8 @@ void Frame::build_widgets() {
 
     container_.pack_start(*Glib::wrap(GTK_WIDGET(overlay_container_)), true, true, 0);
 
-    awesome_bar_entry_.set_width_chars(100);
-    awesome_bar_.pack_start(awesome_bar_entry_, false, false, 10);
-    awesome_bar_.set_margin_left(20);
-    awesome_bar_.set_margin_right(20);
-    awesome_bar_.set_margin_top(20);
-    awesome_bar_.set_margin_bottom(20);
-    awesome_bar_.set_no_show_all();
-
     gtk_overlay_add_overlay(overlay_container_, GTK_WIDGET(awesome_bar_.gobj()));
-    awesome_bar_.set_valign(Gtk::ALIGN_START);
-    awesome_bar_.set_halign(Gtk::ALIGN_CENTER);
+
     show_awesome_bar(false);
 
     auto settings = Gio::Settings::create("org.gnome.desktop.interface");
