@@ -100,7 +100,7 @@ void Frame::build_widgets() {
     try {
         //Assume that the last part is the font size, if it's not
         //then fall back to size 10 and don't alter the font name
-        size = parts.at(parts.size()-1).to_int();
+        size = parts.back().to_int();
         parts.pop_back();
         font_name = _u(" ").join(parts).encode();
     } catch(boost::bad_lexical_cast& e) {}

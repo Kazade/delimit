@@ -6,21 +6,26 @@ find_package(PkgConfig)
 
 pkg_check_modules(GTKMM gtkmm-3.0)
 pkg_check_modules(GTKSOURCEVIEWMM gtksourceviewmm-3.0)
+pkg_check_modules(SQLITE sqlite3)
 
 find_package(Boost COMPONENTS system date_time regex thread REQUIRED)
 link_libraries(
     ${Boost_SYSTEM_LIBRARY}
     ${Boost_DATE_TIME_LIBRARY}
     ${Boost_REGEX_LIBRARY}
+    ${Boost_THREAD_LIBRARY}
 )
 
 FIND_PACKAGE(KAZBASE REQUIRED)
 
-include_directories(${KAZBASE_INCLUDE_DIRS})
+include_directories(
+    ${KAZBASE_INCLUDE_DIRS}
+    ${SQLITE_INCLUDE_DIRS}
+)
+
 link_libraries(
     ${KAZBASE_LIBRARIES}
-    ${Boost_THREAD_LIBRARY}
-    ${Boost_REGEX_LIBRARY}
+    ${SQLITE_LIBRARIES}
 )
 
 add_definitions("-Wall -g")

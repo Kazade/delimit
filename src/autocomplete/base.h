@@ -3,11 +3,13 @@
 
 #include <vector>
 
-#include "../base/unicode.h"
+#include <kazbase/unicode.h>
 
 namespace delimit {
 
 class Datastore;
+class Scope;
+class FileParser;
 
 typedef std::shared_ptr<Scope> ScopePtr;
 typedef std::shared_ptr<FileParser> FileParserPtr;
@@ -15,7 +17,7 @@ typedef std::shared_ptr<Datastore> DatastorePtr;
 
 class FileParser {
 public:
-    std::vector<ScopePtr> parse(const unicode& filename);
+    virtual std::vector<ScopePtr> parse(const unicode& data) = 0;
 };
 
 class Scope {

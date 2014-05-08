@@ -11,6 +11,10 @@ set(
     utils.cpp
     coverage/coverage.cpp
     linter/linter.cpp
+    autocomplete/base.cpp
+    autocomplete/datastore.cpp
+    autocomplete/indexer.cpp
+    autocomplete/provider.cpp
 )
 
 link_directories(${GTKMM_LIBRARY_DIRS} ${GTKSOURCEVIEWMM_LIBRARY_DIRS})
