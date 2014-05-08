@@ -15,6 +15,7 @@ set(
     autocomplete/datastore.cpp
     autocomplete/indexer.cpp
     autocomplete/provider.cpp
+    autocomplete/parsers/python.cpp
 )
 
 link_directories(${GTKMM_LIBRARY_DIRS} ${GTKSOURCEVIEWMM_LIBRARY_DIRS})

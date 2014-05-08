@@ -31,3 +31,6 @@ src/utils.h
 src/utils.cpp
 src/awesome_bar.h
 src/awesome_bar.cpp
+tests/test_python_parser.h
+src/autocomplete/parsers/python.h
+src/autocomplete/parsers/python.cpp
