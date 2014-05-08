@@ -1,6 +1,8 @@
 #ifndef INDEXER_H
 #define INDEXER_H
 
+#include <map>
+
 #include "base.h"
 
 namespace delimit {
@@ -12,6 +14,7 @@ public:
     void register_parser(const unicode& mimetype, FileParserPtr parser);
     void index_directory(const unicode& dir_path);
     std::vector<ScopePtr> index_file(const unicode& path);
+    std::vector<ScopePtr> index_file(const unicode& filename, const unicode& data);
 
     void clear(); //Wipe out the save index file
 

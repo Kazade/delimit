@@ -8,7 +8,7 @@ namespace delimit {
 class Provider : public Gsv::CompletionProvider {
 public:
     Glib::ustring get_name() const { return "Delimit"; }
-    void populate(const Glib::RefPtr<CompletionContext> &context);
+    void populate(const Glib::RefPtr<Gsv::CompletionContext> &context);
 };
 
 }

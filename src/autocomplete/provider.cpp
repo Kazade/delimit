@@ -2,7 +2,7 @@
 
 namespace delimit {
 
-void Provider::populate(const Glib::RefPtr<CompletionContext> &context) {
+void Provider::populate(const Glib::RefPtr<Gsv::CompletionContext> &context) {
 
 }
 

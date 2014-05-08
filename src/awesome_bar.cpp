@@ -20,12 +20,22 @@ void AwesomeBar::build_widgets() {
     set_valign(Gtk::ALIGN_START);
     set_halign(Gtk::ALIGN_CENTER);
 
-    entry_.set_width_chars(100);
+    entry_.set_width_chars(32);
     pack_start(entry_, false, false);
 
     entry_.signal_changed().connect([&]() {
         populate(entry_.get_text().c_str());
     });
+
+    entry_.signal_activate().connect(sigc::mem_fun(this, &AwesomeBar::execute));
+
+    Pango::FontDescription desc("sans-serif 26");
+    entry_.override_font(desc);
+}
+
+void AwesomeBar::execute() {
+    hide();
+    entry_.set_text("");
 }
 
 void AwesomeBar::populate(const unicode &text) {

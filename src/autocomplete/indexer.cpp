@@ -1,4 +1,7 @@
+#include <kazbase/os/path.h>
+
 #include "indexer.h"
+#include "datastore.h"
 
 namespace delimit {
 
@@ -18,7 +21,7 @@ unicode Indexer::guess_type(const unicode& filename) {
      *  loading file data twice.
      */
 
-    auto it = MIMETYPES.find(os::path::splitext(filename)[1]);
+    auto it = MIMETYPES.find(os::path::split_ext(filename).second);
     if(it == MIMETYPES.end()) {
         return "text/plain";
     }
@@ -43,19 +46,23 @@ FileParserPtr Indexer::detect_parser(const unicode& filename) {
     }
 }
 
+std::vector<ScopePtr> Indexer::index_file(const unicode& path, const unicode& data) {
+    auto parser = detect_parser(path);
+    auto scopes = parser->parse(data);
+
+    datastore_->delete_scopes_by_filename(path);
+    datastore_->save_scopes(scopes);
+
+    return scopes;
+}
+
 std::vector<ScopePtr> Indexer::index_file(const unicode &path) {
     /*
      *  Indexes a file by running a parser over it and storing the
      *  resulting scopes in the database
      */
 
-    auto parser = detect_parser(path);
-    auto scopes = parser->parse(path);
-
-    datastore_->delete_scopes_by_filename(path);
-    datastore_->save_scopes(scopes);
-
-    return scopes;
+    return index_file(path, os::path::read_file_contents(path));
 }
 
 void Indexer::index_directory(const unicode &dir_path) {
@@ -69,7 +76,7 @@ void Indexer::index_directory(const unicode &dir_path) {
         if(os::path::is_dir(full_path)) {
             index_directory(full_path);
         } else {
-            index_file(path);
+            index_file(full_path);
         }
     }
 }

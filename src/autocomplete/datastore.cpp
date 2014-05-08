@@ -1,4 +1,6 @@
-#include "../base/unicode.h"
+#include <kazbase/unicode.h>
+#include <kazbase/os/path.h>
+#include <kazbase/exceptions.h>
 
 #include "datastore.h"
 
@@ -6,7 +8,7 @@ namespace delimit {
 
 std::vector<unicode> INITIAL_DATA_SQL = {
     "BEGIN",
-    "CREATE TABLE scope(id INTEGER PRIMARY KEY, filename VARCHAR(255) NOT NULL, path VARCHAR(255) NOT NULL)",
+    "CREATE TABLE scope(id INTEGER PRIMARY KEY, filename VARCHAR(255) NOT NULL, path VARCHAR(1024) NOT NULL)",
     "CREATE INDEX filename_idx ON scope(path)",
     "CREATE TABLE scope_parent(id INTEGER PRIMARY KEY, scope INTEGER, FOREIGN KEY(scope) REFERENCES scope(id))",
     "COMMIT",
@@ -17,7 +19,7 @@ Datastore::Datastore(const unicode &path_to_datastore):
 
     bool create_tables = !os::path::exists(path_to_datastore);
 
-    int rc = sqlite3_open(path_to_datastore.encode(), &db_);
+    int rc = sqlite3_open(path_to_datastore.encode().c_str(), &db_);
     if(rc) {
         sqlite3_close(db_);
         throw IOError("Unable to create database");
@@ -42,7 +44,7 @@ void Datastore::delete_scopes_by_filename(const unicode& path) {
     sqlite3_stmt* stmt;
     int ret = sqlite3_prepare(
         db_,
-        SQL,
+        SQL.encode().c_str(),
         -1,
         &stmt,
         0
@@ -50,11 +52,13 @@ void Datastore::delete_scopes_by_filename(const unicode& path) {
 
     assert(!ret);
 
-    sqlite3_bind_text(stmt, 1, )
-
+    sqlite3_bind_text(stmt, 1, path.encode().c_str(), path.encode().length(), SQLITE_STATIC);
+    if(sqlite3_step(stmt) != SQLITE_DONE) {
+        throw RuntimeError("Unable to delete the selected scopes");
+    }
 }
 
-void Datastore::save_scopes(const unicode& filename, const std::vector<ScopePtr>& scopes) {
+void Datastore::save_scopes(const std::vector<ScopePtr>& scopes) {
 
 }
 

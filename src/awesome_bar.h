@@ -24,6 +24,7 @@ private:
     void build_widgets();
 
     void populate(const unicode& text);
+    void execute();
 };
 
 }
