@@ -2,7 +2,7 @@
 #define AUTOCOMPLETE_BASE_H
 
 #include <vector>
-
+#include <memory>
 #include <kazbase/unicode.h>
 
 namespace delimit {
