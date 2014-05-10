@@ -1,25 +1,22 @@
 
 set(
     DELIMIT_SOURCES
-    main.cpp
-    application.cpp
-    window.cpp
-    frame.cpp
-    buffer.cpp
-    search.cpp
-    awesome_bar.cpp
-    utils.cpp
-    coverage/coverage.cpp
-    linter/linter.cpp
-    autocomplete/base.cpp
-    autocomplete/datastore.cpp
-    autocomplete/indexer.cpp
-    autocomplete/provider.cpp
-    autocomplete/parsers/python.cpp
+    ${CMAKE_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_SOURCE_DIR}/src/application.cpp
+    ${CMAKE_SOURCE_DIR}/src/window.cpp
+    ${CMAKE_SOURCE_DIR}/src/frame.cpp
+    ${CMAKE_SOURCE_DIR}/src/buffer.cpp
+    ${CMAKE_SOURCE_DIR}/src/search.cpp
+    ${CMAKE_SOURCE_DIR}/src/awesome_bar.cpp
+    ${CMAKE_SOURCE_DIR}/src/utils.cpp
+    ${CMAKE_SOURCE_DIR}/src/coverage/coverage.cpp
+    ${CMAKE_SOURCE_DIR}/src/linter/linter.cpp
+    ${CMAKE_SOURCE_DIR}/src/autocomplete/base.cpp
+    ${CMAKE_SOURCE_DIR}/src/autocomplete/datastore.cpp
+    ${CMAKE_SOURCE_DIR}/src/autocomplete/indexer.cpp
+    ${CMAKE_SOURCE_DIR}/src/autocomplete/provider.cpp
+    ${CMAKE_SOURCE_DIR}/src/autocomplete/parsers/python.cpp
 )
-
-link_directories(${GTKMM_LIBRARY_DIRS} ${GTKSOURCEVIEWMM_LIBRARY_DIRS})
-include_directories(${GTKMM_INCLUDE_DIRS} ${GTKSOURCEVIEWMM_INCLUDE_DIRS})
 
 add_executable(delimit ${DELIMIT_SOURCES})
 

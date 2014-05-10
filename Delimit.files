@@ -34,3 +34,4 @@ src/awesome_bar.cpp
 tests/test_python_parser.h
 src/autocomplete/parsers/python.h
 src/autocomplete/parsers/python.cpp
+tests/CMakeLists.txt
