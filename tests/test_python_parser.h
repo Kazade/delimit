@@ -8,7 +8,17 @@ class PythonParsingTests : public TestCase {
 public:
     void test_parsing_classes() {
         unicode test_data = ""
-"class A(object): pass\n"
+"class A(object):\n"
+"    i = 1\n"
+"    j = []\n"
+"    k = {}\n"
+"    l = None\n"
+"    def method(self):\n"
+"        pass\n"
+"\n"
+"def function(self, *args, **kwargs):\n"
+"    i = 1"
+"    return i"
 "class B(A): pass\n"
 "class C(A, B): pass\n";
 

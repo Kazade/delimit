@@ -197,8 +197,10 @@ std::vector<Token> Python::tokenize(const unicode& data) {
     unicode contline = "";
     std::vector<int> indents = { 0 };
 
-    int current_line = 0;
     std::vector<unicode> lines = data.split("\n");
+    for(uint32_t i = 0; i < lines.size(); ++i) {
+        lines[i] = lines[i] + "\n";
+    }
 
     int tabsize = 0;
 
@@ -210,12 +212,14 @@ std::vector<Token> Python::tokenize(const unicode& data) {
 
     while(true) {
         unicode line;
-        if(current_line < (int) lines.size()) {
-            line = lines.at(current_line);
+        if(lnum < (int) lines.size()) {
+            line = lines.at(lnum);
         }
 
+      //  std::cout << line << std::endl;
+
         lnum += 1; //Increment the line counter
-        uint32_t pos = 0, max = line.length(); //Store the line boundaries
+        int32_t pos = 0, max = line.length(); //Store the line boundaries
         if(!contstr.empty()) {
             if(line.empty()) {
                 throw TokenizationError("EOF in multiline string");
@@ -225,11 +229,12 @@ std::vector<Token> Python::tokenize(const unicode& data) {
             if(endmatch) {
                 //Continue
                 pos = end = endmatch.end(0);
+              //  std::cout << "Found STRING token: " << contstr + line.slice(nullptr, end) << std::endl;
                 result.push_back(Token({TokenType::STRING, contstr + line.slice(nullptr, end), strstart, std::make_pair(lnum, end)}));
                 contstr = "";
                 needcont = 0;
                 contline = "";
-            } else if(needcont && line.slice(-2, nullptr) != "\\\n" && line.slice(-3, nullptr) != "\\\r\n") {
+            } else if(needcont && line.slice(-2, nullptr) != "\n" && line.slice(-3, nullptr) != "\r\n") {
                 result.push_back(Token({TokenType::ERRORTOKEN, contstr + line, strstart, std::make_pair(lnum, line.length())}));
                 contstr = "";
                 contline = "";
@@ -241,9 +246,9 @@ std::vector<Token> Python::tokenize(const unicode& data) {
             }
         } else if(parentlev == 0 && !continued) {
             if(line.empty()) {
+              //  std::cout << "Breaking loop because the line is empty" << std::endl;
                 break;
             }
-
             int column = 0;
             while(pos < max) {
                 if(line[pos] == ' ') {
@@ -255,19 +260,22 @@ std::vector<Token> Python::tokenize(const unicode& data) {
                 } else {
                     break;
                 }
+                pos += 1;
             }
 
             if(pos == max) {
                 break;
             }
 
-            if(std::string("#\r\n").find(line[pos]) != std::string::npos) {
+            if(_u("#\r\n").contains(_u(1, line[pos]))) {
+              //  std::cout << "Handling newline" << std::endl;
                 handle_newline(line, lnum, pos, result);
                 continue;
             }
 
             if(column > indents.back()) {
                 indents.push_back(column);
+              //  std::cout << "INDENT" << std::endl;
                 result.push_back(
                     Token({
                         TokenType::INDENT,
@@ -278,6 +286,7 @@ std::vector<Token> Python::tokenize(const unicode& data) {
                 );
             }
 
+       //     std::cout << column << "====" << indents.back() << std::endl;
             while(column < indents.back()) {
                 if(std::find(indents.begin(), indents.end(), column) == indents.end()) {
                     throw TokenizationError("Unindent doesn't match outer indent level");
@@ -291,6 +300,8 @@ std::vector<Token> Python::tokenize(const unicode& data) {
                         std::make_pair(lnum, pos)
                     })
                 );
+
+       //         std::cout << "DEDENT" << std::endl;
             }
         } else {
             if(line.empty()) {
@@ -303,6 +314,7 @@ std::vector<Token> Python::tokenize(const unicode& data) {
         std::pair<int, int> spos;
         std::pair<int, int> epos;
         while(pos < max) {
+           // std::cout << pos << std::endl;
             auto pseudomatch = pseudoprog.match(line, pos);
             if(pseudomatch) {
                 std::pair<int, int> start_end = pseudomatch.span(1);
@@ -320,8 +332,9 @@ std::vector<Token> Python::tokenize(const unicode& data) {
 
                 if(numchars.contains(initial) || (initial == "." && token != ".")) {
                     //We have a number
+                    //std::cout << "Found NUMBER token: " << token << std::endl;
                     result.push_back(Token({TokenType::NUMBER, token, spos, epos}));
-                } else if(initial == _u("\r\n")) {
+                } else if(_u("\r\n").contains(initial)) {
                     if(parentlev > 0) {
                         result.push_back(Token({TokenType::NL, token, spos, epos}));
                     } else {
@@ -370,6 +383,7 @@ std::vector<Token> Python::tokenize(const unicode& data) {
                         result.push_back(Token({TokenType::STRING, token, spos, epos}));
                     }
                 } else if(namechars.contains(initial)) {
+                   // std::cout << "Found name token: " << token << std::endl;
                     result.push_back(Token({TokenType::NAME, token, spos, epos}));
                 } else if(initial == "\\") {
                     continued = 1;
@@ -379,6 +393,7 @@ std::vector<Token> Python::tokenize(const unicode& data) {
                     } else if(_u(")]}").contains(initial)) {
                         parentlev -= 1;
                     }
+                   // std::cout << "Found OP token: " << token << std::endl;
                     result.push_back(Token({TokenType::OP, token, spos, epos}));
                 }
             } else {
@@ -389,6 +404,7 @@ std::vector<Token> Python::tokenize(const unicode& data) {
     }
 
     for(uint32_t i = 1; i < indents.size(); ++i) {
+        //std::cout << "DEDENT" << std::endl;
         result.push_back(Token({TokenType::DEDENT, "", std::make_pair(lnum, 0), std::make_pair(lnum, 0)}));
     }
     result.push_back(Token({TokenType::ENDMARKER, "", std::make_pair(lnum, 0), std::make_pair(lnum, 0)}));
