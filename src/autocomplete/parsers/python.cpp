@@ -30,7 +30,7 @@ const std::string Binnumber = R"(0[bB][01]+[lL]?)";
 const std::string Decnumber = R"([1-9]\d*[lL]?)";
 const std::string Intnumber = group({Hexnumber, Binnumber, Octnumber, Decnumber});
 const std::string Exponent = R"([eE][-+]?\d+)";
-const std::string Pointfloat = group({R"(\d+\.\d*', R"(\.\d+)"}) + maybe({Exponent});
+const std::string Pointfloat = group({R"(\d+\.\d*)", R"(\.\d+)"}) + maybe({Exponent});
 const std::string Expfloat = R"(\d+)" + Exponent;
 const std::string Floatnumber = group({Pointfloat, Expfloat});
 const std::string Imagnumber = group({R"(\d+[jJ])", Floatnumber + R"([jJ])"});
@@ -73,6 +73,12 @@ const std::string ContStr = group({
 });
 const std::string PseudoExtras = group({R"(\\\r?\n|\Z)", Comment, Triple});
 const std::string PseudoToken = Whitespace + group({PseudoExtras, Number, Funny, ContStr, Name});
+
+/*int print() {
+    std::cout << PseudoToken << std::endl;
+    return 0;
+}
+int i = print();*/
 
 const regex::Regex tokenprog = regex::compile(TokenRE);
 const regex::Regex pseudoprog = regex::compile(PseudoToken);
