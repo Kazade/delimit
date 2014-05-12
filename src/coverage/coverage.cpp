@@ -19,7 +19,9 @@ void Coverage::apply_to_buffer(delimit::Buffer *buffer) {
 
     auto result = find_uncovered_lines(buffer->path(), buffer->window().project_path());
     for(auto line: result) {
-        assert(line >= 0 && line < gbuf->end().get_line());
+        if(!(line >= 0 && line < gbuf->end().get_line())) {
+            continue;
+        }
 
         auto iter = gbuf->get_iter_at_line(line);
         assert(iter.get_line() == line);
