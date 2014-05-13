@@ -23,6 +23,18 @@ public:
 class Scope {
 public:
     Scope(const unicode& path, std::vector<unicode> inherited_scopes=std::vector<unicode>());
+
+    const unicode path() const { return path_; }
+    const std::vector<unicode> inherited_paths() const { return inherited_paths_; }
+
+    int start_line = 0;
+    int end_line = 0;
+    int start_col = 0;
+    int end_col = 0;
+
+private:
+    unicode path_;
+    std::vector<unicode> inherited_paths_;
 };
 
 

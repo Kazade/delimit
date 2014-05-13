@@ -411,10 +411,107 @@ std::vector<Token> Python::tokenize(const unicode& data) {
     return result;
 }
 
+bool is_python_builtin(const unicode& name) {
+    const std::vector<unicode> builtins = {
+        "ArithmeticError", "AssertionError", "AttributeError", "BaseException",
+        "BufferError", "BytesWarning", "DeprecationWarning", "EOFError",
+        "Ellipsis", "EnvironmentError", "Exception", "False", "FloatingPointError",
+        "FutureWarning", "GeneratorExit", "IOError", "ImportError", "ImportWarning",
+        "IndentationError", "IndexError", "KeyError", "KeyboardInterrupt",
+        "LookupError", "MemoryError", "NameError", "None", "NotImplemented",
+        "NotImplementedError", "OSError", "OverflowError", "PendingDeprecationWarning",
+        "ReferenceError", "RuntimeError", "RuntimeWarning", "StandardError",
+        "StopIteration", "SyntaxError", "SyntaxWarning", "SystemError", "SystemExit",
+        "TabError", "True", "TypeError", "UnboundLocalError", "UnicodeDecodeError",
+        "UnicodeEncodeError", "UnicodeError", "UnicodeTranslateError", "UnicodeWarning",
+        "UserWarning", "ValueError", "Warning", "ZeroDivisionError", "_", "__debug__",
+        "__doc__", "__import__", "__name__", "__package__", "abs", "all", "any", "apply",
+        "basestring", "bin", "bool", "buffer", "bytearray", "bytes", "callable", "chr",
+        "classmethod", "cmp", "coerce", "compile", "complex", "copyright", "credits",
+        "delattr", "dict", "dir", "divmod", "enumerate", "eval", "execfile", "exit",
+        "file", "filter", "float", "format", "frozenset", "getattr", "globals",
+        "hasattr", "hash", "help", "hex", "id", "input", "int", "intern", "isinstance",
+        "issubclass", "iter", "len", "license", "list", "locals", "long", "map", "max",
+        "memoryview", "min", "next", "object", "oct", "open", "ord", "pow", "print",
+        "property", "quit", "range", "raw_input", "reduce", "reload", "repr", "reversed",
+        "round", "set", "setattr", "slice", "sorted", "staticmethod", "str", "sum", "super",
+        "tuple", "type", "unichr", "unicode", "vars", "xrange", "zip"
+    };
+
+    return std::find(builtins.begin(), builtins.end(), name) != builtins.end();
+}
+
 std::vector<ScopePtr> Python::parse(const unicode& data)  {
     auto tokens = tokenize(data);
 
-    //TODO: Build scopes
+    std::vector<ScopePtr> scopes;
+
+    std::shared_ptr<Token> last_token;
+    std::shared_ptr<Token> next_token;
+
+    unicode current_path = "";
+
+    for(uint32_t i = 0; i < tokens.size(); ++i) {
+        if(i > 0) {
+            last_token = std::make_shared<Token>(tokens[i - 1]);
+        }
+
+        if(i < tokens.size() - 1) {
+            next_token = std::make_shared<Token>(tokens[i + 1]);
+        } else {
+            next_token.reset();
+        }
+
+        Token& this_token = tokens.at(i);
+
+
+        if(this_token.type == TokenType::NAME) {
+            //If this token is the class keyword, and we have the next token, then
+            //process a class
+            if(this_token.str == "class" && next_token && next_token->type == TokenType::NAME) {
+                unicode new_scope_path = _u(".").join({current_path, next_token->str});
+
+                int lookahead = i + 2;
+                bool incomplete_class_def = false;
+                std::vector<unicode> inherited_paths;
+                int closing_bracket_pos = 0;
+                while(true) {
+                    if(lookahead > tokens.size() - 1) {
+                        incomplete_class_def = true;
+                        break;
+                    }
+
+                    Token& lookahead_tok = tokens.at(lookahead);
+                    if(lookahead_tok.str == ")") {
+                        closing_bracket_pos = lookahead_tok.start_pos.second;
+                        break;
+                    }
+
+                    if(lookahead_tok.type == TokenType::NAME) {
+                        //FIXME: If an import or other thing further up overrides a global, we should prefer that
+                        // e.g. if someone overrides "object"
+
+                        //If this is a Python builtin, then we don't include the current path when
+                        //adding to the inherited scopes
+                        if(is_python_builtin(lookahead_tok.str)) {
+                            inherited_paths.push_back(lookahead_tok.str);
+                        } else {
+                            inherited_paths.push_back(_u(".").join({current_path, lookahead_tok.str}));
+                        }
+                    }
+
+                    lookahead += 1;
+                }
+
+                ScopePtr new_scope = std::make_shared<Scope>(new_scope_path, inherited_paths);
+                new_scope->start_line = this_token.start_pos.first;
+                new_scope->start_col = this_token.start_pos.second;
+                scopes.push_back(new_scope);
+            }
+        }
+    }
+
+    return scopes;
 }
 
 }

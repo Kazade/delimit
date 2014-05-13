@@ -27,6 +27,33 @@ public:
         auto tokens = parser.tokenize(test_data);
 
         assert_equal(tokens.at(0).str, "class");
+
+        auto scopes = parser.parse(test_data);
+
+        assert_equal("A", scopes.at(0)->path());
+        assert_equal("object", scopes.at(0)->inherited_paths().at(0));
+        assert_equal(1, scopes.at(0)->start_line);
+        assert_equal(8, scopes.at(0)->end_line);
+        assert_equal(0, scopes.at(0)->start_col);
+        assert_equal(0, scopes.at(0)->end_col);
+
+        assert_equal("A.i", scopes.at(1)->path());
+        assert_equal(2, scopes.at(1)->start_line);
+        assert_equal(8, scopes.at(1)->end_line);
+        assert_equal(6, scopes.at(1)->start_col);
+        assert_equal(0, scopes.at(1)->end_col);
+
+        assert_equal("int", scopes.at(1)->inherited_paths().at(0));
+        assert_equal("A.j", scopes.at(2)->path());
+        assert_equal("list", scopes.at(2)->inherited_paths().at(0));
+        assert_equal("A.k", scopes.at(3)->path());
+        assert_equal("dict", scopes.at(3)->inherited_paths().at(0));
+        assert_equal("A.l", scopes.at(4)->path());
+        assert_equal("None", scopes.at(4)->inherited_paths().at(0));
+        assert_equal("A.method", scopes.at(5)->path());
+        assert_equal("instancemethod", scopes.at(5)->inherited_paths().at(0));
+        assert_equal("A.method.self", scopes.at(6)->path());
+        assert_equal("A", scopes.at(6)->inherited_paths().at(0));
     }
 };
 

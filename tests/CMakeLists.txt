@@ -12,6 +12,7 @@ ADD_CUSTOM_COMMAND(
 set(
     DELIMIT_SOURCES
     ${CMAKE_SOURCE_DIR}/src/autocomplete/parsers/python.cpp
+    ${CMAKE_SOURCE_DIR}/src/autocomplete/base.cpp
 )
 
 
