@@ -197,8 +197,10 @@ std::vector<Token> Python::tokenize(const unicode& data) {
     unicode contline = "";
     std::vector<int> indents = { 0 };
 
-    int current_line = 0;
     std::vector<unicode> lines = data.split("\n");
+    for(uint32_t i = 0; i < lines.size(); ++i) {
+        lines[i] = lines[i] + "\n";
+    }
 
     int tabsize = 0;
 
@@ -210,12 +212,14 @@ std::vector<Token> Python::tokenize(const unicode& data) {
 
     while(true) {
         unicode line;
-        if(current_line < (int) lines.size()) {
-            line = lines.at(current_line);
+        if(lnum < (int) lines.size()) {
+            line = lines.at(lnum);
         }
 
+      //  std::cout << line << std::endl;
+
         lnum += 1; //Increment the line counter
-        uint32_t pos = 0, max = line.length(); //Store the line boundaries
+        int32_t pos = 0, max = line.length(); //Store the line boundaries
         if(!contstr.empty()) {
             if(line.empty()) {
                 throw TokenizationError("EOF in multiline string");
@@ -225,11 +229,12 @@ std::vector<Token> Python::tokenize(const unicode& data) {
             if(endmatch) {
                 //Continue
                 pos = end = endmatch.end(0);
+              //  std::cout << "Found STRING token: " << contstr + line.slice(nullptr, end) << std::endl;
                 result.push_back(Token({TokenType::STRING, contstr + line.slice(nullptr, end), strstart, std::make_pair(lnum, end)}));
                 contstr = "";
                 needcont = 0;
                 contline = "";
-            } else if(needcont && line.slice(-2, nullptr) != "\\\n" && line.slice(-3, nullptr) != "\\\r\n") {
+            } else if(needcont && line.slice(-2, nullptr) != "\n" && line.slice(-3, nullptr) != "\r\n") {
                 result.push_back(Token({TokenType::ERRORTOKEN, contstr + line, strstart, std::make_pair(lnum, line.length())}));
                 contstr = "";
                 contline = "";
@@ -241,9 +246,9 @@ std::vector<Token> Python::tokenize(const unicode& data) {
             }
         } else if(parentlev == 0 && !continued) {
             if(line.empty()) {
+              //  std::cout << "Breaking loop because the line is empty" << std::endl;
                 break;
             }
-
             int column = 0;
             while(pos < max) {
                 if(line[pos] == ' ') {
@@ -255,19 +260,22 @@ std::vector<Token> Python::tokenize(const unicode& data) {
                 } else {
                     break;
                 }
+                pos += 1;
             }
 
             if(pos == max) {
                 break;
             }
 
-            if(std::string("#\r\n").find(line[pos]) != std::string::npos) {
+            if(_u("#\r\n").contains(_u(1, line[pos]))) {
+              //  std::cout << "Handling newline" << std::endl;
                 handle_newline(line, lnum, pos, result);
                 continue;
             }
 
             if(column > indents.back()) {
                 indents.push_back(column);
+              //  std::cout << "INDENT" << std::endl;
                 result.push_back(
                     Token({
                         TokenType::INDENT,
@@ -278,6 +286,7 @@ std::vector<Token> Python::tokenize(const unicode& data) {
                 );
             }
 
+       //     std::cout << column << "====" << indents.back() << std::endl;
             while(column < indents.back()) {
                 if(std::find(indents.begin(), indents.end(), column) == indents.end()) {
                     throw TokenizationError("Unindent doesn't match outer indent level");
@@ -291,6 +300,8 @@ std::vector<Token> Python::tokenize(const unicode& data) {
                         std::make_pair(lnum, pos)
                     })
                 );
+
+       //         std::cout << "DEDENT" << std::endl;
             }
         } else {
             if(line.empty()) {
@@ -303,6 +314,7 @@ std::vector<Token> Python::tokenize(const unicode& data) {
         std::pair<int, int> spos;
         std::pair<int, int> epos;
         while(pos < max) {
+           // std::cout << pos << std::endl;
             auto pseudomatch = pseudoprog.match(line, pos);
             if(pseudomatch) {
                 std::pair<int, int> start_end = pseudomatch.span(1);
@@ -320,8 +332,9 @@ std::vector<Token> Python::tokenize(const unicode& data) {
 
                 if(numchars.contains(initial) || (initial == "." && token != ".")) {
                     //We have a number
+                    //std::cout << "Found NUMBER token: " << token << std::endl;
                     result.push_back(Token({TokenType::NUMBER, token, spos, epos}));
-                } else if(initial == _u("\r\n")) {
+                } else if(_u("\r\n").contains(initial)) {
                     if(parentlev > 0) {
                         result.push_back(Token({TokenType::NL, token, spos, epos}));
                     } else {
@@ -370,6 +383,7 @@ std::vector<Token> Python::tokenize(const unicode& data) {
                         result.push_back(Token({TokenType::STRING, token, spos, epos}));
                     }
                 } else if(namechars.contains(initial)) {
+                   // std::cout << "Found name token: " << token << std::endl;
                     result.push_back(Token({TokenType::NAME, token, spos, epos}));
                 } else if(initial == "\\") {
                     continued = 1;
@@ -379,6 +393,7 @@ std::vector<Token> Python::tokenize(const unicode& data) {
                     } else if(_u(")]}").contains(initial)) {
                         parentlev -= 1;
                     }
+                   // std::cout << "Found OP token: " << token << std::endl;
                     result.push_back(Token({TokenType::OP, token, spos, epos}));
                 }
             } else {
@@ -389,16 +404,254 @@ std::vector<Token> Python::tokenize(const unicode& data) {
     }
 
     for(uint32_t i = 1; i < indents.size(); ++i) {
+        //std::cout << "DEDENT" << std::endl;
         result.push_back(Token({TokenType::DEDENT, "", std::make_pair(lnum, 0), std::make_pair(lnum, 0)}));
     }
     result.push_back(Token({TokenType::ENDMARKER, "", std::make_pair(lnum, 0), std::make_pair(lnum, 0)}));
     return result;
 }
 
+bool is_python_builtin(const unicode& name) {
+    const std::vector<unicode> builtins = {
+        "ArithmeticError", "AssertionError", "AttributeError", "BaseException",
+        "BufferError", "BytesWarning", "DeprecationWarning", "EOFError",
+        "Ellipsis", "EnvironmentError", "Exception", "False", "FloatingPointError",
+        "FutureWarning", "GeneratorExit", "IOError", "ImportError", "ImportWarning",
+        "IndentationError", "IndexError", "KeyError", "KeyboardInterrupt",
+        "LookupError", "MemoryError", "NameError", "None", "NotImplemented",
+        "NotImplementedError", "OSError", "OverflowError", "PendingDeprecationWarning",
+        "ReferenceError", "RuntimeError", "RuntimeWarning", "StandardError",
+        "StopIteration", "SyntaxError", "SyntaxWarning", "SystemError", "SystemExit",
+        "TabError", "True", "TypeError", "UnboundLocalError", "UnicodeDecodeError",
+        "UnicodeEncodeError", "UnicodeError", "UnicodeTranslateError", "UnicodeWarning",
+        "UserWarning", "ValueError", "Warning", "ZeroDivisionError", "_", "__debug__",
+        "__doc__", "__import__", "__name__", "__package__", "abs", "all", "any", "apply",
+        "basestring", "bin", "bool", "buffer", "bytearray", "bytes", "callable", "chr",
+        "classmethod", "cmp", "coerce", "compile", "complex", "copyright", "credits",
+        "delattr", "dict", "dir", "divmod", "enumerate", "eval", "execfile", "exit",
+        "file", "filter", "float", "format", "frozenset", "getattr", "globals",
+        "hasattr", "hash", "help", "hex", "id", "input", "int", "intern", "isinstance",
+        "issubclass", "iter", "len", "license", "list", "locals", "long", "map", "max",
+        "memoryview", "min", "next", "object", "oct", "open", "ord", "pow", "print",
+        "property", "quit", "range", "raw_input", "reduce", "reload", "repr", "reversed",
+        "round", "set", "setattr", "slice", "sorted", "staticmethod", "str", "sum", "super",
+        "tuple", "type", "unichr", "unicode", "vars", "xrange", "zip"
+    };
+
+    return std::find(builtins.begin(), builtins.end(), name) != builtins.end();
+}
+
+std::pair<bool, std::vector<Token>> find_tokens_till_next(const unicode& what, const std::vector<Token>& all_tokens, const int start) {
+    bool complete = false;
+    int lookahead = start;
+    std::vector<Token> result;
+    while(true) {
+        if(uint32_t(lookahead) > all_tokens.size() - 1) {
+            break;
+        }
+
+        const Token& lookahead_tok = all_tokens.at(lookahead);
+        if(lookahead_tok.str == what) {
+            complete = true;
+            break;
+        }
+
+        result.push_back(lookahead_tok);
+
+        lookahead += 1;
+    }
+
+    return std::make_pair(complete, result);
+}
+
 std::vector<ScopePtr> Python::parse(const unicode& data)  {
     auto tokens = tokenize(data);
 
-    //TODO: Build scopes
+    std::vector<ScopePtr> scopes;
+
+    std::shared_ptr<Token> last_token;
+    std::shared_ptr<Token> next_token;
+
+    unicode current_path = "";
+
+    std::vector<ScopePtr> open_scopes;
+
+    bool inside_class = false;
+
+    for(uint32_t i = 0; i < tokens.size(); ++i) {
+        if(i > 0) {
+            last_token = std::make_shared<Token>(tokens[i - 1]);
+        }
+
+        if(i < tokens.size() - 1) {
+            next_token = std::make_shared<Token>(tokens[i + 1]);
+        } else {
+            next_token.reset();
+        }
+
+        Token& this_token = tokens.at(i);
+
+
+        if(this_token.type == TokenType::NAME) {
+            //If this token is the class keyword, and we have the next token, then
+            //process a class
+            if(this_token.str == "class" && next_token && next_token->type == TokenType::NAME) {
+                unicode new_scope_path = _u(".").join({current_path, next_token->str});
+
+                std::vector<unicode> inherited_paths;
+                auto search = find_tokens_till_next(")", tokens, i + 2);
+
+                for(auto lookahead_tok: search.second) {
+                    if(lookahead_tok.type == TokenType::NAME) {
+                        //FIXME: If an import or other thing further up overrides a global, we should prefer that
+                        // e.g. if someone overrides "object"
+
+                        //If this is a Python builtin, then we don't include the current path when
+                        //adding to the inherited scopes
+                        if(is_python_builtin(lookahead_tok.str)) {
+                            inherited_paths.push_back(lookahead_tok.str);
+                        } else {
+                            inherited_paths.push_back(_u(".").join({current_path, lookahead_tok.str}));
+                        }
+                    }
+
+                }
+
+                ScopePtr new_scope = std::make_shared<Scope>(new_scope_path, inherited_paths);
+                new_scope->start_line = this_token.start_pos.first;
+                new_scope->start_col = this_token.start_pos.second;
+                scopes.push_back(new_scope);
+                open_scopes.push_back(new_scope);
+
+                current_path = new_scope_path;
+                inside_class = true;
+            } else if(this_token.str == "def" && next_token && next_token->type == TokenType::NAME) {
+                //We've found a function or method
+                unicode new_scope_path = _u(".").join({current_path, next_token->str});
+                std::vector<unicode> inherited_scopes;
+                if(inside_class) {
+                    inherited_scopes.push_back("instancemethod");
+                } else {
+                    inherited_scopes.push_back("function");
+                }
+                ScopePtr new_scope = std::make_shared<Scope>(new_scope_path, inherited_scopes);
+                new_scope->start_line = this_token.start_pos.first;
+                new_scope->start_col = this_token.end_pos.second; //Start the scope at the end of the method name
+
+
+                std::vector<ScopePtr> args;
+
+                auto search = find_tokens_till_next(")", tokens, i + 3);
+
+                bool next_token_is_assignment = false;
+                bool next_name_is_args = false;
+                bool next_name_is_kwargs = false;
+                for(auto& lookahead_tok: search.second) {
+                    if(lookahead_tok.type == TokenType::NAME) {
+                        if(!next_token_is_assignment) {
+                            if(next_name_is_args || next_name_is_kwargs) {
+                                std::cout << "Need to set the current type (e.g. tuple/dict)" << std::endl;
+                            }
+
+                            unicode arg_scope_path = _u(".").join({new_scope_path, lookahead_tok.str});
+                            ScopePtr new_arg = std::make_shared<Scope>(arg_scope_path);
+                            new_arg->start_line = this_token.start_pos.first;
+                            new_arg->start_col = this_token.end_pos.second; //Inherit function scope boundaries
+                            args.push_back(new_arg);
+                        } else {
+                            next_token_is_assignment = false;
+                            std::cout << "Default arguments to methods not yet handled" << std::endl;
+                        }
+                    } else if(lookahead_tok.type == TokenType::OP) {
+                        if(lookahead_tok.str == ",") {
+                            continue;
+                        } else if(lookahead_tok.str == "=") {
+                            next_token_is_assignment = true;
+                        } else if(lookahead_tok.str == "*") {
+                            next_name_is_args = true;
+                        } else if(lookahead_tok.str == "**") {
+                            next_name_is_kwargs = true;
+                        } else {
+                            std::cout << "Unexpected token during function definition: " << lookahead_tok.str << std::endl;
+                        }
+                    } else {
+                        std::cout << "Unexpected token type during function definition: " << lookahead_tok.type << " - " << lookahead_tok.str << std::endl;
+                    }
+                }
+
+                scopes.push_back(new_scope);
+                for(auto scope: args) {
+                    scopes.push_back(scope);
+                }
+
+            } else if(next_token && next_token->type == TokenType::OP) {
+                if(next_token->str == "=") {
+                    //Let's figure out what's been assigned
+                    int lookahead = i + 2;
+
+                    std::vector<unicode> inherited_scopes;
+                    if(lookahead < (int) tokens.size()) {
+                        Token& tok = tokens.at(lookahead);
+
+                        if(tok.type == OP) {
+                            if(tok.str == "[") {
+                                inherited_scopes.push_back("list");
+                            } else if(tok.str == "{") {
+                                //FIXME: Could be a set, we should look for a ":" before a closing }
+                                inherited_scopes.push_back("dict");
+                            } else if(tok.str.starts_with("'") || tok.str.starts_with("\"")) {
+                                inherited_scopes.push_back("str");
+                            } else {
+                                std::cout << "Unhandled OP: " << tok.str << std::endl;
+                            }
+                        } else if(tok.type == TokenType::NUMBER) {
+                            if(tok.str.contains(".")) {
+                                inherited_scopes.push_back("float");
+                            } else if(tok.str.ends_with("L")) {
+                                inherited_scopes.push_back("long");
+                            } else {
+                                inherited_scopes.push_back("int");
+                            }
+                        } else if(tok.type == TokenType::NAME) {
+                            if(is_python_builtin(tok.str)) {
+                                inherited_scopes.push_back(tok.str);
+                            } else {
+                                //??? We need to look back up the scope tree from the current scope to
+                                // find a matching scope with this name... e.g. if we are doing a = A() we
+                                // need to go through the scopes and find the deepest scope where the last part of the path
+                                // is 'A'
+                                std::cout << "Unhandled assignment: " << tok.type << " - " << tok.str << std::endl;
+                            }
+
+                        } else {
+                            std::cout << "Unhandled assignment: " << tok.type << " - " << tok.str << std::endl;
+                        }
+
+
+                    } else {
+                        //No inherited scopes... perhaps it should inherit something by default?
+                    }
+
+
+                    //Assignment to something \o/
+                    unicode new_scope_path = _u(".").join({current_path, this_token.str});
+                    ScopePtr new_scope = std::make_shared<Scope>(new_scope_path, inherited_scopes);
+                    new_scope->start_line = this_token.start_pos.first;
+                    new_scope->start_col = next_token->start_pos.second; //Start after the assignment
+                    scopes.push_back(new_scope);
+                    open_scopes.push_back(new_scope);
+                }
+            }
+        } else if(this_token.type == TokenType::DEDENT) {
+            for(auto scope: open_scopes) {
+                scope->end_line = this_token.end_pos.first;
+                scope->end_col = this_token.end_pos.second;
+            }
+            open_scopes.clear();
+        }
+    }
+
+    return scopes;
 }
 
 }
