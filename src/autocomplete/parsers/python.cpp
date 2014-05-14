@@ -441,6 +441,29 @@ bool is_python_builtin(const unicode& name) {
     return std::find(builtins.begin(), builtins.end(), name) != builtins.end();
 }
 
+std::pair<bool, std::vector<Token>> find_tokens_till_next(const unicode& what, const std::vector<Token>& all_tokens, const int start) {
+    bool complete = false;
+    int lookahead = start;
+    std::vector<Token> result;
+    while(true) {
+        if(uint32_t(lookahead) > all_tokens.size() - 1) {
+            break;
+        }
+
+        const Token& lookahead_tok = all_tokens.at(lookahead);
+        if(lookahead_tok.str == what) {
+            complete = true;
+            break;
+        }
+
+        result.push_back(lookahead_tok);
+
+        lookahead += 1;
+    }
+
+    return std::make_pair(complete, result);
+}
+
 std::vector<ScopePtr> Python::parse(const unicode& data)  {
     auto tokens = tokenize(data);
 
@@ -450,6 +473,10 @@ std::vector<ScopePtr> Python::parse(const unicode& data)  {
     std::shared_ptr<Token> next_token;
 
     unicode current_path = "";
+
+    std::vector<ScopePtr> open_scopes;
+
+    bool inside_class = false;
 
     for(uint32_t i = 0; i < tokens.size(); ++i) {
         if(i > 0) {
@@ -471,22 +498,10 @@ std::vector<ScopePtr> Python::parse(const unicode& data)  {
             if(this_token.str == "class" && next_token && next_token->type == TokenType::NAME) {
                 unicode new_scope_path = _u(".").join({current_path, next_token->str});
 
-                int lookahead = i + 2;
-                bool incomplete_class_def = false;
                 std::vector<unicode> inherited_paths;
-                int closing_bracket_pos = 0;
-                while(true) {
-                    if(lookahead > tokens.size() - 1) {
-                        incomplete_class_def = true;
-                        break;
-                    }
+                auto search = find_tokens_till_next(")", tokens, i + 2);
 
-                    Token& lookahead_tok = tokens.at(lookahead);
-                    if(lookahead_tok.str == ")") {
-                        closing_bracket_pos = lookahead_tok.start_pos.second;
-                        break;
-                    }
-
+                for(auto lookahead_tok: search.second) {
                     if(lookahead_tok.type == TokenType::NAME) {
                         //FIXME: If an import or other thing further up overrides a global, we should prefer that
                         // e.g. if someone overrides "object"
@@ -500,14 +515,139 @@ std::vector<ScopePtr> Python::parse(const unicode& data)  {
                         }
                     }
 
-                    lookahead += 1;
                 }
 
                 ScopePtr new_scope = std::make_shared<Scope>(new_scope_path, inherited_paths);
                 new_scope->start_line = this_token.start_pos.first;
                 new_scope->start_col = this_token.start_pos.second;
                 scopes.push_back(new_scope);
+                open_scopes.push_back(new_scope);
+
+                current_path = new_scope_path;
+                inside_class = true;
+            } else if(this_token.str == "def" && next_token && next_token->type == TokenType::NAME) {
+                //We've found a function or method
+                unicode new_scope_path = _u(".").join({current_path, next_token->str});
+                std::vector<unicode> inherited_scopes;
+                if(inside_class) {
+                    inherited_scopes.push_back("instancemethod");
+                } else {
+                    inherited_scopes.push_back("function");
+                }
+                ScopePtr new_scope = std::make_shared<Scope>(new_scope_path, inherited_scopes);
+                new_scope->start_line = this_token.start_pos.first;
+                new_scope->start_col = this_token.end_pos.second; //Start the scope at the end of the method name
+
+
+                std::vector<ScopePtr> args;
+
+                auto search = find_tokens_till_next(")", tokens, i + 3);
+
+                bool next_token_is_assignment = false;
+                bool next_name_is_args = false;
+                bool next_name_is_kwargs = false;
+                for(auto& lookahead_tok: search.second) {
+                    if(lookahead_tok.type == TokenType::NAME) {
+                        if(!next_token_is_assignment) {
+                            if(next_name_is_args || next_name_is_kwargs) {
+                                std::cout << "Need to set the current type (e.g. tuple/dict)" << std::endl;
+                            }
+
+                            unicode arg_scope_path = _u(".").join({new_scope_path, lookahead_tok.str});
+                            ScopePtr new_arg = std::make_shared<Scope>(arg_scope_path);
+                            new_arg->start_line = this_token.start_pos.first;
+                            new_arg->start_col = this_token.end_pos.second; //Inherit function scope boundaries
+                            args.push_back(new_arg);
+                        } else {
+                            next_token_is_assignment = false;
+                            std::cout << "Default arguments to methods not yet handled" << std::endl;
+                        }
+                    } else if(lookahead_tok.type == TokenType::OP) {
+                        if(lookahead_tok.str == ",") {
+                            continue;
+                        } else if(lookahead_tok.str == "=") {
+                            next_token_is_assignment = true;
+                        } else if(lookahead_tok.str == "*") {
+                            next_name_is_args = true;
+                        } else if(lookahead_tok.str == "**") {
+                            next_name_is_kwargs = true;
+                        } else {
+                            std::cout << "Unexpected token during function definition: " << lookahead_tok.str << std::endl;
+                        }
+                    } else {
+                        std::cout << "Unexpected token type during function definition: " << lookahead_tok.type << " - " << lookahead_tok.str << std::endl;
+                    }
+                }
+
+                scopes.push_back(new_scope);
+                for(auto scope: args) {
+                    scopes.push_back(scope);
+                }
+
+            } else if(next_token && next_token->type == TokenType::OP) {
+                if(next_token->str == "=") {
+                    //Let's figure out what's been assigned
+                    int lookahead = i + 2;
+
+                    std::vector<unicode> inherited_scopes;
+                    if(lookahead < (int) tokens.size()) {
+                        Token& tok = tokens.at(lookahead);
+
+                        if(tok.type == OP) {
+                            if(tok.str == "[") {
+                                inherited_scopes.push_back("list");
+                            } else if(tok.str == "{") {
+                                //FIXME: Could be a set, we should look for a ":" before a closing }
+                                inherited_scopes.push_back("dict");
+                            } else if(tok.str.starts_with("'") || tok.str.starts_with("\"")) {
+                                inherited_scopes.push_back("str");
+                            } else {
+                                std::cout << "Unhandled OP: " << tok.str << std::endl;
+                            }
+                        } else if(tok.type == TokenType::NUMBER) {
+                            if(tok.str.contains(".")) {
+                                inherited_scopes.push_back("float");
+                            } else if(tok.str.ends_with("L")) {
+                                inherited_scopes.push_back("long");
+                            } else {
+                                inherited_scopes.push_back("int");
+                            }
+                        } else if(tok.type == TokenType::NAME) {
+                            if(is_python_builtin(tok.str)) {
+                                inherited_scopes.push_back(tok.str);
+                            } else {
+                                //??? We need to look back up the scope tree from the current scope to
+                                // find a matching scope with this name... e.g. if we are doing a = A() we
+                                // need to go through the scopes and find the deepest scope where the last part of the path
+                                // is 'A'
+                                std::cout << "Unhandled assignment: " << tok.type << " - " << tok.str << std::endl;
+                            }
+
+                        } else {
+                            std::cout << "Unhandled assignment: " << tok.type << " - " << tok.str << std::endl;
+                        }
+
+
+                    } else {
+                        //No inherited scopes... perhaps it should inherit something by default?
+                    }
+
+
+                    //Assignment to something \o/
+                    unicode new_scope_path = _u(".").join({current_path, this_token.str});
+                    ScopePtr new_scope = std::make_shared<Scope>(new_scope_path, inherited_scopes);
+                    new_scope->start_line = this_token.start_pos.first;
+                    new_scope->start_col = next_token->start_pos.second; //Start after the assignment
+                    scopes.push_back(new_scope);
+                    open_scopes.push_back(new_scope);
+                }
             }
+        } else if(this_token.type == TokenType::DEDENT) {
+            for(auto scope: open_scopes) {
+                scope->end_line = this_token.end_pos.first;
+                scope->end_col = this_token.end_pos.second;
+            }
+            open_scopes.clear();
         }
     }
 

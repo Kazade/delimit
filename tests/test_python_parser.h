@@ -14,6 +14,12 @@ public:
 "    k = {}\n"
 "    l = None\n"
 "    def method(self):\n"
+"        self.m = 'A'\n"
+"        self.n = True\n"
+"        self.o = set()\n"
+"        self.p = dict({1: 1})\n"
+"        self.q = 1.0002343\n"
+"        self.r = 1000000000L\n"
 "        pass\n"
 "\n"
 "def function(self, *args, **kwargs):\n"
@@ -30,16 +36,20 @@ public:
 
         auto scopes = parser.parse(test_data);
 
+        for(auto scope: scopes) {
+            std::cout << scope->path() << " = " << _u(",").join(scope->inherited_paths()) << std::endl;
+        }
+
         assert_equal("A", scopes.at(0)->path());
         assert_equal("object", scopes.at(0)->inherited_paths().at(0));
         assert_equal(1, scopes.at(0)->start_line);
-        assert_equal(8, scopes.at(0)->end_line);
+        assert_equal(15, scopes.at(0)->end_line);
         assert_equal(0, scopes.at(0)->start_col);
         assert_equal(0, scopes.at(0)->end_col);
 
         assert_equal("A.i", scopes.at(1)->path());
         assert_equal(2, scopes.at(1)->start_line);
-        assert_equal(8, scopes.at(1)->end_line);
+        assert_equal(15, scopes.at(1)->end_line);
         assert_equal(6, scopes.at(1)->start_col);
         assert_equal(0, scopes.at(1)->end_col);
 
