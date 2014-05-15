@@ -216,7 +216,11 @@ std::vector<Token> Python::tokenize(const unicode& data) {
             line = lines.at(lnum);
         }
 
-      //  std::cout << line << std::endl;
+        if(line.contains("...")) {
+            std::cout << "Here" << std::endl;
+        }
+
+        std::cout << lnum << ":" << line << std::endl;
 
         lnum += 1; //Increment the line counter
         int32_t pos = 0, max = line.length(); //Store the line boundaries
@@ -344,9 +348,16 @@ std::vector<Token> Python::tokenize(const unicode& data) {
                     assert(!token.ends_with("\n"));
                     result.push_back(Token({TokenType::COMMENT, token, spos, epos}));
                 } else if(triple_quoted.count(token.encode())) {
-                    auto endprog = endprogs.at(token.encode());
+                    auto tok_str = token.encode();
+                    endprog = endprogs.at(tok_str);
                     auto endmatch = endprog.match(line, pos);
+
+                    std::cout << "line: " << line << std::endl;
+                    std::cout << "pos: " << pos << std::endl;
+
                     if(endmatch) {
+                        std::cout << endmatch.start(0) << ":" << endmatch.end(0) << std::endl;
+
                         pos = endmatch.end(0);
                         token = line.slice(start, pos);
                         result.push_back(Token({TokenType::STRING, token, spos, std::make_pair(lnum, pos)}));
@@ -367,7 +378,7 @@ std::vector<Token> Python::tokenize(const unicode& data) {
                         bool break_outer = false;
                         for(unicode tok: { initial, _u(1, token[1]), _u(1, token[2])}) {
                             if(endprogs.count(tok.encode())) {
-                                auto endprog = endprogs.at(tok.encode());
+                                endprog = endprogs.at(tok.encode());
                                 contstr = line.slice(start, nullptr);
                                 needcont = 1;
                                 contline = line;
@@ -464,7 +475,12 @@ std::pair<bool, std::vector<Token>> find_tokens_till_next(const unicode& what, c
     return std::make_pair(complete, result);
 }
 
-std::vector<ScopePtr> Python::parse(const unicode& data)  {
+unicode Python::base_scope_from_filename(const unicode &filename) {
+    //FIXME: Search the PYTHONPATH to find the correct relative path
+    return os::path::split_ext(filename).first.replace("/", ".");
+}
+
+std::pair<std::vector<ScopePtr>, bool> Python::parse(const unicode& data, const unicode &base_scope)  {
     auto tokens = tokenize(data);
 
     std::vector<ScopePtr> scopes;
@@ -472,7 +488,7 @@ std::vector<ScopePtr> Python::parse(const unicode& data)  {
     std::shared_ptr<Token> last_token;
     std::shared_ptr<Token> next_token;
 
-    unicode current_path = "";
+    unicode current_path = base_scope;
 
     std::vector<ScopePtr> open_scopes;
 
@@ -651,7 +667,7 @@ std::vector<ScopePtr> Python::parse(const unicode& data)  {
         }
     }
 
-    return scopes;
+    return std::make_pair(scopes, true);
 }
 
 }

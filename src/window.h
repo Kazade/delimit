@@ -13,6 +13,8 @@
 
 namespace delimit {
 
+class Provider;
+
 enum WindowType {
     WINDOW_TYPE_FOLDER,
     WINDOW_TYPE_FILE
@@ -158,6 +160,8 @@ private:
     Glib::RefPtr<Gtk::ActionGroup> action_group_;
 
     void add_global_action(const unicode& name, const Gtk::AccelKey& key, std::function<void ()> func);
+
+    std::shared_ptr<Provider> completion_provider_;
 };
 
 }

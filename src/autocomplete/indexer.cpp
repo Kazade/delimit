@@ -6,11 +6,15 @@
 namespace delimit {
 
 static const std::map<unicode, unicode> MIMETYPES = {
-    { "py", "application/python" },
+    { ".py", "application/python" },
 };
 
 Indexer::Indexer(const unicode& path_to_datastore) {
     datastore_ = std::make_shared<Datastore>(path_to_datastore);
+}
+
+void Indexer::register_parser(const unicode& mimetype, FileParserPtr parser) {
+    parsers_.insert(std::make_pair(mimetype, parser));
 }
 
 unicode Indexer::guess_type(const unicode& filename) {
@@ -21,7 +25,8 @@ unicode Indexer::guess_type(const unicode& filename) {
      *  loading file data twice.
      */
 
-    auto it = MIMETYPES.find(os::path::split_ext(filename).second);
+    auto ext = os::path::split_ext(filename).second;
+    auto it = MIMETYPES.find(ext);
     if(it == MIMETYPES.end()) {
         return "text/plain";
     }
@@ -46,14 +51,17 @@ FileParserPtr Indexer::detect_parser(const unicode& filename) {
     }
 }
 
-std::vector<ScopePtr> Indexer::index_file(const unicode& path, const unicode& data) {
-    auto parser = detect_parser(path);
-    auto scopes = parser->parse(data);
+std::vector<ScopePtr> Indexer::index_file(const unicode& filename, const unicode& data) {
+    auto parser = detect_parser(filename);
 
-    datastore_->delete_scopes_by_filename(path);
-    datastore_->save_scopes(scopes);
+    auto base_scope = parser->base_scope_from_filename(filename);
+    auto scopes_and_success = parser->parse(data, base_scope);
 
-    return scopes;
+    if(scopes_and_success.second) {
+        datastore_->delete_scopes_by_filename(filename);
+        datastore_->save_scopes(scopes_and_success.first, filename);
+    }
+    return scopes_and_success.first;
 }
 
 std::vector<ScopePtr> Indexer::index_file(const unicode &path) {

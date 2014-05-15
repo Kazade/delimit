@@ -10,14 +10,17 @@ namespace delimit {
 class Datastore;
 class Scope;
 class FileParser;
+class Indexer;
 
 typedef std::shared_ptr<Scope> ScopePtr;
 typedef std::shared_ptr<FileParser> FileParserPtr;
 typedef std::shared_ptr<Datastore> DatastorePtr;
+typedef std::shared_ptr<Indexer> IndexerPtr;
 
 class FileParser {
 public:
-    virtual std::vector<ScopePtr> parse(const unicode& data) = 0;
+    virtual std::pair<std::vector<ScopePtr>, bool> parse(const unicode& data, const unicode& base_scope) = 0;
+    virtual unicode base_scope_from_filename(const unicode& filename) = 0;
 };
 
 class Scope {

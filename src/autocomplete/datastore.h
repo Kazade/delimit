@@ -12,8 +12,14 @@ public:
     Datastore(const unicode& path_to_datastore);
 
     void delete_scopes_by_filename(const unicode& path);
-    void save_scopes(const std::vector<ScopePtr>& scopes);
+    void save_scopes(const std::vector<ScopePtr>& scopes, const unicode& filename);
 
+    std::vector<unicode> query_completions(
+        const unicode& filename,
+        int line_number,
+        int col_number,
+        const unicode& string_to_complete
+    );
 private:
     sqlite3* db_;
 

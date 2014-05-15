@@ -2,6 +2,7 @@
 #include <glibmm/i18n.h>
 #include <gdkmm.h>
 
+#include "autocomplete/provider.h"
 #include "window.h"
 #include "application.h"
 
@@ -33,6 +34,8 @@ Window::Window():
     type_(WINDOW_TYPE_FILE),
     current_frame_(0) {
 
+    completion_provider_ = std::make_shared<Provider>(this);
+
     L_DEBUG("Creating window with empty buffer");
 
     file_tree_store_ = Gtk::TreeStore::create(file_tree_columns_);
@@ -61,6 +64,8 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
     buffer_close_(nullptr),
     type_(WINDOW_TYPE_FILE),
     current_frame_(0) {
+
+    completion_provider_ = std::make_shared<Provider>(this);
 
     file_tree_store_ = Gtk::TreeStore::create(file_tree_columns_);
     open_list_store_ = Gtk::ListStore::create(open_list_columns_);

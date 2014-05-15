@@ -26,7 +26,10 @@ public:
 "    i = 1"
 "    return i"
 "class B(A): pass\n"
-"class C(A, B): pass\n";
+"class C(A, B): pass\n"
+"\"\"\" Multiline\n"
+" ... \n"
+"string \"\"\"\n";
 
         delimit::parser::Python parser;
 
@@ -34,7 +37,8 @@ public:
 
         assert_equal(tokens.at(0).str, "class");
 
-        auto scopes = parser.parse(test_data);
+        auto scopes_and_success = parser.parse(test_data, "test.testing");
+        auto scopes = scopes_and_success.first;
 
         for(auto scope: scopes) {
             std::cout << scope->path() << " = " << _u(",").join(scope->inherited_paths()) << std::endl;

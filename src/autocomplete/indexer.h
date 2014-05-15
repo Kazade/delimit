@@ -18,6 +18,7 @@ public:
 
     void clear(); //Wipe out the save index file
 
+    DatastorePtr datastore() { return datastore_; }
 private:
     FileParserPtr detect_parser(const unicode& filename);
     unicode guess_type(const unicode& filename);

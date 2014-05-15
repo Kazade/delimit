@@ -75,7 +75,8 @@ struct Token {
 
 class Python : public delimit::FileParser {
 public:
-    std::vector<ScopePtr> parse(const unicode& data);
+    std::pair<std::vector<ScopePtr>, bool> parse(const unicode& data, const unicode& base_scope);
+    unicode base_scope_from_filename(const unicode &filename);
     std::vector<Token> tokenize(const unicode& data);
 };
 
