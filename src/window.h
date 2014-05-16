@@ -82,6 +82,8 @@ public:
     unicode project_path() const { return path_; }
 
     void set_error_count(int32_t count);
+
+    Glib::RefPtr<Gsv::CompletionProvider> completion_provider();
 private:
     void close_buffer(Buffer* buffer);
     void close_buffer_for_file(const Glib::RefPtr<Gio::File>& file);
@@ -161,7 +163,7 @@ private:
 
     void add_global_action(const unicode& name, const Gtk::AccelKey& key, std::function<void ()> func);
 
-    std::shared_ptr<Provider> completion_provider_;
+    Glib::RefPtr<Provider> completion_provider_;
 };
 
 }

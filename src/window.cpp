@@ -34,7 +34,7 @@ Window::Window():
     type_(WINDOW_TYPE_FILE),
     current_frame_(0) {
 
-    completion_provider_ = std::make_shared<Provider>(this);
+    completion_provider_ = Glib::RefPtr<Provider>(new Provider(this));
 
     L_DEBUG("Creating window with empty buffer");
 
@@ -65,7 +65,7 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
     type_(WINDOW_TYPE_FILE),
     current_frame_(0) {
 
-    completion_provider_ = std::make_shared<Provider>(this);
+    completion_provider_ = Glib::RefPtr<Provider>(new Provider(this));
 
     file_tree_store_ = Gtk::TreeStore::create(file_tree_columns_);
     open_list_store_ = Gtk::ListStore::create(open_list_columns_);
@@ -155,6 +155,10 @@ void Window::add_global_action(const unicode& name, const Gtk::AccelKey& key, st
     action_group_->add(new_action, key);
     new_action->set_accel_group(accel_group_);
     new_action->connect_accelerator();
+}
+
+Glib::RefPtr<Gsv::CompletionProvider> Window::completion_provider() {
+    return completion_provider_;
 }
 
 void Window::build_widgets() {

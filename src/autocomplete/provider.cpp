@@ -14,7 +14,7 @@ Provider::Provider(Window* window) {
 
     ///Just a test, let's try and index the tokenize.py library
 
-    indexer_->index_file("/usr/lib64/python2.7/tokenize.py");
+    indexer_->index_file("/usr/lib64/python2.7/os.py");
 }
 
 void Provider::populate(const Glib::RefPtr<Gsv::CompletionContext> &context) {

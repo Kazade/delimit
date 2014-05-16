@@ -30,10 +30,10 @@ public:
     const unicode path() const { return path_; }
     const std::vector<unicode> inherited_paths() const { return inherited_paths_; }
 
-    int start_line = 0;
-    int end_line = 0;
-    int start_col = 0;
-    int end_col = 0;
+    int start_line;
+    int end_line;
+    int start_col;
+    int end_col;
 
 private:
     unicode path_;

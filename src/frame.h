@@ -18,19 +18,7 @@ class Frame {
 public:
     typedef std::shared_ptr<Frame> ptr;
 
-    Frame(Window& parent):
-        parent_(parent),
-        container_(Gtk::ORIENTATION_VERTICAL),
-        file_chooser_(true),
-        awesome_bar_(this),
-        search_(this),        
-        buffer_(nullptr) {
-
-        search_._connect_signals();
-
-        build_widgets();
-    }
-
+    Frame(Window& parent);
     void set_buffer(Buffer* buffer);
     Buffer* buffer() { return buffer_; }
     Gsv::View& view() { return source_view_; }

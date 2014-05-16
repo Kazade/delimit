@@ -64,6 +64,29 @@ gchar* get_tooltip(GtkSourceMarkAttributes *attrs,
     return g_strdup_printf("No message");
 }
 
+Frame::Frame(Window& parent):
+    parent_(parent),
+    container_(Gtk::ORIENTATION_VERTICAL),
+    file_chooser_(true),
+    awesome_bar_(this),
+    search_(this),
+    buffer_(nullptr) {
+
+    search_._connect_signals();
+
+    build_widgets();
+
+    Glib::RefPtr<Gsv::CompletionProvider> provider = parent.completion_provider();
+    assert(provider);
+
+    auto completion = view().get_completion();
+
+    L_DEBUG("About to install code completion");
+    if(!completion->add_provider(provider)) {
+        L_ERROR("Unable to initialize code completion... weird");
+    }
+}
+
 void Frame::show_awesome_bar(bool value) {
     if(value) {
         awesome_bar_.show();

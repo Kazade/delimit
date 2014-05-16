@@ -4,6 +4,8 @@
 
 #include "application.h"
 #include "window.h"
+#include "autocomplete/provider.h"
+
 
 namespace delimit {
 

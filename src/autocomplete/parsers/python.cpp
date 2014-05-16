@@ -216,11 +216,7 @@ std::vector<Token> Python::tokenize(const unicode& data) {
             line = lines.at(lnum);
         }
 
-        if(line.contains("...")) {
-            std::cout << "Here" << std::endl;
-        }
-
-        std::cout << lnum << ":" << line << std::endl;
+        std::cout << line << std::endl;
 
         lnum += 1; //Increment the line counter
         int32_t pos = 0, max = line.length(); //Store the line boundaries
@@ -351,13 +347,7 @@ std::vector<Token> Python::tokenize(const unicode& data) {
                     auto tok_str = token.encode();
                     endprog = endprogs.at(tok_str);
                     auto endmatch = endprog.match(line, pos);
-
-                    std::cout << "line: " << line << std::endl;
-                    std::cout << "pos: " << pos << std::endl;
-
                     if(endmatch) {
-                        std::cout << endmatch.start(0) << ":" << endmatch.end(0) << std::endl;
-
                         pos = endmatch.end(0);
                         token = line.slice(start, pos);
                         result.push_back(Token({TokenType::STRING, token, spos, std::make_pair(lnum, pos)}));
@@ -475,12 +465,50 @@ std::pair<bool, std::vector<Token>> find_tokens_till_next(const unicode& what, c
     return std::make_pair(complete, result);
 }
 
+unicode guess_scope_from_assigned_token(const Token& tok) {
+    if(tok.type == OP) {
+        if(tok.str == "[") {
+            return "list";
+        } else if(tok.str == "{") {
+            //FIXME: Could be a set, we should look for a ":" before a closing }
+            return "dict";
+        } else if(tok.str.starts_with("'") || tok.str.starts_with("\"")) {
+            return "str";
+        } else {
+            std::cout << "Unhandled OP: " << tok.str << std::endl;
+        }
+    } else if(tok.type == TokenType::NUMBER) {
+        if(tok.str.contains(".")) {
+            return "float";
+        } else if(tok.str.ends_with("L")) {
+            return "long";
+        } else {
+            return "int";
+        }
+    } else if(tok.type == TokenType::NAME) {
+        if(is_python_builtin(tok.str)) {
+            return tok.str;
+        } else {
+            //??? We need to look back up the scope tree from the current scope to
+            // find a matching scope with this name... e.g. if we are doing a = A() we
+            // need to go through the scopes and find the deepest scope where the last part of the path
+            // is 'A'
+            std::cout << "Unhandled assignment: " << tok.type << " - " << tok.str << std::endl;
+        }
+
+    } else {
+        std::cout << "Unhandled assignment: " << tok.type << " - " << tok.str << std::endl;
+    }
+
+    return "";
+}
+
 unicode Python::base_scope_from_filename(const unicode &filename) {
     //FIXME: Search the PYTHONPATH to find the correct relative path
     return os::path::split_ext(filename).first.replace("/", ".");
 }
 
-std::pair<std::vector<ScopePtr>, bool> Python::parse(const unicode& data, const unicode &base_scope)  {
+std::pair<std::vector<ScopePtr>, bool> Python::parse(const unicode& data, const unicode& base_scope)  {
     auto tokens = tokenize(data);
 
     std::vector<ScopePtr> scopes;
@@ -512,7 +540,7 @@ std::pair<std::vector<ScopePtr>, bool> Python::parse(const unicode& data, const 
             //If this token is the class keyword, and we have the next token, then
             //process a class
             if(this_token.str == "class" && next_token && next_token->type == TokenType::NAME) {
-                unicode new_scope_path = _u(".").join({current_path, next_token->str});
+                unicode new_scope_path = _u(".").join(std::vector<unicode>({current_path, next_token->str}));
 
                 std::vector<unicode> inherited_paths;
                 auto search = find_tokens_till_next(")", tokens, i + 2);
@@ -527,7 +555,7 @@ std::pair<std::vector<ScopePtr>, bool> Python::parse(const unicode& data, const 
                         if(is_python_builtin(lookahead_tok.str)) {
                             inherited_paths.push_back(lookahead_tok.str);
                         } else {
-                            inherited_paths.push_back(_u(".").join({current_path, lookahead_tok.str}));
+                            inherited_paths.push_back(_u(".").join(std::vector<unicode>({current_path, lookahead_tok.str})));
                         }
                     }
 
@@ -543,7 +571,7 @@ std::pair<std::vector<ScopePtr>, bool> Python::parse(const unicode& data, const 
                 inside_class = true;
             } else if(this_token.str == "def" && next_token && next_token->type == TokenType::NAME) {
                 //We've found a function or method
-                unicode new_scope_path = _u(".").join({current_path, next_token->str});
+                unicode new_scope_path = _u(".").join(std::vector<unicode>({current_path, next_token->str}));
                 std::vector<unicode> inherited_scopes;
                 if(inside_class) {
                     inherited_scopes.push_back("instancemethod");
@@ -562,27 +590,43 @@ std::pair<std::vector<ScopePtr>, bool> Python::parse(const unicode& data, const 
                 bool next_token_is_assignment = false;
                 bool next_name_is_args = false;
                 bool next_name_is_kwargs = false;
-                for(auto& lookahead_tok: search.second) {
-                    if(lookahead_tok.type == TokenType::NAME) {
-                        if(!next_token_is_assignment) {
-                            if(next_name_is_args || next_name_is_kwargs) {
-                                std::cout << "Need to set the current type (e.g. tuple/dict)" << std::endl;
-                            }
+                for(uint32_t i = 0; i < search.second.size(); ++i) {
+                    auto& lookahead_tok = search.second.at(i);
 
-                            unicode arg_scope_path = _u(".").join({new_scope_path, lookahead_tok.str});
-                            ScopePtr new_arg = std::make_shared<Scope>(arg_scope_path);
-                            new_arg->start_line = this_token.start_pos.first;
-                            new_arg->start_col = this_token.end_pos.second; //Inherit function scope boundaries
-                            args.push_back(new_arg);
-                        } else {
-                            next_token_is_assignment = false;
-                            std::cout << "Default arguments to methods not yet handled" << std::endl;
+                    if(lookahead_tok.type == TokenType::NAME) {
+                        Token* next_token = (i + 1 < search.second.size()) ? &search.second.at(i+1) : nullptr;
+                        Token* next_next_token = (i + 2 < search.second.size()) ? &search.second.at(i+2) : nullptr;
+
+                        std::vector<unicode> inherited_scopes;
+                        if(next_token && next_token->type == TokenType::OP) {
+                            if(next_token->str == "=") {
+                                if(next_next_token) {
+                                    unicode guessed = guess_scope_from_assigned_token(*next_next_token);
+                                    if(!guessed.empty()) {
+                                        inherited_scopes.push_back(guessed);
+                                    }
+                                    i++;
+                                }
+                            }
+                            i++;
+                        } else if(next_name_is_args) {
+                            inherited_scopes.push_back("tuple");
+                            next_name_is_args = false;
+                        } else if(next_name_is_kwargs) {
+                            inherited_scopes.push_back("dict");
+                            next_name_is_kwargs = false;
                         }
+
+
+                        unicode arg_scope_path = _u(".").join(std::vector<unicode>({new_scope_path, lookahead_tok.str}));
+                        ScopePtr new_arg = std::make_shared<Scope>(arg_scope_path, inherited_scopes);
+                        new_arg->start_line = this_token.start_pos.first;
+                        new_arg->start_col = this_token.end_pos.second; //Inherit function scope boundaries
+                        args.push_back(new_arg);
+
                     } else if(lookahead_tok.type == TokenType::OP) {
                         if(lookahead_tok.str == ",") {
                             continue;
-                        } else if(lookahead_tok.str == "=") {
-                            next_token_is_assignment = true;
                         } else if(lookahead_tok.str == "*") {
                             next_name_is_args = true;
                         } else if(lookahead_tok.str == "**") {
@@ -609,48 +653,16 @@ std::pair<std::vector<ScopePtr>, bool> Python::parse(const unicode& data, const 
                     if(lookahead < (int) tokens.size()) {
                         Token& tok = tokens.at(lookahead);
 
-                        if(tok.type == OP) {
-                            if(tok.str == "[") {
-                                inherited_scopes.push_back("list");
-                            } else if(tok.str == "{") {
-                                //FIXME: Could be a set, we should look for a ":" before a closing }
-                                inherited_scopes.push_back("dict");
-                            } else if(tok.str.starts_with("'") || tok.str.starts_with("\"")) {
-                                inherited_scopes.push_back("str");
-                            } else {
-                                std::cout << "Unhandled OP: " << tok.str << std::endl;
-                            }
-                        } else if(tok.type == TokenType::NUMBER) {
-                            if(tok.str.contains(".")) {
-                                inherited_scopes.push_back("float");
-                            } else if(tok.str.ends_with("L")) {
-                                inherited_scopes.push_back("long");
-                            } else {
-                                inherited_scopes.push_back("int");
-                            }
-                        } else if(tok.type == TokenType::NAME) {
-                            if(is_python_builtin(tok.str)) {
-                                inherited_scopes.push_back(tok.str);
-                            } else {
-                                //??? We need to look back up the scope tree from the current scope to
-                                // find a matching scope with this name... e.g. if we are doing a = A() we
-                                // need to go through the scopes and find the deepest scope where the last part of the path
-                                // is 'A'
-                                std::cout << "Unhandled assignment: " << tok.type << " - " << tok.str << std::endl;
-                            }
-
-                        } else {
-                            std::cout << "Unhandled assignment: " << tok.type << " - " << tok.str << std::endl;
+                        unicode guessed = guess_scope_from_assigned_token(tok);
+                        if(!guessed.empty()) {
+                            inherited_scopes.push_back(guessed);
                         }
-
-
                     } else {
                         //No inherited scopes... perhaps it should inherit something by default?
                     }
 
-
                     //Assignment to something \o/
-                    unicode new_scope_path = _u(".").join({current_path, this_token.str});
+                    unicode new_scope_path = _u(".").join(std::vector<unicode>({current_path, this_token.str}));
                     ScopePtr new_scope = std::make_shared<Scope>(new_scope_path, inherited_scopes);
                     new_scope->start_line = this_token.start_pos.first;
                     new_scope->start_col = next_token->start_pos.second; //Start after the assignment
