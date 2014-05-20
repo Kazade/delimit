@@ -75,16 +75,6 @@ Frame::Frame(Window& parent):
     search_._connect_signals();
 
     build_widgets();
-
-    Glib::RefPtr<Gsv::CompletionProvider> provider = parent.completion_provider();
-    assert(provider);
-
-    auto completion = view().get_completion();
-
-    L_DEBUG("About to install code completion");
-    if(!completion->add_provider(provider)) {
-        L_ERROR("Unable to initialize code completion... weird");
-    }
 }
 
 void Frame::show_awesome_bar(bool value) {
@@ -142,6 +132,14 @@ void Frame::build_widgets() {
     source_view_.set_right_margin(4);
     source_view_.set_show_line_marks(true);
     source_view_.set_smart_home_end(Gsv::SMART_HOME_END_AFTER);
+
+    Glib::RefPtr<Gsv::CompletionProvider> provider = parent_.completion_provider();
+    assert(provider);
+
+    L_DEBUG("About to install code completion");
+    if(!source_view_.get_completion()->add_provider(provider)) {
+        L_ERROR("Unable to initialize code completion... weird");
+    }
 
     search_.signal_close_requested().connect([&]() {
         parent_.buffer_search_button().set_active(false);

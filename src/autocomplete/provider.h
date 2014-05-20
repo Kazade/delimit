@@ -9,12 +9,15 @@ namespace delimit {
 
 class Window;
 
-class Provider : public Gsv::CompletionProvider {
+class Provider : public Glib::Object, public Gsv::CompletionProvider {
 public:
     Provider(Window *window);
 
     Glib::ustring get_name() const { return "Delimit"; }
-    void populate(const Glib::RefPtr<Gsv::CompletionContext> &context);
+
+    void populate_vfunc(const Glib::RefPtr<Gsv::CompletionContext> &context) override;
+    bool match_vfunc(const Glib::RefPtr<const Gsv::CompletionContext> &context) const override { return true; }
+    Gsv::CompletionActivation get_activation_vfunc() const override;
 
 private:
     Window* window_;

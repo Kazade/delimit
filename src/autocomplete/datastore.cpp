@@ -88,6 +88,7 @@ void Datastore::save_scopes(const std::vector<ScopePtr>& scopes, const unicode &
 }
 
 std::vector<unicode> Datastore::query_completions(const unicode &filename, int line_number, int col_number, const unicode &string_to_complete) {
+    std::cout << string_to_complete << std::endl;
     return std::vector<unicode>();
 }
 
