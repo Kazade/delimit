@@ -44,6 +44,7 @@ private:
     void clear_matches();
     int32_t find_next_match(const Gtk::TextIter& start);
     int32_t last_selected_match_ = -1;
+    void replace_text(Gtk::TextIter &start, Gtk::TextIter& end, Glib::ustring& replacement);
 
 
     int highlight_all(const unicode& string);

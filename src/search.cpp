@@ -182,24 +182,39 @@ int32_t Search::find_next_match(const Gtk::TextIter& start) {
     return 0;
 }
 
-void Search::on_replace_all_clicked() {
-    auto text = find_entry_.get_text();
-    auto replacement_text = replace_entry_.get_text();
-    if(text == replacement_text) {
-        //no-op
+void Search::replace_text(Gtk::TextIter& start, Gtk::TextIter& end, Glib::ustring& replacement) {
+    auto buf = buffer()->_gtk_buffer();
+
+    if(buf->get_slice(start, end) == replacement) {
         return;
     }
 
-    on_replace_clicked();
+    //Store the offset to the start of the selection set to be replaced
+    auto offset = start.get_offset();
 
-    while(!matches_.empty()) {
-        on_replace_clicked();
+    //Erase the selection
+    buf->erase(start, end);
+
+    //Build a new iterator from the stored offset, and insert the text there
+    auto new_start = buf->get_iter_at_offset(offset);
+    buf->insert(new_start, replacement);
+}
+
+void Search::on_replace_all_clicked() {
+    auto text = find_entry_.get_text();
+    auto replacement_text = replace_entry_.get_text();
+
+    locate_matches(unicode(text.c_str()));
+
+    for(auto match: matches_) {
+        replace_text(match.first, match.second, replacement_text);
     }
 }
 
 void Search::on_replace_clicked() {
     auto text = find_entry_.get_text();
     auto replacement_text = replace_entry_.get_text();
+
     if(text == replacement_text) {
         //no-op
         return;
@@ -210,18 +225,7 @@ void Search::on_replace_clicked() {
         //If we had a selected match already, then replace that before moving on
         to_replace = matches_[last_selected_match_];
 
-
-        auto buf = buffer()->_gtk_buffer();
-
-        //Store the offset to the start of the selection set to be replaced
-        auto offset = to_replace.first.get_offset();
-
-        //Erase the selection
-        buf->erase(to_replace.first, to_replace.second);
-
-        //Build a new iterator from the stored offset, and insert the text there
-        auto new_start = buf->get_iter_at_offset(offset);
-        buf->insert(new_start, replacement_text);
+        replace_text(to_replace.first, to_replace.second, replacement_text);
     }
 
     //Find the next match
