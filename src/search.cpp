@@ -15,6 +15,7 @@ Search::Search(Frame* parent):
 void Search::_connect_signals() {
     assert(frame_);
     frame_->signal_buffer_changed().connect(sigc::mem_fun(this, &Search::on_buffer_changed));
+    close_button_.signal_clicked().connect(sigc::mem_fun(this, &Search::hide));
 }
 
 void Search::show() {
