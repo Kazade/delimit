@@ -40,7 +40,7 @@ void Search::on_buffer_changed(Buffer *buffer)  {
         //Create the buffer tag if necessary
         if(!buffer->_gtk_buffer()->get_tag_table()->lookup(SEARCH_HIGHLIGHT_TAG)) {
             auto tag = buffer->_gtk_buffer()->create_tag (SEARCH_HIGHLIGHT_TAG);
-            tag->property_background() = "#B3BF6F";
+            tag->property_background() = "#1EBCFF";
         }
     }
 }
@@ -139,27 +139,62 @@ bool Search::on_entry_key_press(GdkEventKey* event) {
     return false;
 }
 
+void Search::locate_matches(const unicode& string) {
+    matches_.clear();
+
+    auto buf = this->buffer()->_gtk_buffer();
+    auto start = buf->begin();
+    Gtk::TextIter end;
+
+    bool case_sensitive = case_sensitive_.get_active();
+
+    while(start.forward_search(
+              string.encode(), (case_sensitive) ? Gtk::TextSearchFlags(0) : Gtk::TEXT_SEARCH_CASE_INSENSITIVE,
+              start, end)) {
+
+        matches_.push_back(std::make_pair(start, end));
+        start = buf->get_iter_at_offset(end.get_offset());
+    }
+
+}
+
+int32_t Search::find_next_match(const Gtk::TextIter& start) {
+    if(matches_.empty()) {
+        return -1;
+    }
+
+    int i = 0;
+    for(auto match: matches_) {
+        if(match.first.get_offset() > start.get_offset()) {
+            return i;
+        }
+        ++i;
+    }
+
+    //If we got here then there were no matches after the cursor, so just return the first one out
+    //of all of them
+    return 0;
+}
+
 void Search::on_find_next_clicked() {
     if(!buffer()) {
         return;
     }
 
     auto buf = buffer()->_gtk_buffer();
-    Gtk::TextIter start, end;
-    buf->get_selection_bounds(start, end);
+
+    auto start = buf->get_iter_at_mark(buf->get_insert());
 
     auto text = unicode(find_entry_.get_text().c_str());
 
-    bool case_sensitive = case_sensitive_.get_active();
-    bool found = end.forward_search(
-        text.encode(),
-        (case_sensitive) ? Gtk::TextSearchFlags(0) : Gtk::TEXT_SEARCH_CASE_INSENSITIVE,
-        start, end
-    );
+    locate_matches(text);
 
-    if(found) {
-        buf->select_range(start, end);
-        frame_->view().scroll_to(start);
+    auto next = find_next_match(start);
+
+    if(next > -1) {
+        auto match = matches_[next];
+        buf->select_range(match.first, match.second);
+        frame_->view().scroll_to(match.first);
     }
 }
 

@@ -33,7 +33,15 @@ public:
     sigc::signal<void> signal_close_requested() { return signal_close_requested_; }
 
     void _connect_signals();
+
 private:
+    std::vector<std::pair<Gtk::TextIter, Gtk::TextIter>> matches_;
+
+    void locate_matches(const unicode& string);
+    void clear_matches();
+    int32_t find_next_match(const Gtk::TextIter& start);
+
+
     int highlight_all(const unicode& string);
     int highlight_all(const unicode& string, std::vector<Gtk::TextBuffer::iterator>& start_iters);
     void clear_highlight();

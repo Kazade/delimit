@@ -132,6 +132,7 @@ void Frame::build_widgets() {
     source_view_.set_right_margin(4);
     source_view_.set_show_line_marks(true);
     source_view_.set_smart_home_end(Gsv::SMART_HOME_END_AFTER);
+    source_view_.set_highlight_current_line(true);
 
     Glib::RefPtr<Gsv::CompletionProvider> provider = parent_.completion_provider();
     assert(provider);
