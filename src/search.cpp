@@ -204,10 +204,31 @@ void Search::on_replace_all_clicked() {
     auto text = find_entry_.get_text();
     auto replacement_text = replace_entry_.get_text();
 
-    locate_matches(unicode(text.c_str()));
+    /*
+     * This is either clever or stupid...
+     *
+     * Basically, we can't just call locate_matches
+     * and then iterate them because replacing the first will invalidate
+     * all the iterators. So we have to call locate_matches after each replacement
+     * until all the matches are gone. But there is an edge case, if we have a case-insensitive
+     * match, and we replace the same text but with different capitalization (e.g. replace
+     * 'cheese' with 'CHEESE') then the number of matches never changes, even when the replacements
+     * happen - so we'd hit an infinte loop. So what we do is we keep track of the number of matches
+     * if the number of matches changes (goes down) then we don't increment i to read the next match
+     * we just keep replacing matches_[0] till they are all gone. If the number of matches doesn't change
+     * then we increment 'i' each time so we eventually replace all the matches even if they are the same
+     * case! Phew!!
+     */
 
-    for(auto match: matches_) {
-        replace_text(match.first, match.second, replacement_text);
+    locate_matches(unicode(text.c_str()));
+    uint32_t i = 0;
+    uint32_t last_matches_size = matches_.size();
+    while(!matches_.empty() && i < matches_.size()) {
+        replace_text(matches_[i].first, matches_[i].second, replacement_text);
+        locate_matches(unicode(text.c_str()));
+        if(matches_.size() == last_matches_size) {
+            ++i;
+        }
     }
 }
 
