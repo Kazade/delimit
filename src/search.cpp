@@ -16,6 +16,8 @@ void Search::_connect_signals() {
     assert(frame_);
     frame_->signal_buffer_changed().connect(sigc::mem_fun(this, &Search::on_buffer_changed));
     close_button_.signal_clicked().connect(sigc::mem_fun(this, &Search::hide));
+    replace_button_.signal_clicked().connect(sigc::mem_fun(this, &Search::on_replace_clicked));
+    replace_all_button_.signal_clicked().connect(sigc::mem_fun(this, &Search::on_replace_all_clicked));
 }
 
 void Search::show() {
@@ -101,6 +103,8 @@ void Search::build_widgets() {
 }
 
 void Search::on_entry_changed() {
+    last_selected_match_ = -1;
+
     auto text = unicode(find_entry_.get_text().c_str());
 
     if(text.empty()) {
@@ -142,6 +146,7 @@ bool Search::on_entry_key_press(GdkEventKey* event) {
 
 void Search::locate_matches(const unicode& string) {
     matches_.clear();
+    last_selected_match_ = -1;
 
     auto buf = this->buffer()->_gtk_buffer();
     auto start = buf->begin();
@@ -177,6 +182,52 @@ int32_t Search::find_next_match(const Gtk::TextIter& start) {
     return 0;
 }
 
+void Search::on_replace_all_clicked() {
+    auto text = find_entry_.get_text();
+    auto replacement_text = replace_entry_.get_text();
+    if(text == replacement_text) {
+        //no-op
+        return;
+    }
+
+    on_replace_clicked();
+
+    while(!matches_.empty()) {
+        on_replace_clicked();
+    }
+}
+
+void Search::on_replace_clicked() {
+    auto text = find_entry_.get_text();
+    auto replacement_text = replace_entry_.get_text();
+    if(text == replacement_text) {
+        //no-op
+        return;
+    }
+
+    std::pair<Gtk::TextIter, Gtk::TextIter> to_replace;
+    if(last_selected_match_ > -1 && !matches_.empty()) {
+        //If we had a selected match already, then replace that before moving on
+        to_replace = matches_[last_selected_match_];
+
+
+        auto buf = buffer()->_gtk_buffer();
+
+        //Store the offset to the start of the selection set to be replaced
+        auto offset = to_replace.first.get_offset();
+
+        //Erase the selection
+        buf->erase(to_replace.first, to_replace.second);
+
+        //Build a new iterator from the stored offset, and insert the text there
+        auto new_start = buf->get_iter_at_offset(offset);
+        buf->insert(new_start, replacement_text);
+    }
+
+    //Find the next match
+    on_find_next_clicked();
+}
+
 void Search::on_find_next_clicked() {
     if(!buffer()) {
         return;
@@ -191,6 +242,7 @@ void Search::on_find_next_clicked() {
     locate_matches(text);
 
     auto next = find_next_match(start);
+    last_selected_match_ = next;
 
     if(next > -1) {
         auto match = matches_[next];

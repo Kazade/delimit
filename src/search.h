@@ -16,6 +16,9 @@ public:
 
     void on_entry_changed();
     void on_find_next_clicked();
+    void on_replace_clicked();
+    void on_replace_all_clicked();
+
     void on_case_sensitive_changed() {
         on_entry_changed();
     }
@@ -40,6 +43,7 @@ private:
     void locate_matches(const unicode& string);
     void clear_matches();
     int32_t find_next_match(const Gtk::TextIter& start);
+    int32_t last_selected_match_ = -1;
 
 
     int highlight_all(const unicode& string);
