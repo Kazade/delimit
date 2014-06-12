@@ -29,7 +29,7 @@ void Buffer::create_buffer(Glib::RefPtr<Gsv::Language> lang) {
     if(!gtk_buffer_) {
         gtk_buffer_ = Gsv::Buffer::create(lang);
         gtk_buffer_->signal_changed().connect(sigc::mem_fun(this, &Buffer::on_buffer_changed));
-        gtk_buffer_->signal_modified_changed().connect(sigc::mem_fun(this, &Buffer::on_signal_modified_changed));        ;
+        gtk_buffer_->signal_modified_changed().connect(sigc::mem_fun(this, &Buffer::on_signal_modified_changed));
     }
 
     gtk_buffer_->set_language(lang);

@@ -128,6 +128,7 @@ private:
     Gtk::ToolButton* buffer_redo_;
     Gtk::ToggleToolButton* buffer_search_;
     Gtk::ToggleToolButton* window_split_;
+    Gtk::Paned* main_paned_;
 
     Gtk::Button* buffer_close_;
     Gtk::Label* error_counter_;

@@ -31,6 +31,7 @@ Window::Window():
     buffer_undo_(nullptr),
     buffer_search_(nullptr),
     buffer_close_(nullptr),
+    main_paned_(nullptr),
     type_(WINDOW_TYPE_FILE),
     current_frame_(0) {
 
@@ -62,6 +63,7 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
     buffer_undo_(nullptr),
     buffer_search_(nullptr),
     buffer_close_(nullptr),
+    main_paned_(nullptr),
     type_(WINDOW_TYPE_FILE),
     current_frame_(0) {
 
@@ -193,6 +195,7 @@ void Window::build_widgets() {
     builder->get_widget("window_split", window_split_);
     builder->get_widget("buffer_close", buffer_close_);
     builder->get_widget("error_counter", error_counter_);
+    builder->get_widget("window_pane", main_paned_);
 
     buffer_new_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_new_clicked));
     buffer_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_clicked));
@@ -244,6 +247,11 @@ void Window::build_widgets() {
     gtk_window_->set_icon_from_file(icon_file);
 
     gtk_window_->maximize();
+
+    //Set the pane to be 1/5th the size of the screen width - can't figure out
+    //how to work out what the actual size of the window will be :(
+    int window_width = Gdk::Screen::get_default()->get_width();
+    main_paned_->set_position(window_width / 5);
 }
 
 void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column) {
@@ -253,7 +261,7 @@ void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::Tree
         Glib::ustring full_path = row[file_tree_columns_.full_path];
 
         if(Gio::File::create_for_path(full_path)->query_file_type() == Gio::FILE_TYPE_REGULAR) {
-            open_buffer(Gio::File::create_for_path(full_path));
+            open_buffer(Gio::File::create_for_path(os::path::real_path(full_path.c_str()).encode()));
         }
     }
 }
@@ -371,7 +379,9 @@ bool Window::on_tree_test_expand_row(const Gtk::TreeModel::iterator& iter, const
 
     if(!dummy_nodes.empty()) {
         //Build the node
-        dirwalk(Glib::ustring(row[file_tree_columns_.full_path]).c_str(), &row);
+        auto path = Glib::ustring(row[file_tree_columns_.full_path]);
+        auto unicode_path = unicode(path.c_str());
+        dirwalk(unicode_path, &row);
 
         for(auto ref: dummy_nodes) {
             file_tree_store_->erase(file_tree_store_->get_iter(ref.get_path()));//Erase the dummy
@@ -429,7 +439,7 @@ void Window::unwatch_directory(const unicode& path) {
 void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
     std::vector<unicode> files;
 
-    bool path_is_dir = os::path::is_dir(path);
+    bool path_is_dir = os::path::is_dir(os::path::real_path(path));
     if(!path_is_dir) {
         L_DEBUG("Not walking file: " + path.encode());
         return;
@@ -455,6 +465,7 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
 
         L_DEBUG(_u("Adding file: {0}").format(real_path));
         if(os::path::is_dir(real_path)) {
+            L_DEBUG(_u("...Is directory"));
             directories.push_back((*it));
             it = files.erase(it);
         } else {

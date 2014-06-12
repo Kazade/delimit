@@ -138,9 +138,10 @@ void Frame::build_widgets() {
     assert(provider);
 
     L_DEBUG("About to install code completion");
-    if(!source_view_.get_completion()->add_provider(provider)) {
+/*    if(!source_view_.get_completion()->add_provider(provider)) {
         L_ERROR("Unable to initialize code completion... weird");
     }
+*/
 
     search_.signal_close_requested().connect([&]() {
         parent_.buffer_search_button().set_active(false);
