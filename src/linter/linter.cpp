@@ -22,7 +22,8 @@ void Linter::apply_to_buffer(delimit::Buffer *buffer) {
         auto line = line_and_message.first;
         auto message = line_and_message.second;
 
-        assert(line >= 0 && line < gbuf->end().get_line());
+        auto last_line = gbuf->end().get_line();
+        assert(line >= 0 && line <= last_line);
 
         auto iter = gbuf->get_iter_at_line(line);
         assert(iter.get_line() == line);

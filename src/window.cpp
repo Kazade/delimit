@@ -29,7 +29,6 @@ Window::Window():
     folder_open_(nullptr),
     buffer_save_(nullptr),
     buffer_undo_(nullptr),
-    buffer_search_(nullptr),
     buffer_close_(nullptr),
     main_paned_(nullptr),
     type_(WINDOW_TYPE_FILE),
@@ -61,7 +60,6 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
     folder_open_(nullptr),
     buffer_save_(nullptr),
     buffer_undo_(nullptr),
-    buffer_search_(nullptr),
     buffer_close_(nullptr),
     main_paned_(nullptr),
     type_(WINDOW_TYPE_FILE),
@@ -191,7 +189,6 @@ void Window::build_widgets() {
     builder->get_widget("buffer_save", buffer_save_);
     builder->get_widget("buffer_undo", buffer_undo_);
     builder->get_widget("buffer_redo", buffer_redo_);
-    builder->get_widget("buffer_search", buffer_search_);
     builder->get_widget("window_split", window_split_);
     builder->get_widget("buffer_close", buffer_close_);
     builder->get_widget("error_counter", error_counter_);
@@ -201,7 +198,6 @@ void Window::build_widgets() {
     buffer_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_clicked));
     buffer_save_->signal_clicked().connect(sigc::hide_return(sigc::mem_fun(this, &Window::toolbutton_save_clicked)));
     folder_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_folder_clicked));
-    buffer_search_->signal_toggled().connect(sigc::mem_fun(this, &Window::toolbutton_search_toggled));
     buffer_close_->signal_clicked().connect(sigc::mem_fun(this, &Window::close_active_buffer));
     buffer_undo_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_undo_clicked));
     buffer_redo_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_redo_clicked));
@@ -218,7 +214,6 @@ void Window::build_widgets() {
     buffer_save_->set_icon_name("document-save");
     buffer_open_->set_icon_name("document-open");
     folder_open_->set_icon_name("folder-open");
-    buffer_search_->set_icon_name("search");
     buffer_undo_->set_icon_name("edit-undo");
     buffer_redo_->set_icon_name("edit-redo");
     window_split_->set_icon_name("window-new");
@@ -361,10 +356,6 @@ bool Window::toolbutton_save_clicked() {
     return was_saved;
 }
 
-
-void Window::toolbutton_search_toggled() {
-    frames_[current_frame_]->set_search_visible(buffer_search_->get_active());
-}
 
 bool Window::on_tree_test_expand_row(const Gtk::TreeModel::iterator& iter, const Gtk::TreeModel::Path& path) {
     Gtk::TreeRow row = (*iter);

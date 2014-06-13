@@ -127,19 +127,6 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkToggleToolButton" id="buffer_search">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Search</property>
-                    <property name="use_underline">True</property>
-                    <property name="icon_name">find</property>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="homogeneous">True</property>
-                  </packing>
-                </child>
-                <child>
                   <object class="GtkToggleToolButton" id="window_split">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>

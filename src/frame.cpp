@@ -143,10 +143,6 @@ void Frame::build_widgets() {
     }
 */
 
-    search_.signal_close_requested().connect([&]() {
-        parent_.buffer_search_button().set_active(false);
-    });
-
     search_.set_no_show_all();
 
     auto coverage_attrs = Gsv::MarkAttributes::create();

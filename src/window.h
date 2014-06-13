@@ -69,8 +69,6 @@ public:
         new_buffer("Thing");
     }
 
-    Gtk::ToggleToolButton& buffer_search_button() { return *buffer_search_; }
-
     void set_undo_enabled(bool value);
     void set_redo_enabled(bool value);
 
@@ -126,7 +124,6 @@ private:
     Gtk::ToolButton* buffer_save_;
     Gtk::ToolButton* buffer_undo_;
     Gtk::ToolButton* buffer_redo_;
-    Gtk::ToggleToolButton* buffer_search_;
     Gtk::ToggleToolButton* window_split_;
     Gtk::Paned* main_paned_;
 
@@ -141,7 +138,6 @@ private:
 
     void toolbutton_undo_clicked();
     void toolbutton_redo_clicked();
-    void toolbutton_search_toggled();
 
     void create_frame();
 
