@@ -53,6 +53,8 @@ private:
     sigc::connection file_changed_connection_;
     sigc::connection buffer_changed_connection_;
 
+    Glib::RefPtr<Gsv::CompletionProvider> provider_;
+
     void check_undoable_actions();
 };
 

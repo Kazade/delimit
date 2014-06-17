@@ -3,6 +3,7 @@
 #include "frame.h"
 #include "buffer.h"
 #include "window.h"
+#include "autocomplete/provider.h"
 
 namespace delimit {
 
@@ -35,7 +36,7 @@ std::pair<IndentType, int> detect_indentation(const unicode& text) {
         if(whitespace.starts_with("\t")) {
             return std::make_pair(INDENT_TABS, 0); //Guess tab indentation
         } else {
-            int i = 0;
+            uint32_t i = 0;
 
             //Count the spaces
             while(i < whitespace.length() && whitespace[i] == ' ') {
@@ -75,6 +76,8 @@ Frame::Frame(Window& parent):
     search_._connect_signals();
 
     build_widgets();
+
+    provider_ = Glib::RefPtr<Provider>(new Provider(&parent));
 }
 
 void Frame::show_awesome_bar(bool value) {
@@ -134,14 +137,14 @@ void Frame::build_widgets() {
     source_view_.set_smart_home_end(Gsv::SMART_HOME_END_AFTER);
     source_view_.set_highlight_current_line(true);
 
-    Glib::RefPtr<Gsv::CompletionProvider> provider = parent_.completion_provider();
-    assert(provider);
-
     L_DEBUG("About to install code completion");
-/*    if(!source_view_.get_completion()->add_provider(provider)) {
-        L_ERROR("Unable to initialize code completion... weird");
+    if(provider_) {
+        if(!source_view_.get_completion()->add_provider(provider_)) {
+            L_ERROR("Unable to initialize code completion... weird");
+        }
+    } else {
+        L_ERROR("No completion provider found");
     }
-*/
 
     search_.set_no_show_all();
 
