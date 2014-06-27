@@ -20,6 +20,8 @@ public:
         int col_number,
         const unicode& string_to_complete
     );
+
+    unicode query_scope_at(const unicode& filename, int line_number, int col_number);
 private:
     sqlite3* db_;
 

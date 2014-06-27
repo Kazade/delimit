@@ -75,9 +75,8 @@ Frame::Frame(Window& parent):
 
     search_._connect_signals();
 
-    build_widgets();
-
     provider_ = Glib::RefPtr<Provider>(new Provider(&parent));
+    build_widgets();
 }
 
 void Frame::show_awesome_bar(bool value) {
@@ -119,7 +118,7 @@ void Frame::build_widgets() {
         size = parts.back().to_int();
         parts.pop_back();
         font_name = _u(" ").join(parts).encode();
-    } catch(boost::bad_lexical_cast& e) {}
+    } catch(std::exception& e) {}
 
     Pango::FontDescription fdesc;
     fdesc.set_family(font_name);
@@ -216,6 +215,8 @@ void Frame::set_buffer(Buffer *buffer) {
               source_view_.set_indent_width(indent.second);
               source_view_.set_insert_spaces_instead_of_tabs(true);
           }
+
+          provider_->indexer()->index_file("", buffer->_gtk_buffer()->get_text().c_str());
     });
 
     Glib::signal_idle().connect_once([&]() {

@@ -47,7 +47,7 @@ void AwesomeBar::populate(const unicode &text) {
             auto buffer = frame_->buffer()->_gtk_buffer();
             auto iter = buffer->get_iter_at_line(line_number);
             frame_->view().scroll_to(iter, 0, 0.5, 0.5);
-        } catch(boost::bad_lexical_cast& e) {
+        } catch(std::exception& e) {
             return;
         }
     }

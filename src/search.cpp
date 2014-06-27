@@ -1,3 +1,4 @@
+#include <cassert>
 #include "search.h"
 #include "buffer.h"
 #include "frame.h"

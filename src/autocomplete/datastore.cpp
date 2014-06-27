@@ -1,6 +1,7 @@
 #include <kazbase/unicode.h>
 #include <kazbase/os/path.h>
 #include <kazbase/exceptions.h>
+#include <cassert>
 
 #include "datastore.h"
 
@@ -8,7 +9,7 @@ namespace delimit {
 
 std::vector<unicode> INITIAL_DATA_SQL = {
     "BEGIN",
-    "CREATE TABLE scope(id INTEGER PRIMARY KEY, filename VARCHAR(255) NOT NULL, path VARCHAR(1024) NOT NULL)",
+    "CREATE TABLE scope(id INTEGER PRIMARY KEY, filename VARCHAR(255) NOT NULL, path VARCHAR(1024) NOT NULL, start_line INTEGER NOT NULL, start_col INTEGER NOT NULL, end_line INTEGER NOT NULL, end_col INTEGER NOT NULL)",
     "CREATE INDEX filename_idx ON scope(path)",
     "CREATE TABLE scope_parent(id INTEGER PRIMARY KEY, path VARCHAR(1024), scope INTEGER, FOREIGN KEY(scope) REFERENCES scope(id))",
     "COMMIT",
@@ -59,7 +60,7 @@ void Datastore::delete_scopes_by_filename(const unicode& path) {
 }
 
 void Datastore::save_scopes(const std::vector<ScopePtr>& scopes, const unicode &filename) {
-    const unicode SCOPE_INSERT_SQL = "INSERT INTO scope (filename, path) VALUES(?, ?)";
+    const unicode SCOPE_INSERT_SQL = "INSERT INTO scope (filename, path, start_line, start_col, end_line, end_col) VALUES(?, ?, ?, ?, ?, ?)";
     const unicode SCOPE_PARENT_SQL = "INSERT INTO scope_parent(scope, path) VALUES(?, ?)";
 
     for(auto scope: scopes) {
@@ -68,6 +69,10 @@ void Datastore::save_scopes(const std::vector<ScopePtr>& scopes, const unicode &
         assert(!ret);
         sqlite3_bind_text(stmt, 1, filename.encode().c_str(), filename.encode().length(), SQLITE_TRANSIENT);
         sqlite3_bind_text(stmt, 2, scope->path().encode().c_str(), scope->path().encode().length(), SQLITE_TRANSIENT);
+        sqlite3_bind_int(stmt, 3, scope->start_line);
+        sqlite3_bind_int(stmt, 4, scope->start_col);
+        sqlite3_bind_int(stmt, 5, scope->end_line);
+        sqlite3_bind_int(stmt, 6, scope->end_col);
 
         if(sqlite3_step(stmt) != SQLITE_DONE) {
             throw RuntimeError("Unable to insert a scope");
@@ -87,7 +92,15 @@ void Datastore::save_scopes(const std::vector<ScopePtr>& scopes, const unicode &
     }
 }
 
+unicode Datastore::query_scope_at(const unicode &filename, int line_number, int col_number) {
+    return "";
+}
+
 std::vector<unicode> Datastore::query_completions(const unicode &filename, int line_number, int col_number, const unicode &string_to_complete) {
+    auto scope = query_scope_at(filename, line_number, col_number);
+
+
+
     std::cout << string_to_complete << std::endl;
     return std::vector<unicode>();
 }

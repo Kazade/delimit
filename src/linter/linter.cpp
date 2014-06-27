@@ -1,3 +1,4 @@
+#include <iostream>
 #include "linter.h"
 
 #include "../frame.h"
@@ -66,7 +67,7 @@ LinterResult PythonLinter::find_problematic_lines(const unicode& filename, const
             ret.push_back(std::make_pair(lineno, message));
 
             std::cout << lineno << ": " << message << std::endl;
-        } catch(boost::bad_lexical_cast& e) {
+        } catch(std::exception& e) {
             continue;
         }
     }

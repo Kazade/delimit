@@ -1,3 +1,4 @@
+#include <iostream>
 
 #include "coverage.h"
 #include "../frame.h"
@@ -60,7 +61,7 @@ std::vector<int32_t> PythonCoverage::find_uncovered_lines(const unicode &filenam
         if(high_low.size() == 1) {
             try {
                 ret.push_back(high_low.front().to_int() - 1);
-            } catch(boost::bad_lexical_cast& e) {
+            } catch(std::exception& e) {
                 continue;
             }
         } else {
@@ -70,7 +71,7 @@ std::vector<int32_t> PythonCoverage::find_uncovered_lines(const unicode &filenam
                 for(int i = start; i <= end; ++i) {
                     ret.push_back(i);
                 }
-            } catch(boost::bad_lexical_cast& e) {
+            } catch(std::exception& e) {
                 continue;
             }
         }

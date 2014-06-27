@@ -19,6 +19,7 @@ public:
     bool match_vfunc(const Glib::RefPtr<const Gsv::CompletionContext> &context) const override { return true; }
     Gsv::CompletionActivation get_activation_vfunc() const override;
 
+    IndexerPtr indexer() { return indexer_; }
 private:
     Window* window_;
     IndexerPtr indexer_;

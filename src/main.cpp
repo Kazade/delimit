@@ -1,7 +1,7 @@
 #include <gtkmm.h>
 #include <gtksourceviewmm.h>
 
-
+#include <cassert>
 #include <kazbase/os.h>
 #include <kazbase/logging.h>
 

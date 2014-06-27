@@ -9,6 +9,8 @@
 #include "awesome_bar.h"
 #include "search.h"
 
+#include "autocomplete/provider.h"
+
 namespace delimit {
 
 class Window;
@@ -53,7 +55,7 @@ private:
     sigc::connection file_changed_connection_;
     sigc::connection buffer_changed_connection_;
 
-    Glib::RefPtr<Gsv::CompletionProvider> provider_;
+    Glib::RefPtr<Provider> provider_;
 
     void check_undoable_actions();
 };

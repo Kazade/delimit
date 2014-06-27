@@ -16,6 +16,7 @@ set(
     ${CMAKE_SOURCE_DIR}/src/autocomplete/indexer.cpp
     ${CMAKE_SOURCE_DIR}/src/autocomplete/provider.cpp
     ${CMAKE_SOURCE_DIR}/src/autocomplete/parsers/python.cpp
+    ${CMAKE_SOURCE_DIR}/src/autocomplete/parsers/plain.cpp
 )
 
 add_executable(delimit ${DELIMIT_SOURCES})

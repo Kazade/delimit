@@ -1,3 +1,4 @@
+#include <cassert>
 #include <kazbase/exceptions.h>
 #include <kazbase/regex.h>
 #include <kazbase/list_utils.h>
@@ -80,14 +81,14 @@ const std::string PseudoToken = Whitespace + group({PseudoExtras, Number, Funny,
 }
 int i = print();*/
 
-const regex::Regex tokenprog = regex::compile(TokenRE);
-const regex::Regex pseudoprog = regex::compile(PseudoToken);
-const regex::Regex single3prog = regex::compile(Single3);
-const regex::Regex double3prog = regex::compile(Double3);
+const regex::Regex tokenprog = regex::Regex(TokenRE);
+const regex::Regex pseudoprog = regex::Regex(PseudoToken);
+const regex::Regex single3prog = regex::Regex(Single3);
+const regex::Regex double3prog = regex::Regex(Double3);
 
 const std::map<std::string, regex::Regex> endprogs = {
-    {"'", regex::compile(Single)},
-    {"\"", regex::compile(Double)},
+    {"'", regex::Regex(Single)},
+    {"\"", regex::Regex(Double)},
     {"'''", single3prog},
     {"\"\"\"", double3prog},
     {"r'''", single3prog},
@@ -504,8 +505,30 @@ unicode guess_scope_from_assigned_token(const Token& tok) {
 }
 
 unicode Python::base_scope_from_filename(const unicode &filename) {
-    //FIXME: Search the PYTHONPATH to find the correct relative path
-    return os::path::split_ext(filename).first.replace("/", ".");
+    //FIXME: UGLY TEMPORARY HACK! Given a filename, go up the tree until we find the first directory without an __init__.py
+
+    auto parent = os::path::abs_path(os::path::dir_name(filename));
+
+    while(true) {
+        bool has_init = false;
+        for(auto file: os::path::list_dir(parent)) {
+            if(file == "__init__.py") {
+                has_init = true;
+                break;
+            }
+        }
+
+        if(!has_init) {
+            //No init file, strip this path from the filename
+            auto rel = filename.slice(parent.length(), nullptr).lstrip("/");
+            auto without_ext = os::path::split_ext(rel).first;
+            return without_ext.replace("/", ".");
+        }
+
+        parent = os::path::abs_path(os::path::dir_name(parent));
+    }
+
+    throw RuntimeError("Wat?");
 }
 
 std::pair<std::vector<ScopePtr>, bool> Python::parse(const unicode& data, const unicode& base_scope)  {

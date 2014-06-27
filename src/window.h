@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 #include <set>
+#include <cassert>
 
 #include <kazbase/unicode.h>
 #include <gtkmm.h>
