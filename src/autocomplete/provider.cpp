@@ -7,6 +7,9 @@
 #include "parsers/plain.h"
 #include "parsers/python.h"
 
+#include <kazbase/hash/md5.h>
+#include <kazbase/os.h>
+#include <kazbase/fdo/base_directory.h>
 
 namespace delimit {
 
@@ -15,17 +18,17 @@ unicode get_parser_to_use(const unicode& mime) {
 }
 
 Provider::Provider(Window* window):
+    Gsv::CompletionProvider(),
     Glib::ObjectBase(typeid(Provider)),
-    Glib::Object(),
-    Gsv::CompletionProvider() {
-    indexer_ = std::make_shared<Indexer>("/tmp/test.db");
+    Glib::Object() {
+
+    unicode folder = fdo::xdg::make_dir_in_data_home("delimit");
+    unicode database_file = os::path::join(folder, "completions.db");
+
+    indexer_ = std::make_shared<Indexer>(database_file);
 
     indexer_->register_parser("text/plain", std::make_shared<parser::Plain>());
     indexer_->register_parser("application/python", std::make_shared<parser::Python>());
-
-    ///Just a test, let's try and index the tokenize.py library
-
-    indexer_->index_file("/usr/lib64/python2.7/os.py");
 }
 
 void Provider::populate_vfunc(const Glib::RefPtr<Gsv::CompletionContext> &context) {
@@ -52,17 +55,23 @@ void Provider::populate_vfunc(const Glib::RefPtr<Gsv::CompletionContext> &contex
     }
 
     //FIXME: Determine the line that needs completing, and the current filename
-    std::cout << "Populate called: " << incomplete << std::endl;
     auto completions = indexer_->datastore()->query_completions(
         get_parser_to_use("FIXME"), "", line, col, unicode(incomplete.c_str())
     );
 
-    /*
+
+    std::vector<Glib::RefPtr<Gsv::CompletionProposal>> results;
+
+    Glib::RefPtr<Gdk::Pixbuf> icon = Gtk::IconTheme::get_default()->load_icon("info", Gtk::ICON_SIZE_MENU);
+
+    for(auto completion: completions) {
+        results.push_back(Gsv::CompletionItem::create(completion.encode(), completion.encode(), icon, ""));
+    }
+
     Glib::RefPtr<Provider> reffed_this(this);
     reffed_this->reference();
 
-    context->add_proposals(reffed_this, {Gsv::CompletionItem::create("Test", "Test", Glib::RefPtr<Gdk::Pixbuf>(), "") }, true);
-    */
+    context->add_proposals(reffed_this, results, true);
 }
 
 Gsv::CompletionActivation Provider::get_activation_vfunc() const {

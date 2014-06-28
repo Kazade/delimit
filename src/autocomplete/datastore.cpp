@@ -2,7 +2,7 @@
 #include <kazbase/os/path.h>
 #include <kazbase/exceptions.h>
 #include <cassert>
-
+#include <gtkmm.h>
 #include "datastore.h"
 
 namespace delimit {
@@ -63,6 +63,7 @@ void Datastore::save_scopes(const unicode &parser_name, const std::vector<ScopeP
     const unicode SCOPE_INSERT_SQL = "INSERT INTO scope (filename, path, start_line, start_col, end_line, end_col, parser) VALUES(?, ?, ?, ?, ?, ?, ?)";
     const unicode SCOPE_PARENT_SQL = "INSERT INTO scope_parent(scope, path) VALUES(?, ?)";
 
+    sqlite3_exec(db_, "BEGIN;", 0, 0, 0);
     for(auto scope: scopes) {
         sqlite3_stmt* stmt;
         int ret = sqlite3_prepare(db_, SCOPE_INSERT_SQL.encode().c_str(), -1, &stmt, 0);
@@ -90,7 +91,13 @@ void Datastore::save_scopes(const unicode &parser_name, const std::vector<ScopeP
                 throw RuntimeError("Unable to insert an inherited scope");
             }
         }
+
+        //Keep the window responsive
+        while(Gtk::Main::events_pending()) {
+            Gtk::Main::iteration();
+        }
     }
+    sqlite3_exec(db_, "COMMIT;", 0, 0, 0);
 }
 
 unicode Datastore::query_scope_at(const unicode& parser, const unicode &filename, int line_number, int col_number) {
@@ -103,29 +110,25 @@ std::vector<unicode> Datastore::query_completions(const unicode& parser, const u
     //FIXME: Must take into account scope! This only works for the PLAIN parser search not more complex lookups
     std::cout << parser << ": " << string_to_complete << std::endl;
 
-    unicode sql = "SELECT path FROM scope WHERE parser = ? AND path LIKE ?";
-    sqlite3_stmt* stmt;
-    int ret = sqlite3_prepare(db_, sql.encode().c_str(), -1, &stmt, 0);
-    if(ret) {
+    unicode sql = "SELECT DISTINCT path FROM scope WHERE parser = ? AND path LIKE ? ORDER BY path;";
+
+    sqlite3_stmt* stmt = nullptr;
+
+    int ret = sqlite3_prepare_v2(db_, sql.encode().c_str(), -1, &stmt, 0);
+    if(ret != SQLITE_OK) {
         return std::vector<unicode>();
     }
 
-    unicode like = _u("{0} %").format(string_to_complete);
+    std::string like = _u("{0}%").format(string_to_complete).encode();
+    std::string par = parser.encode();
 
-    sqlite3_bind_text(stmt, 1, parser.encode().c_str(), parser.encode().length(), SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 2, like.encode().c_str(), like.encode().length(), SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 1, par.c_str(), par.length(), SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, like.c_str(), like.length(), SQLITE_TRANSIENT);
 
     std::vector<unicode> results;
-    while(true) {
-        ret = sqlite3_step(stmt);
-        if(ret == SQLITE_ROW) {
-            unicode path = (char*) sqlite3_column_text(stmt, 0);
-            std::cout << "Found match: " << path << std::endl;
-            results.push_back(path);
-        } else {
-            break;
-        }
-        sqlite3_reset(stmt);
+    while(sqlite3_step(stmt) == SQLITE_ROW) {
+        unicode path = (char*) sqlite3_column_text(stmt, 0);
+        results.push_back(path);
     }
 
 

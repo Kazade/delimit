@@ -29,8 +29,8 @@ Window::Window():
     folder_open_(nullptr),
     buffer_save_(nullptr),
     buffer_undo_(nullptr),
-    buffer_close_(nullptr),
     main_paned_(nullptr),
+    buffer_close_(nullptr),
     type_(WINDOW_TYPE_FILE),
     current_frame_(0) {
 
@@ -58,8 +58,8 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
     folder_open_(nullptr),
     buffer_save_(nullptr),
     buffer_undo_(nullptr),
-    buffer_close_(nullptr),
     main_paned_(nullptr),
+    buffer_close_(nullptr),    
     type_(WINDOW_TYPE_FILE),
     current_frame_(0) {
 
@@ -141,7 +141,7 @@ void Window::init_actions() {
 
 void Window::begin_search() {
     gtk_search_window_->set_transient_for(*gtk_window_);
-    int response = gtk_search_window_->run();
+    /*int response = */gtk_search_window_->run();
     gtk_search_window_->hide();
 }
 

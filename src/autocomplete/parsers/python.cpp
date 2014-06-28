@@ -610,7 +610,7 @@ std::pair<std::vector<ScopePtr>, bool> Python::parse(const unicode& data, const 
 
                 auto search = find_tokens_till_next(")", tokens, i + 3);
 
-                bool next_token_is_assignment = false;
+                //bool next_token_is_assignment = false;
                 bool next_name_is_args = false;
                 bool next_name_is_kwargs = false;
                 for(uint32_t i = 0; i < search.second.size(); ++i) {
