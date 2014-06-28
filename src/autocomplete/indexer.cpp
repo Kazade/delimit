@@ -59,7 +59,7 @@ std::vector<ScopePtr> Indexer::index_file(const unicode& filename, const unicode
 
     if(scopes_and_success.second) {
         datastore_->delete_scopes_by_filename(filename);
-        datastore_->save_scopes(scopes_and_success.first, filename);
+        datastore_->save_scopes(parser->name(), scopes_and_success.first, filename);
     }
     return scopes_and_success.first;
 }

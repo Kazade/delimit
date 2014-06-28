@@ -7,7 +7,12 @@
 #include "parsers/plain.h"
 #include "parsers/python.h"
 
+
 namespace delimit {
+
+unicode get_parser_to_use(const unicode& mime) {
+    return "PLAIN";
+}
 
 Provider::Provider(Window* window):
     Glib::ObjectBase(typeid(Provider)),
@@ -48,7 +53,9 @@ void Provider::populate_vfunc(const Glib::RefPtr<Gsv::CompletionContext> &contex
 
     //FIXME: Determine the line that needs completing, and the current filename
     std::cout << "Populate called: " << incomplete << std::endl;
-    auto completions = indexer_->datastore()->query_completions("", line, col, unicode(incomplete.c_str()));
+    auto completions = indexer_->datastore()->query_completions(
+        get_parser_to_use("FIXME"), "", line, col, unicode(incomplete.c_str())
+    );
 
     /*
     Glib::RefPtr<Provider> reffed_this(this);

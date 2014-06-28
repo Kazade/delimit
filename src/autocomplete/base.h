@@ -19,6 +19,7 @@ typedef std::shared_ptr<Indexer> IndexerPtr;
 
 class FileParser {
 public:
+    virtual const unicode name() const = 0;
     virtual std::pair<std::vector<ScopePtr>, bool> parse(const unicode& data, const unicode& base_scope) = 0;
     virtual unicode base_scope_from_filename(const unicode& filename) = 0;
 };

@@ -9,7 +9,7 @@ namespace delimit {
 
 std::vector<unicode> INITIAL_DATA_SQL = {
     "BEGIN",
-    "CREATE TABLE scope(id INTEGER PRIMARY KEY, filename VARCHAR(255) NOT NULL, path VARCHAR(1024) NOT NULL, start_line INTEGER NOT NULL, start_col INTEGER NOT NULL, end_line INTEGER NOT NULL, end_col INTEGER NOT NULL)",
+    "CREATE TABLE scope(id INTEGER PRIMARY KEY, filename VARCHAR(255) NOT NULL, path VARCHAR(1024) NOT NULL, start_line INTEGER NOT NULL, start_col INTEGER NOT NULL, end_line INTEGER NOT NULL, end_col INTEGER NOT NULL, parser VARCHAR(255) NOT NULL)",
     "CREATE INDEX filename_idx ON scope(path)",
     "CREATE TABLE scope_parent(id INTEGER PRIMARY KEY, path VARCHAR(1024), scope INTEGER, FOREIGN KEY(scope) REFERENCES scope(id))",
     "COMMIT",
@@ -59,8 +59,8 @@ void Datastore::delete_scopes_by_filename(const unicode& path) {
     }
 }
 
-void Datastore::save_scopes(const std::vector<ScopePtr>& scopes, const unicode &filename) {
-    const unicode SCOPE_INSERT_SQL = "INSERT INTO scope (filename, path, start_line, start_col, end_line, end_col) VALUES(?, ?, ?, ?, ?, ?)";
+void Datastore::save_scopes(const unicode &parser_name, const std::vector<ScopePtr>& scopes, const unicode &filename) {
+    const unicode SCOPE_INSERT_SQL = "INSERT INTO scope (filename, path, start_line, start_col, end_line, end_col, parser) VALUES(?, ?, ?, ?, ?, ?, ?)";
     const unicode SCOPE_PARENT_SQL = "INSERT INTO scope_parent(scope, path) VALUES(?, ?)";
 
     for(auto scope: scopes) {
@@ -73,6 +73,7 @@ void Datastore::save_scopes(const std::vector<ScopePtr>& scopes, const unicode &
         sqlite3_bind_int(stmt, 4, scope->start_col);
         sqlite3_bind_int(stmt, 5, scope->end_line);
         sqlite3_bind_int(stmt, 6, scope->end_col);
+        sqlite3_bind_text(stmt, 7, parser_name.encode().c_str(), parser_name.encode().length(), SQLITE_TRANSIENT);
 
         if(sqlite3_step(stmt) != SQLITE_DONE) {
             throw RuntimeError("Unable to insert a scope");
@@ -92,17 +93,43 @@ void Datastore::save_scopes(const std::vector<ScopePtr>& scopes, const unicode &
     }
 }
 
-unicode Datastore::query_scope_at(const unicode &filename, int line_number, int col_number) {
+unicode Datastore::query_scope_at(const unicode& parser, const unicode &filename, int line_number, int col_number) {
+
+
     return "";
 }
 
-std::vector<unicode> Datastore::query_completions(const unicode &filename, int line_number, int col_number, const unicode &string_to_complete) {
-    auto scope = query_scope_at(filename, line_number, col_number);
+std::vector<unicode> Datastore::query_completions(const unicode& parser, const unicode &filename, int line_number, int col_number, const unicode &string_to_complete) {
+    //FIXME: Must take into account scope! This only works for the PLAIN parser search not more complex lookups
+    std::cout << parser << ": " << string_to_complete << std::endl;
+
+    unicode sql = "SELECT path FROM scope WHERE parser = ? AND path LIKE ?";
+    sqlite3_stmt* stmt;
+    int ret = sqlite3_prepare(db_, sql.encode().c_str(), -1, &stmt, 0);
+    if(ret) {
+        return std::vector<unicode>();
+    }
+
+    unicode like = _u("{0} %").format(string_to_complete);
+
+    sqlite3_bind_text(stmt, 1, parser.encode().c_str(), parser.encode().length(), SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, like.encode().c_str(), like.encode().length(), SQLITE_TRANSIENT);
+
+    std::vector<unicode> results;
+    while(true) {
+        ret = sqlite3_step(stmt);
+        if(ret == SQLITE_ROW) {
+            unicode path = (char*) sqlite3_column_text(stmt, 0);
+            std::cout << "Found match: " << path << std::endl;
+            results.push_back(path);
+        } else {
+            break;
+        }
+        sqlite3_reset(stmt);
+    }
 
 
-
-    std::cout << string_to_complete << std::endl;
-    return std::vector<unicode>();
+    return results;
 }
 
 }
