@@ -68,6 +68,10 @@ void Provider::populate_vfunc(const Glib::RefPtr<Gsv::CompletionContext> &contex
         results.push_back(Gsv::CompletionItem::create(completion.encode(), completion.encode(), icon, ""));
     }
 
+    if(results.empty()) {
+        return;
+    }
+
     Glib::RefPtr<Provider> reffed_this(this);
     reffed_this->reference();
 
