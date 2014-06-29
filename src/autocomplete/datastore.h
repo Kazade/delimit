@@ -26,6 +26,9 @@ private:
     sqlite3* db_;
 
     void initialize_tables();
+    void open_and_recreate_if_necessary(const unicode& path_to_datastore);
+
+    unicode query_database_version();
 };
 
 

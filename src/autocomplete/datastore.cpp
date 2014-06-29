@@ -1,6 +1,7 @@
 #include <kazbase/unicode.h>
 #include <kazbase/os/path.h>
 #include <kazbase/exceptions.h>
+#include <kazbase/hash/md5.h>
 #include <cassert>
 #include <gtkmm.h>
 #include "datastore.h"
@@ -9,15 +10,24 @@ namespace delimit {
 
 std::vector<unicode> INITIAL_DATA_SQL = {
     "BEGIN",
-    "CREATE TABLE scope(id INTEGER PRIMARY KEY, filename VARCHAR(255) NOT NULL, path VARCHAR(1024) NOT NULL, start_line INTEGER NOT NULL, start_col INTEGER NOT NULL, end_line INTEGER NOT NULL, end_col INTEGER NOT NULL, parser VARCHAR(255) NOT NULL)",
+    "CREATE TABLE version(version VARCHAR(32) PRIMARY KEY)",
+    "CREATE TABLE scope(id INTEGER PRIMARY KEY, filename VARCHAR(255) NOT NULL, path VARCHAR(1024) NOT NULL, start_line INTEGER NOT NULL, start_col INTEGER NOT NULL, end_line INTEGER NOT NULL, end_col INTEGER NOT NULL, parser VARCHAR(255) NOT NULL, UNIQUE(filename, path, start_line, end_line))",
     "CREATE INDEX filename_idx ON scope(path)",
     "CREATE TABLE scope_parent(id INTEGER PRIMARY KEY, path VARCHAR(1024), scope INTEGER, FOREIGN KEY(scope) REFERENCES scope(id))",
     "COMMIT",
 };
 
+unicode version() {
+    return hashlib::MD5(_u("\n").join(INITIAL_DATA_SQL).encode()).hex_digest();
+}
+
 Datastore::Datastore(const unicode &path_to_datastore):
     db_(nullptr) {
 
+    open_and_recreate_if_necessary(path_to_datastore);
+}
+
+void Datastore::open_and_recreate_if_necessary(const unicode &path_to_datastore) {
     bool create_tables = !os::path::exists(path_to_datastore);
 
     int rc = sqlite3_open(path_to_datastore.encode().c_str(), &db_);
@@ -26,9 +36,41 @@ Datastore::Datastore(const unicode &path_to_datastore):
         throw IOError("Unable to create database");
     }
 
+    if(query_database_version() != version()) {
+        L_DEBUG("Deleting existing database as version differs");
+        sqlite3_close(db_);
+        os::remove(path_to_datastore);
+
+        rc = sqlite3_open(path_to_datastore.encode().c_str(), &db_);
+        if(rc) {
+            sqlite3_close(db_);
+            throw IOError("Unable to create database");
+        }
+        create_tables = true;
+    }
+
     if(create_tables) {
         initialize_tables();
     }
+}
+
+unicode Datastore::query_database_version() {
+    unicode sql = "SELECT version FROM version";
+
+    sqlite3_stmt* stmt = nullptr;
+
+    unicode vers;
+
+    int ret = sqlite3_prepare_v2(db_, sql.encode().c_str(), -1, &stmt, 0);
+
+    if(ret == SQLITE_OK) {
+        if(sqlite3_step(stmt) == SQLITE_ROW) {
+            vers = (char*) sqlite3_column_text(stmt, 0);
+        }
+    }
+
+    sqlite3_finalize(stmt);
+    return vers;
 }
 
 void Datastore::initialize_tables() {
@@ -37,6 +79,22 @@ void Datastore::initialize_tables() {
     if(ret) {
         throw IOError("Unable to create database tables");
     }
+
+    unicode version_sql = "INSERT INTO version (version) VALUES (?);";
+    sqlite3_stmt* stmt;
+    ret = sqlite3_prepare(db_, version_sql.encode().c_str(), -1, &stmt, 0);
+    if(ret) {
+        throw RuntimeError("Unable to prep statement to insert version");
+    }
+
+    std::string vers = version().encode();
+    sqlite3_bind_text(stmt, 1, vers.c_str(), vers.length(), SQLITE_TRANSIENT);
+
+    if(sqlite3_step(stmt) != SQLITE_DONE) {
+        throw RuntimeError("Unable to insert version");
+    }
+
+    sqlite3_finalize(stmt);
 }
 
 void Datastore::delete_scopes_by_filename(const unicode& path) {
@@ -53,19 +111,20 @@ void Datastore::delete_scopes_by_filename(const unicode& path) {
 
     assert(!ret);
 
-    sqlite3_bind_text(stmt, 1, path.encode().c_str(), path.encode().length(), SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 1, path.encode().c_str(), path.encode().length(), SQLITE_TRANSIENT);
     if(sqlite3_step(stmt) != SQLITE_DONE) {
-        throw RuntimeError("Unable to delete the selected scopes");
+        throw RuntimeError(_u("Unable to delete the selected scopes: {0}").format(sqlite3_errmsg(db_)).encode());
     }
+    sqlite3_finalize(stmt);
 }
 
 void Datastore::save_scopes(const unicode &parser_name, const std::vector<ScopePtr>& scopes, const unicode &filename) {
-    const unicode SCOPE_INSERT_SQL = "INSERT INTO scope (filename, path, start_line, start_col, end_line, end_col, parser) VALUES(?, ?, ?, ?, ?, ?, ?)";
+    const unicode SCOPE_INSERT_SQL = "REPLACE INTO scope (filename, path, start_line, start_col, end_line, end_col, parser) VALUES(?, ?, ?, ?, ?, ?, ?)";
     const unicode SCOPE_PARENT_SQL = "INSERT INTO scope_parent(scope, path) VALUES(?, ?)";
 
     sqlite3_exec(db_, "BEGIN;", 0, 0, 0);
     for(auto scope: scopes) {
-        sqlite3_stmt* stmt;
+        sqlite3_stmt* stmt = nullptr;
         int ret = sqlite3_prepare(db_, SCOPE_INSERT_SQL.encode().c_str(), -1, &stmt, 0);
         assert(!ret);
         sqlite3_bind_text(stmt, 1, filename.encode().c_str(), filename.encode().length(), SQLITE_TRANSIENT);
@@ -96,13 +155,12 @@ void Datastore::save_scopes(const unicode &parser_name, const std::vector<ScopeP
         while(Gtk::Main::events_pending()) {
             Gtk::Main::iteration();
         }
+        sqlite3_finalize(stmt);
     }
     sqlite3_exec(db_, "COMMIT;", 0, 0, 0);
 }
 
 unicode Datastore::query_scope_at(const unicode& parser, const unicode &filename, int line_number, int col_number) {
-
-
     return "";
 }
 
@@ -131,7 +189,7 @@ std::vector<unicode> Datastore::query_completions(const unicode& parser, const u
         results.push_back(path);
     }
 
-
+    sqlite3_finalize(stmt);
     return results;
 }
 
