@@ -7,6 +7,7 @@
 #include "parsers/plain.h"
 #include "parsers/python.h"
 
+#include <kazbase/logging.h>
 #include <kazbase/hash/md5.h>
 #include <kazbase/os.h>
 #include <kazbase/fdo/base_directory.h>
@@ -32,6 +33,8 @@ Provider::Provider(Window* window):
 }
 
 void Provider::populate_vfunc(const Glib::RefPtr<Gsv::CompletionContext> &context) {
+    L_DEBUG("Populate_vfunc called");
+
     unicode allowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_";
 
     auto iter = context->get_iter();
@@ -49,28 +52,23 @@ void Provider::populate_vfunc(const Glib::RefPtr<Gsv::CompletionContext> &contex
         }
     }
 
-    auto incomplete = buffer->get_text(start, iter, true);
-    if(incomplete.empty()) {
-        return;
-    }
-
-    //FIXME: Determine the line that needs completing, and the current filename
-    auto completions = indexer_->datastore()->query_completions(
-        get_parser_to_use("FIXME"), "", line, col, unicode(incomplete.c_str())
-    );
-
-
     std::vector<Glib::RefPtr<Gsv::CompletionProposal>> results;
 
-    Glib::RefPtr<Gdk::Pixbuf> icon = Gtk::IconTheme::get_default()->load_icon("info", Gtk::ICON_SIZE_MENU);
+    auto incomplete = buffer->get_text(start, iter, true);
+    if(!incomplete.empty()) {
+        //FIXME: Determine the line that needs completing, and the current filename
+        auto completions = indexer_->datastore()->query_completions(
+            get_parser_to_use("FIXME"), "", line, col, unicode(incomplete.c_str())
+        );
 
-    for(auto completion: completions) {
-        results.push_back(Gsv::CompletionItem::create(completion.encode(), completion.encode(), icon, ""));
+        Glib::RefPtr<Gdk::Pixbuf> icon = Gtk::IconTheme::get_default()->load_icon("info", Gtk::ICON_SIZE_MENU);
+
+        for(auto completion: completions) {
+            results.push_back(Gsv::CompletionItem::create(completion.encode(), completion.encode(), icon, ""));
+        }
     }
 
-    if(results.empty()) {
-        return;
-    }
+    L_DEBUG("Populating results");
 
     Glib::RefPtr<Provider> reffed_this(this);
     reffed_this->reference();
