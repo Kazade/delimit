@@ -100,6 +100,8 @@ private:
 
     coverage::Coverage::ptr coverage_;
     linter::Linter::ptr linter_;
+
+    void mark_as_recently_used();
 };
 
 }

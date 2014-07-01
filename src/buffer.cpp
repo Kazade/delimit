@@ -31,6 +31,20 @@ Buffer::Buffer(Window& parent, const Glib::RefPtr<Gio::File>& file):
     signal_file_changed().connect(sigc::mem_fun(this, &Buffer::on_file_changed));
 
     set_modified(false);
+
+    mark_as_recently_used();
+}
+
+void Buffer::mark_as_recently_used() {
+    auto recent_manager = Gtk::RecentManager::get_default();
+
+    Gtk::RecentManager::Data data;
+    data.app_name = "delimit";
+    data.app_exec = "delimit %u";
+
+    auto info = gio_file_->query_info(G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE);
+    data.mime_type = info->get_content_type();
+    recent_manager->add_item(_u("file://{0}").format(path()).encode(), data);
 }
 
 bool Buffer::is_new_file() const {
