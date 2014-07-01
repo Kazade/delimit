@@ -59,16 +59,12 @@ public:
     void split();
     void unsplit();
 
-    void new_buffer(const unicode& name);
+    void new_buffer();
     void open_buffer(const Glib::RefPtr<Gio::File>& path);
 
     WindowType type() const { return type_; }
 
     Gtk::Window& _gtk_window() { assert(gtk_window_); return *gtk_window_; }
-
-    void new_buffer_thing() {
-        new_buffer("Thing");
-    }
 
     void set_undo_enabled(bool value);
     void set_redo_enabled(bool value);
@@ -82,6 +78,7 @@ public:
 
     void set_error_count(int32_t count);
 
+    int new_file_count() const;
 private:
     void close_buffer(Buffer* buffer);
     void close_buffer_for_file(const Glib::RefPtr<Gio::File>& file);
@@ -159,7 +156,6 @@ private:
     Glib::RefPtr<Gtk::ActionGroup> action_group_;
 
     void add_global_action(const unicode& name, const Gtk::AccelKey& key, std::function<void ()> func);
-
 };
 
 }

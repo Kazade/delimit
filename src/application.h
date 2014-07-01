@@ -6,6 +6,9 @@
 
 namespace delimit {
 
+void clear_tempfiles_directory();
+unicode tempfiles_directory();
+
 class Window;
 
 class Application: public Gtk::Application {

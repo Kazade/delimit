@@ -40,7 +40,7 @@ Window::Window():
     open_list_store_ = Gtk::ListStore::create(open_list_columns_);
 
     build_widgets();
-    new_buffer("Untitled");
+    new_buffer();
 
     //Don't show the folder tree on FILE windows
     file_tree_scrolled_window_->get_parent()->remove(*file_tree_scrolled_window_);
@@ -89,7 +89,7 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
             L_DEBUG("not found.");
         }
 
-        new_buffer("Untitled");
+        new_buffer();
 
     } else {
         type_ = WINDOW_TYPE_FILE;
@@ -103,6 +103,8 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
         open_file_list_->set_vexpand(true);
     }
 }
+
+
 
 void Window::init_actions() {
     accel_group_ = Gtk::AccelGroup::create();
@@ -261,7 +263,7 @@ void Window::on_list_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk:
 }
 
 void Window::toolbutton_new_clicked() {
-    new_buffer("Untitled");
+    new_buffer();
 }
 
 void Window::toolbutton_undo_clicked() {
@@ -331,7 +333,7 @@ bool Window::toolbutton_save_clicked() {
 
     if(buffer) {
         unicode path = buffer->path();
-        if(path.empty()) {
+        if(buffer->is_new_file()) {
             int result = dialog.run();
             switch(result) {
                 case Gtk::RESPONSE_OK:
@@ -348,6 +350,15 @@ bool Window::toolbutton_save_clicked() {
     return was_saved;
 }
 
+int Window::new_file_count() const {
+    int i = 0;
+    for(auto buffer: open_buffers_) {
+        if(buffer->is_new_file()) {
+            ++i;
+        }
+    }
+    return i;
+}
 
 bool Window::on_tree_test_expand_row(const Gtk::TreeModel::iterator& iter, const Gtk::TreeModel::Path& path) {
     Gtk::TreeRow row = (*iter);
@@ -633,7 +644,7 @@ void Window::unsplit() {
 void Window::on_buffer_modified(Buffer* buffer) {
     buffer_save_->set_sensitive(buffer->modified());
 
-    unicode to_display = (buffer->path().empty()) ? buffer->name() : buffer->path();
+    unicode to_display = (buffer->is_new_file()) ? buffer->name() : buffer->path();
 
     if(type_ == WINDOW_TYPE_FOLDER && !path_.empty() && !buffer->path().empty()) {
         to_display = os::path::rel_path(to_display, path_);
@@ -652,8 +663,8 @@ void Window::activate_buffer(Buffer::ptr buffer) {
     on_buffer_modified(buffer.get());
 }
 
-void Window::new_buffer(const unicode& name) {
-    Buffer::ptr buffer = std::make_shared<Buffer>(*this, name);
+void Window::new_buffer() {
+    Buffer::ptr buffer = std::make_shared<Buffer>(*this);
 
     //Watch for changes to the buffer
     buffer->signal_modified_changed().connect(
@@ -736,8 +747,8 @@ void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {
 
     unicode name = os::path::split(file->get_path()).second;
 
-    Buffer::ptr buffer = std::make_shared<Buffer>(*this, name, file);
-    buffer->set_modified(false);
+    Buffer::ptr buffer = std::make_shared<Buffer>(*this, file);
+
     //Watch for changes to the buffer
     buffer->signal_modified_changed().connect(
         sigc::mem_fun(this, &Window::on_buffer_modified)

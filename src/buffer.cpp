@@ -1,38 +1,76 @@
 #include "buffer.h"
 #include "window.h"
+#include "application.h"
 
 #include <kazbase/logging.h>
+#include <kazbase/fdo/base_directory.h>
 
 namespace delimit {
 
-Buffer::Buffer(Window& parent, const unicode& name):
+Buffer::Buffer(Window& parent):
     parent_(parent),
-    name_(name),
     error_count_(0),
     adjustment_(0) {
 
-    create_buffer();
+    auto file = create_new_file(); //Create a new "unsaved" file
+    create_buffer(); //Create the buffer
+    set_gio_file(file); //Set the gio file
     signal_file_changed().connect(sigc::mem_fun(this, &Buffer::on_file_changed));
+
+    set_modified(true); //This is an unsaved file really
 }
 
-Buffer::Buffer(Window& parent, const unicode& name, const Glib::RefPtr<Gio::File>& file):
+Buffer::Buffer(Window& parent, const Glib::RefPtr<Gio::File>& file):
     parent_(parent),
-    name_(name),
     adjustment_(0),
     error_count_(0) {
 
-    set_gio_file(file);
+    create_buffer();
+    set_gio_file(file);    
+    apply_language_to_buffer(guess_language_from_file(file));
     signal_file_changed().connect(sigc::mem_fun(this, &Buffer::on_file_changed));
+
+    set_modified(false);
 }
 
-void Buffer::create_buffer(Glib::RefPtr<Gsv::Language> lang) {
+bool Buffer::is_new_file() const {
+    return !os::path::exists(gio_file_->get_path());
+}
+
+Glib::RefPtr<Gio::File> Buffer::create_new_file() {
+    /*
+     *  Creates a new file. We create a Gio::File for a path in the tempfiles directory
+     *  but don't actually create a file there. That way the lack of existence of the path
+     *  allows us to determine whether the file is new, or has been deleted on disk
+     */
+
+    auto temp_files = tempfiles_directory();
+
+    int existing_count = parent_.new_file_count();
+
+    //FIXME: This will create multiple files with the same path if we have untitled
+    //files in two windows. I'm not sure if this is a problem or not considering these
+    //paths are just placeholders. In future it may be!
+    auto untitled_filename = _u("Untitled {0}").format(existing_count + 1);
+    auto full_path = os::path::join(temp_files, untitled_filename);
+    auto file = Gio::File::create_for_path(full_path.encode());
+    return file;
+}
+
+void Buffer::apply_language_to_buffer(const Glib::RefPtr<Gsv::Language>& language) {
+    gtk_buffer_->set_language(language);
+}
+
+void Buffer::create_buffer() {
     if(!gtk_buffer_) {
-        gtk_buffer_ = Gsv::Buffer::create(lang);
+        gtk_buffer_ = Gsv::Buffer::create();
         gtk_buffer_->signal_changed().connect(sigc::mem_fun(this, &Buffer::on_buffer_changed));
         gtk_buffer_->signal_modified_changed().connect(sigc::mem_fun(this, &Buffer::on_signal_modified_changed));
     }
+}
 
-    gtk_buffer_->set_language(lang);
+void Buffer::on_signal_modified_changed() {
+    signal_modified_changed_(this);
 }
 
 Buffer::~Buffer() {
@@ -86,30 +124,28 @@ Glib::RefPtr<Gsv::Buffer> Buffer::_gtk_buffer() {
 }
 
 unicode Buffer::name() const {
-    return name_;
+    return os::path::split(gio_file_->get_path()).second;
 }
 
 unicode Buffer::path() const {
-    if(gio_file_)
-        return gio_file_->get_path();
-    return "";
+    assert(gio_file_);
+    return gio_file_->get_path();
 }
 
 bool Buffer::modified() const {
     return gtk_buffer_->get_modified();
 }
 
-void Buffer::mark_as_new_file() {
-    gio_file_.reset();
-    if(gio_file_monitor_) {
-        L_DEBUG("Wiping out file monitor");
-        gio_file_monitor_->cancel();
-        gio_file_monitor_.reset();
-    }
-    set_modified(true);
+Glib::RefPtr<Gsv::Language> Buffer::guess_language_from_file(const GioFilePtr& file) {
+    Glib::RefPtr<Gsv::LanguageManager> lm = Gsv::LanguageManager::get_default();
+    Glib::RefPtr<Gsv::Language> lang = lm->guess_language(file->get_path(), Glib::ustring());
+
+    return lang;
 }
 
 void Buffer::set_gio_file(const Glib::RefPtr<Gio::File>& file, bool reload) {
+    assert(gtk_buffer_);
+
     if(gio_file_monitor_) {
         L_DEBUG("Disconnecting existing file monitor");
         gio_file_monitor_->cancel();
@@ -118,16 +154,10 @@ void Buffer::set_gio_file(const Glib::RefPtr<Gio::File>& file, bool reload) {
 
     gio_file_ = file;
 
-    //This will detect the right language on save or load
-    //and connect a file monitor
-    if(gio_file_) {
+    //This will connect a file monitor
+    if(gio_file_ && !is_new_file()) {
         file_etag_ = gio_file_->query_info(G_FILE_ATTRIBUTE_ETAG_VALUE)->get_etag();
         L_DEBUG("File etag: " + file_etag_);
-
-        Glib::RefPtr<Gsv::LanguageManager> lm = Gsv::LanguageManager::get_default();
-        Glib::RefPtr<Gsv::Language> lang = lm->guess_language(file->get_path(), Glib::ustring());
-
-        create_buffer(lang); //Create the buffer if necessary
 
         if(reload) {
             std::function<void (Glib::RefPtr<Gio::AsyncResult>)> func = std::bind(&Buffer::_finish_read, this, file, std::placeholders::_1);
@@ -141,9 +171,6 @@ void Buffer::set_gio_file(const Glib::RefPtr<Gio::File>& file, bool reload) {
         }
     } else {
         file_etag_ = ""; //Wipe out the etag
-
-        //Create the buffer without specifying a language
-        create_buffer();
     }
 }
 
@@ -223,27 +250,23 @@ void Buffer::save(const unicode& path) {
     trim_trailing_whitespace();
 
     Glib::ustring text = _gtk_buffer()->get_text();
-    _gtk_buffer()->set_modified(false);
 
-    //If we are saving the buffer for the first time over an existing path
-    //then create the gio_file_ so we can replace the contents below
-    if(!gio_file_ && os::path::exists(path)) {
-        gio_file_ = Gio::File::create_for_path(path.encode());
-    }
-
-    if(gio_file_ && gio_file_->get_path() == path.encode()) {
+    if(gio_file_->get_path() == path.encode()) {
         //FIXME: Use entity tag arguments to make sure that the file
         //didn't change since the last time we saved
         gio_file_->replace_contents(std::string(text.c_str()), "", file_etag_);
         set_gio_file(gio_file_, false); //Don't reload the file, reconnect the monitor
     } else {
         auto file = Gio::File::create_for_path(path.encode());
-        file->create_file();
+        if(!os::path::exists(path)) {
+            file->create_file();
+        }
         file->replace_contents(text, "", file_etag_);
         set_gio_file(file, false); //Don't reload the file, reconnect the monitor
     }
 
-    set_name(os::path::split(gio_file_->get_path()).second);
+    set_modified(false);
+
     parent_.rebuild_open_list();
     run_linters_and_stuff();
 }
@@ -261,8 +284,8 @@ void Buffer::on_file_deleted(const unicode& filename) {
                 close();
             break;
             case Gtk::RESPONSE_NO:
-                //If they didn't want to close the file, mark this one as a totally new file
-                mark_as_new_file();
+                //If they didn't want to close the file, mark this file as modified from on disk
+                set_modified(true);
             break;
             default:
                 return;

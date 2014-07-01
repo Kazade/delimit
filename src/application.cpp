@@ -9,6 +9,25 @@
 
 namespace delimit {
 
+void clear_tempfiles_directory() {
+    auto tempfiles_dir = tempfiles_directory();
+    for(auto file: os::path::list_dir(tempfiles_dir)) {
+        auto path = os::path::join(tempfiles_dir, file);
+        if(!os::path::is_dir(path)) {
+            os::remove(path);
+        }
+    }
+}
+
+unicode tempfiles_directory() {
+    auto data_home = fdo::xdg::get_data_home();
+    auto temp_files = os::path::join({data_home, "delimit", "tempfiles"});
+
+    os::make_dirs(temp_files);
+
+    return temp_files;
+}
+
 Application::Application(int& argc, char**& argv, const Glib::ustring& application_id, Gio::ApplicationFlags flags):
     Gtk::Application(argc, argv, application_id, flags) {
 
@@ -38,8 +57,8 @@ Glib::RefPtr<Application> Application::create(
     return Glib::RefPtr<delimit::Application>(new delimit::Application(argc, argv, application_id, flags));
 }
 
-void Application::add_window(Window::ptr window) {
-    windows_.push_back(window);
+void Application::add_window(Window::ptr window) {    
+    windows_.push_back(window);    
     add_window(window->_gtk_window());
     window->_gtk_window().show_all();
 }
@@ -106,6 +125,8 @@ void Application::action_quit(const Glib::VariantBase&) {
 
 void Application::on_startup() {
     Gtk::Application::on_startup();
+
+    clear_tempfiles_directory();
 
     //Create the application menu
     app_menu_ = Gio::Menu::create();
