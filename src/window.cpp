@@ -1,10 +1,12 @@
 #include <gtkmm.h>
 #include <glibmm/i18n.h>
 #include <gdkmm.h>
+#include <thread>
 
 #include "autocomplete/provider.h"
 #include "window.h"
 #include "application.h"
+#include "search/search_thread.h"
 
 #include <kazbase/exceptions.h>
 #include <kazbase/unicode.h>
@@ -143,7 +145,34 @@ void Window::init_actions() {
 
 void Window::begin_search() {
     gtk_search_window_->set_transient_for(*gtk_window_);
-    /*int response = */gtk_search_window_->run();
+    int response = gtk_search_window_->run();
+
+    if(response == Gtk::RESPONSE_OK) {
+        if(search_thread_) {
+            //Stop any running search thread
+            search_thread_->stop();
+            search_thread_.reset();
+        }
+
+        std::vector<unicode> files_to_search;
+        unicode search_text;
+
+        //Start the search thread
+        search_thread_ = std::make_shared<SearchThread>(files_to_search, search_text, false);
+
+        Glib::signal_idle().connect([&]() -> bool {
+            int i = 10;
+            while(i--) {
+                auto match = search_thread_->pop_result();
+                if(!match) {
+                    break;
+                }
+            }
+
+            return search_thread_ && search_thread_->running();
+        });
+    }
+
     gtk_search_window_->hide();
 }
 

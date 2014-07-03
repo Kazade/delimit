@@ -9,6 +9,7 @@
 #include <kazbase/unicode.h>
 #include <gtkmm.h>
 
+#include "search/search_thread.h"
 #include "buffer.h"
 #include "frame.h"
 
@@ -101,6 +102,9 @@ private:
     void begin_search();
 
     Gtk::Dialog* gtk_search_window_;
+    std::shared_ptr<SearchThread> search_thread_;
+
+
     Gtk::ApplicationWindow* gtk_window_;
     Gtk::Alignment* gtk_container_;
 

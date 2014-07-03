@@ -37,3 +37,4 @@ src/autocomplete/parsers/python.cpp
 tests/CMakeLists.txt
 src/autocomplete/parsers/plain.h
 src/autocomplete/parsers/plain.cpp
+src/search/search_thread.h
