@@ -38,14 +38,42 @@ void Coverage::apply_to_buffer(delimit::Buffer *buffer) {
 }
 
 std::vector<int32_t> PythonCoverage::find_uncovered_lines(const unicode &filename, const unicode &project_root) {
-    //Return nothing if we can't find a coverage file in the project root
-    if(!os::path::exists(os::path::join(project_root, ".coverage"))) {
+    //Search up to the project root, to find the coverage file
+    unicode current_dir = os::path::abs_path(os::path::dir_name(filename));
+    while(current_dir != project_root) {
+        unicode coverage = os::path::join(current_dir, ".coverage");
+        if(os::path::exists(coverage)) {
+            break;
+        }
+
+        unicode next_level = os::path::abs_path(os::path::dir_name(current_dir));
+        if(next_level == current_dir) {
+            break;
+        }
+
+        current_dir = next_level;
+    }
+
+    if(!os::path::exists(os::path::join(current_dir, ".coverage"))) {
+        return std::vector<int32_t>();
+    }
+
+    unicode coverage_command;
+
+    for(auto command: { "python-coverage", "coverage"}) {
+        coverage_command = call_command(_u("which {0}").format(command));
+        if(!coverage_command.empty()) {
+            break;
+        }
+    }
+
+    if(coverage_command.empty()) {
         return std::vector<int32_t>();
     }
 
     unicode result = call_command(
-        _u("python-coverage report -m --include {0}").format(filename),
-        project_root
+        _u("{0} report -m --include {1}").format(coverage_command, filename),
+        current_dir
     );
 
     unicode last_line = result.split("\n").back();
