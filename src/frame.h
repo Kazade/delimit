@@ -3,7 +3,7 @@
 
 #include <gtkmm.h>
 #include <gtksourceviewmm.h>
-
+#include <kazbase/json/json.h>
 #include <memory>
 
 #include "awesome_bar.h"
@@ -54,10 +54,16 @@ private:
     sigc::signal<void, Buffer*> signal_buffer_changed_;
     sigc::connection file_changed_connection_;
     sigc::connection buffer_changed_connection_;
+    sigc::connection buffer_loaded_connection_;
 
     Glib::RefPtr<Provider> provider_;
 
     void check_undoable_actions();
+
+    void apply_settings(const unicode& mimetype);
+    void detect_and_apply_indentation(Buffer* buffer);
+
+    json::JSON current_settings_;
 };
 
 }

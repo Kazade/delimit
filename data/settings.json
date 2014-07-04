@@ -1,0 +1,18 @@
+{
+    "default": {
+        "show_line_numbers": true,
+        "tab_width": 4,
+        "auto_indent": true,
+        "insert_spaces_instead_of_tabs": true,
+        "draw_whitespace_spaces": true,
+        "draw_whitespace_tabs": true,
+        "highlight_current_line": true,
+        "detect_indentation": false
+    },
+    "application/javascript": {
+        "insert_spaces_instead_of_tabs": false
+    },
+    "text/plain": {
+        "insert_spaces_instead_of_tabs": false
+    }
+}

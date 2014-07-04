@@ -7,7 +7,6 @@ src/CMakeLists.txt
 src/window.cpp
 src/frame.cpp
 src/utils/sigc_lambda.h
-src/settings.h
 src/application.h
 src/application.cpp
 src/buffer.cpp

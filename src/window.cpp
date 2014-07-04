@@ -37,6 +37,8 @@ Window::Window():
     current_frame_(0) {
 
     L_DEBUG("Creating window with empty buffer");
+    load_settings();
+
 
     file_tree_store_ = Gtk::TreeStore::create(file_tree_columns_);
     open_list_store_ = Gtk::ListStore::create(open_list_columns_);
@@ -64,6 +66,8 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
     buffer_close_(nullptr),    
     type_(WINDOW_TYPE_FILE),
     current_frame_(0) {
+
+    load_settings();
 
     file_tree_store_ = Gtk::TreeStore::create(file_tree_columns_);
     open_list_store_ = Gtk::ListStore::create(open_list_columns_);
@@ -182,6 +186,35 @@ void Window::add_global_action(const unicode& name, const Gtk::AccelKey& key, st
     action_group_->add(new_action, key);
     new_action->set_accel_group(accel_group_);
     new_action->connect_accelerator();
+}
+
+void Window::load_settings() {
+    unicode master_settings_file = fdo::xdg::find_data_file("delimit/settings.json");
+    std::vector<unicode> paths;
+    try {
+        paths.push_back(fdo::xdg::find_user_data_file("delimit/settings.json"));
+    } catch(std::exception& e) {
+
+    }
+
+
+    if(this->type() == WINDOW_TYPE_FOLDER) {
+        paths.push_back(os::path::join(project_path(), ".delimit"));
+    }
+
+    if(!os::path::exists(master_settings_file)) {
+        throw RuntimeError(_u("Unable to locate master settings at {0}").format(master_settings_file).encode());
+    }
+
+    json::JSON settings = json::loads(file_utils::read(master_settings_file));
+
+    for(auto path: paths) {
+        if(os::path::exists(path)) {
+            settings.update(json::loads(file_utils::read(path)));
+        }
+    }
+
+    settings_ = settings;
 }
 
 void Window::build_widgets() {

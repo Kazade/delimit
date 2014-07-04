@@ -88,6 +88,55 @@ void Frame::show_awesome_bar(bool value) {
     }
 }
 
+void Frame::apply_settings(const unicode& mimetype) {
+    L_INFO(_u("Applying settings for: ") + mimetype);
+
+    //Load any settings from the settings file
+    json::JSON default_settings = parent_.settings()["default"];
+
+    if(parent_.settings().has_key(mimetype)) {
+        default_settings.update(parent_.settings()[mimetype]);
+    }
+
+    source_view_.set_show_line_numbers(default_settings["show_line_numbers"].get_bool());
+    source_view_.set_auto_indent(default_settings["auto_indent"].get_bool());
+
+    if(!default_settings["detect_indentation"].get_bool()) {
+        source_view_.set_tab_width(default_settings["tab_width"].get_number());
+        source_view_.set_insert_spaces_instead_of_tabs(default_settings["insert_spaces_instead_of_tabs"].get_bool());
+    }
+
+    Gsv::DrawSpacesFlags flags;
+    if(default_settings["draw_whitespace_spaces"].get_bool()) {
+        flags |= Gsv::DRAW_SPACES_SPACE;
+    }
+    if(default_settings["draw_whitespace_tabs"].get_bool()) {
+        flags |= Gsv::DRAW_SPACES_TAB;
+    }
+
+    source_view_.set_draw_spaces(flags);
+    source_view_.set_highlight_current_line(default_settings["highlight_current_line"].get_bool());
+
+    //Load any font setting overrides
+    bool update_fonts = false;
+    Pango::FontDescription fdesc;
+    if(default_settings.has_key("override_font_family")) {
+        fdesc.set_family(default_settings["override_font_family"].get().encode());
+        update_fonts = true;
+    }
+
+    if(default_settings.has_key("override_font_size")) {
+        fdesc.set_size(default_settings["override_font_size"].get_number() * PANGO_SCALE);
+        update_fonts = true;
+    }
+
+    if(update_fonts) {
+        source_view_.override_font(fdesc);
+    }
+
+    current_settings_ = default_settings;
+}
+
 void Frame::build_widgets() {
     scrolled_window_.add(source_view_);
 
@@ -125,16 +174,12 @@ void Frame::build_widgets() {
     fdesc.set_size(size * PANGO_SCALE);
     source_view_.override_font(fdesc);
 
-    source_view_.set_show_line_numbers(true);
-    source_view_.set_tab_width(4);
-    source_view_.set_auto_indent(true);
-    source_view_.set_insert_spaces_instead_of_tabs(true);
-    source_view_.set_draw_spaces(Gsv::DRAW_SPACES_SPACE | Gsv::DRAW_SPACES_TAB);
+    apply_settings("text/plain");
+
     source_view_.set_left_margin(4);
     source_view_.set_right_margin(4);
     source_view_.set_show_line_marks(true);
     source_view_.set_smart_home_end(Gsv::SMART_HOME_END_AFTER);
-    source_view_.set_highlight_current_line(true);
 
     L_DEBUG("About to install code completion");
     if(provider_) {
@@ -145,11 +190,17 @@ void Frame::build_widgets() {
         L_ERROR("No completion provider found");
     }
 
+    source_view_.signal_populate_popup().connect([](Gtk::Menu* menu) {
+        //TODO: Build a "Comment" entry, add "Block", "Lines", and conditionally "Uncomment"
+        //TODO: Add "Move" -> "To New File" for selections
+    });
+
+
     search_.set_no_show_all();
 
     auto coverage_attrs = Gsv::MarkAttributes::create();
     Gdk::RGBA coverage_colour;
-    coverage_colour.set_rgba(1.0, 0.5, 0, 0.15);
+    coverage_colour.set_rgba(1.0, 0.7, 0, 0.1);
     coverage_attrs->set_background(coverage_colour);
     source_view_.set_mark_attributes("coverage", coverage_attrs, 0);
 
@@ -186,6 +237,21 @@ void Frame::set_search_visible(bool value) {
     }
 }
 
+void Frame::detect_and_apply_indentation(Buffer* buffer) {
+    if(!buffer) return;
+
+    if(current_settings_.has_key("detect_indentation") && current_settings_["detect_indentation"].get_bool()) {
+        auto indent = detect_indentation(std::string(buffer->_gtk_buffer()->get_text()));
+
+        if(indent.first == INDENT_TABS) {
+            source_view_.set_insert_spaces_instead_of_tabs(false);
+        } else {
+            source_view_.set_indent_width(indent.second);
+            source_view_.set_insert_spaces_instead_of_tabs(true);
+        }
+    }
+}
+
 void Frame::set_buffer(Buffer *buffer) {
     if(buffer == buffer_) {
         return;
@@ -198,6 +264,8 @@ void Frame::set_buffer(Buffer *buffer) {
 
     buffer_ = buffer;
 
+    apply_settings(buffer_->guess_mimetype());
+
     parent_.set_error_count(buffer_->error_count());
 
     source_view_.set_buffer(buffer_->_gtk_buffer());    
@@ -206,30 +274,15 @@ void Frame::set_buffer(Buffer *buffer) {
     auto manager = Gsv::StyleSchemeManager::get_default();
     source_view_.get_source_buffer()->set_style_scheme(manager->get_scheme("delimit"));
 
-    buffer_->signal_loaded().connect([&](Buffer* buffer) {
-          auto indent = detect_indentation(std::string(buffer->_gtk_buffer()->get_text()));
-
-          if(indent.first == INDENT_TABS) {
-              source_view_.set_insert_spaces_instead_of_tabs(false);
-          } else {
-              source_view_.set_indent_width(indent.second);
-              source_view_.set_insert_spaces_instead_of_tabs(true);
-          }
-
-          provider_->indexer()->index_file("", buffer->_gtk_buffer()->get_text().c_str());
+    buffer_loaded_connection_ = buffer_->signal_loaded().connect([&](Buffer* buffer) {
+        detect_and_apply_indentation(buffer);
+        provider_->indexer()->index_file("", buffer->_gtk_buffer()->get_text().c_str());
+        buffer_loaded_connection_.disconnect(); //Disconnect once we've run this once
     });
 
     Glib::signal_idle().connect_once([&]() {
         scrolled_window_.get_vadjustment()->set_value(buffer_->retrieve_adjustment_value());
-
-        auto indent = detect_indentation(std::string(buffer_->_gtk_buffer()->get_text()));
-
-        if(indent.first == INDENT_TABS) {
-            source_view_.set_insert_spaces_instead_of_tabs(false);
-        } else {
-            source_view_.set_indent_width(indent.second);
-            source_view_.set_insert_spaces_instead_of_tabs(true);
-        }
+        detect_and_apply_indentation(buffer);
     });
 
     buffer_changed_connection_ = buffer_->_gtk_buffer()->signal_changed().connect(sigc::mem_fun(this, &Frame::check_undoable_actions));

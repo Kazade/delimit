@@ -35,7 +35,20 @@ Buffer::Buffer(Window& parent, const Glib::RefPtr<Gio::File>& file):
     mark_as_recently_used();
 }
 
+unicode Buffer::guess_mimetype() const {
+    if(is_new_file()) {
+        return "text/plain";
+    }
+
+    auto info = gio_file_->query_info(G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE);
+    return info->get_content_type();
+}
+
 void Buffer::mark_as_recently_used() {
+    if(!os::path::exists(path())) {
+        return;
+    }
+
     auto recent_manager = Gtk::RecentManager::get_default();
 
     Gtk::RecentManager::Data data;

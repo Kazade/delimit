@@ -58,6 +58,7 @@ public:
 
     bool is_new_file() const;
 
+    unicode guess_mimetype() const;
 private:
     int32_t error_count_;
 

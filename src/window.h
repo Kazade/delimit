@@ -7,6 +7,8 @@
 #include <cassert>
 
 #include <kazbase/unicode.h>
+#include <kazbase/json/json.h>
+
 #include <gtkmm.h>
 
 #include "search/search_thread.h"
@@ -80,7 +82,11 @@ public:
     void set_error_count(int32_t count);
 
     int new_file_count() const;
+
+    const json::JSON settings() { return settings_; }
 private:
+    void load_settings();
+
     void close_buffer(Buffer* buffer);
     void close_buffer_for_file(const Glib::RefPtr<Gio::File>& file);
     void close_active_buffer();
@@ -160,6 +166,8 @@ private:
     Glib::RefPtr<Gtk::ActionGroup> action_group_;
 
     void add_global_action(const unicode& name, const Gtk::AccelKey& key, std::function<void ()> func);
+
+    json::JSON settings_;
 };
 
 }
