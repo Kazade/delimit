@@ -427,8 +427,12 @@ bool Window::on_tree_test_expand_row(const Gtk::TreeModel::iterator& iter, const
 
     //Remove all dummy rows
     std::vector<Gtk::TreeRowReference> dummy_nodes;
-    for(auto child: row->children()) {
-        if(child[file_tree_columns_.is_dummy]) {
+    for(auto& child: row->children()) {
+        assert(child);
+
+        bool val = child->get_value(file_tree_columns_.is_dummy);
+
+        if(val) {
             dummy_nodes.push_back(Gtk::TreeRowReference(file_tree_store_, file_tree_store_->get_path(child)));
         }
     }
@@ -547,6 +551,8 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
             tree_row_lookup_[path] = Gtk::TreeRowReference(file_tree_store_, file_tree_store_->get_path(root_iter));
         }
 
+        assert(root_iter);
+
         node = &(*root_iter);
         node->set_value(file_tree_columns_.name, Glib::ustring(os::path::split(path).second.encode()));
         node->set_value(file_tree_columns_.full_path, Glib::ustring(path.encode()));
@@ -607,7 +613,6 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
         );
 
         Gtk::TreeIter iter;
-        const Gtk::TreeRow* row = nullptr;
 
         //If the node already exists for this path, don't add it again
         if(tree_row_lookup_.find(full_name) != tree_row_lookup_.end()) {
@@ -623,17 +628,22 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
             tree_row_lookup_[full_name] = Gtk::TreeRowReference(file_tree_store_, file_tree_store_->get_path(iter));
         }
 
-        row = &(*iter);
-        row->set_value(file_tree_columns_.name, Glib::ustring(f.encode()));
-        row->set_value(file_tree_columns_.full_path, Glib::ustring(full_name.encode()));
-        row->set_value(file_tree_columns_.image, image);
-        row->set_value(file_tree_columns_.is_folder, is_folder);
-        row->set_value(file_tree_columns_.is_dummy, false);
+        assert(iter);
+
+        const Gtk::TreeRow& row = (*iter);
+        row.set_value(file_tree_columns_.name, Glib::ustring(f.encode()));
+        row.set_value(file_tree_columns_.full_path, Glib::ustring(full_name.encode()));
+        row.set_value(file_tree_columns_.image, image);
+        row.set_value(file_tree_columns_.is_folder, is_folder);
+        row.set_value(file_tree_columns_.is_dummy, false);
 
         if(is_folder && row->children().empty()) {
             //Add a dummy node under the folder
-            const Gtk::TreeRow* dummy = &(*file_tree_store_->append(row->children()));
-            dummy->set_value(file_tree_columns_.is_dummy, true);
+            const Gtk::TreeIter dummy_iter = file_tree_store_->append(row->children());
+            assert(dummy_iter);
+
+            const Gtk::TreeRow& dummy = (*dummy_iter);
+            dummy.set_value(file_tree_columns_.is_dummy, true);
         }
     }
 

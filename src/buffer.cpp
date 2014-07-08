@@ -167,6 +167,7 @@ Glib::RefPtr<Gsv::Language> Buffer::guess_language_from_file(const GioFilePtr& f
     Glib::RefPtr<Gsv::LanguageManager> lm = Gsv::LanguageManager::get_default();
     Glib::RefPtr<Gsv::Language> lang = lm->guess_language(file->get_path(), Glib::ustring());
 
+    L_DEBUG(_u("Detected {0}").format(lang->get_name()));
     return lang;
 }
 
