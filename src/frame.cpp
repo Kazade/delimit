@@ -200,14 +200,11 @@ void Frame::build_widgets() {
 
     auto coverage_attrs = Gsv::MarkAttributes::create();
     Gdk::RGBA coverage_colour;
-    coverage_colour.set_rgba(1.0, 0.7, 0, 0.1);
+    coverage_colour.set_rgba(1.0, 0.5, 0, 0.12);
     coverage_attrs->set_background(coverage_colour);
     source_view_.set_mark_attributes("coverage", coverage_attrs, 0);
 
     auto linter_attrs = Gsv::MarkAttributes::create();
-    Gdk::RGBA linter_colour;
-    linter_colour.set_rgba(1.0, 0.0, 0, 0.15);
-    linter_attrs->set_background(linter_colour);
     linter_attrs->set_icon_name("dialog-error");
 
     g_signal_connect(linter_attrs->gobj(), "query-tooltip-markup", G_CALLBACK(get_tooltip), source_view_.gobj());
