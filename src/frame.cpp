@@ -166,6 +166,11 @@ void Frame::build_widgets() {
         //then fall back to size 10 and don't alter the font name
         size = parts.back().to_int();
         parts.pop_back();
+
+        //FIXME: This is a hack to remove the style from the name...
+        if(parts.back() == "Medium") {
+            parts.pop_back();
+        }
         font_name = _u(" ").join(parts).encode();
     } catch(std::exception& e) {}
 

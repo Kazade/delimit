@@ -124,6 +124,8 @@ private:
     OpenListColumns open_list_columns_;
     Glib::RefPtr<Gtk::ListStore> open_list_store_;
 
+    Gtk::HeaderBar header_bar_;
+
     //Toolbar
     Gtk::ToolButton* buffer_new_;
     Gtk::ToolButton* buffer_open_;

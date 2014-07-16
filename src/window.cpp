@@ -258,6 +258,31 @@ void Window::build_widgets() {
     buffer_undo_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_undo_clicked));
     buffer_redo_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_redo_clicked));
 
+    //Convert to headerbar - until glade supports it :/
+
+    header_bar_.set_show_close_button();
+    header_bar_.set_title("Delimit");
+
+    buffer_new_->reparent(header_bar_);
+    buffer_open_->reparent(header_bar_);
+    folder_open_->reparent(header_bar_);
+    buffer_save_->reparent(header_bar_);
+    buffer_undo_->reparent(header_bar_);
+    buffer_redo_->reparent(header_bar_);
+    window_split_->reparent(header_bar_);
+
+    auto original = buffer_close_->get_parent(); //Store the container
+
+    original->remove(*error_counter_);
+    header_bar_.pack_end(*error_counter_);
+
+    original->remove(*buffer_close_);
+    header_bar_.pack_end(*buffer_close_);
+
+    original->get_parent()->remove(*original); //Remove the original container
+
+    gtk_window_->set_titlebar(header_bar_);
+
     window_split_->signal_toggled().connect([&]() {
         if(window_split_->get_active()) {
             split();
@@ -298,11 +323,6 @@ void Window::build_widgets() {
     gtk_window_->set_icon_from_file(icon_file);
 
     gtk_window_->maximize();
-
-    //Set the pane to be 1/5th the size of the screen width - can't figure out
-    //how to work out what the actual size of the window will be :(
-    int window_width = Gdk::Screen::get_default()->get_width();
-    main_paned_->set_position(window_width / 5);
 }
 
 void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column) {
@@ -722,8 +742,8 @@ void Window::on_buffer_modified(Buffer* buffer) {
         to_display = os::path::rel_path(to_display, path_);
     }
 
-    _gtk_window().set_title(
-        _u("Delimit - {0}{1}").format(
+    header_bar_.set_subtitle(
+        _u("{0}{1}").format(
             to_display, buffer->modified() ? "*": ""
         ).encode().c_str()
     );
