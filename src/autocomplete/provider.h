@@ -9,7 +9,7 @@ namespace delimit {
 
 class Window;
 
-class Provider :  public Gsv::CompletionProvider, public Glib::Object {
+class Provider :  public Glib::Object, public Gsv::CompletionProvider {
 public:
     Provider(Window *window);
 

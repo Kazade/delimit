@@ -164,8 +164,14 @@ unicode Datastore::query_scope_at(const unicode& parser, const unicode &filename
     return "";
 }
 
-std::vector<unicode> Datastore::query_completions(const unicode& parser, const unicode &filename, int line_number, int col_number, const unicode &string_to_complete) {
+std::vector<unicode> Datastore::query_completions(const unicode& parser, const unicode &filename, int line_number, int col_number, const unicode &string_to_complete, bool word_completion_only) {
     //FIXME: Must take into account scope! This only works for the PLAIN parser search not more complex lookups
+
+    unicode final = string_to_complete;
+    if(word_completion_only) {
+        final = string_to_complete.split(".").back();
+    }
+
     std::cout << parser << ": " << string_to_complete << std::endl;
 
     unicode sql = "SELECT DISTINCT path FROM scope WHERE parser = ? AND path LIKE ? ORDER BY path;";
@@ -177,7 +183,7 @@ std::vector<unicode> Datastore::query_completions(const unicode& parser, const u
         return std::vector<unicode>();
     }
 
-    std::string like = _u("{0}%").format(string_to_complete).encode();
+    std::string like = _u("{0}%").format(final).encode();
     std::string par = parser.encode();
 
     sqlite3_bind_text(stmt, 1, par.c_str(), par.length(), SQLITE_TRANSIENT);
