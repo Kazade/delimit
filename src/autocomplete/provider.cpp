@@ -19,9 +19,9 @@ unicode get_parser_to_use(const unicode& mime) {
 }
 
 Provider::Provider(Window* window):
-    Gsv::CompletionProvider(),
     Glib::ObjectBase(typeid(Provider)),
-    Glib::Object() {
+    Glib::Object(),
+    Gsv::CompletionProvider() {
 
     unicode folder = fdo::xdg::make_dir_in_data_home("delimit");
     unicode database_file = os::path::join(folder, "completions.db");
@@ -56,15 +56,15 @@ void Provider::populate_vfunc(const Glib::RefPtr<Gsv::CompletionContext> &contex
 
     auto incomplete = buffer->get_text(start, iter, true);
     if(!incomplete.empty()) {
+        std::cout << incomplete << std::endl;
         //FIXME: Determine the line that needs completing, and the current filename
         auto completions = indexer_->datastore()->query_completions(
-            get_parser_to_use("FIXME"), "", line, col, unicode(incomplete.c_str())
+            get_parser_to_use("FIXME"), "", line, col, unicode(incomplete.c_str()),
+            true //FIXME: When we properly use scopes, we won't need this!! This just uses everything after the last '.'
         );
 
-        Glib::RefPtr<Gdk::Pixbuf> icon = Gtk::IconTheme::get_default()->load_icon("info", Gtk::ICON_SIZE_MENU);
-
         for(auto completion: completions) {
-            results.push_back(Gsv::CompletionItem::create(completion.encode(), completion.encode(), icon, ""));
+            results.push_back(Gsv::CompletionItem::create(completion.encode(), completion.encode(), Gtk::Stock::INFO, ""));
         }
     }
 

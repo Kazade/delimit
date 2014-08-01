@@ -19,7 +19,7 @@ public:
         int line_number,
         int col_number,
         const unicode& string_to_complete
-    );
+    , bool word_completion_only=false);
 
     unicode query_scope_at(const unicode &parser, const unicode& filename, int line_number, int col_number);
 private:
