@@ -15,6 +15,7 @@ Indexer::Indexer(const unicode& path_to_datastore) {
 
 void Indexer::register_parser(const unicode& mimetype, FileParserPtr parser) {
     parsers_.insert(std::make_pair(mimetype, parser));
+    parsers_by_name_.insert(std::make_pair(parser->name(), parser));
 }
 
 unicode Indexer::guess_type(const unicode& filename) {

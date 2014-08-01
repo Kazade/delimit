@@ -57,10 +57,12 @@ void Provider::populate_vfunc(const Glib::RefPtr<Gsv::CompletionContext> &contex
     auto incomplete = buffer->get_text(start, iter, true);
     if(!incomplete.empty()) {
         std::cout << incomplete << std::endl;
+
+        unicode parser_name = get_parser_to_use("FIXME");
         //FIXME: Determine the line that needs completing, and the current filename
         auto completions = indexer_->datastore()->query_completions(
-            get_parser_to_use("FIXME"), "", line, col, unicode(incomplete.c_str()),
-            true //FIXME: When we properly use scopes, we won't need this!! This just uses everything after the last '.'
+            parser_name, "", line, col, unicode(incomplete.c_str()),
+            !indexer()->parser(parser_name)->supports_nested_lookups()
         );
 
         for(auto completion: completions) {

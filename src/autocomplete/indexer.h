@@ -19,11 +19,14 @@ public:
     void clear(); //Wipe out the save index file
 
     DatastorePtr datastore() { return datastore_; }
+
+    FileParserPtr parser(const unicode& name) { return parsers_by_name_.at(name); }
 private:
     FileParserPtr detect_parser(const unicode& filename);
     unicode guess_type(const unicode& filename);
 
     std::map<unicode, FileParserPtr> parsers_;
+    std::map<unicode, FileParserPtr> parsers_by_name_;
     DatastorePtr datastore_;
 };
 

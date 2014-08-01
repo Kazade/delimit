@@ -77,6 +77,9 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
     if(files.size() == 1 && files[0]->query_file_type() == Gio::FILE_TYPE_DIRECTORY) {
         type_ = WINDOW_TYPE_FOLDER;
 
+        auto recent_manager = Gtk::RecentManager::get_default();
+        recent_manager->add_item(_u("file://{0}").format(files[0]->get_path()).encode());
+
         rebuild_file_tree(files[0]->get_path());
         path_ = files[0]->get_path();
 

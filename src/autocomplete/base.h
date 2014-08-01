@@ -22,6 +22,7 @@ public:
     virtual const unicode name() const = 0;
     virtual std::pair<std::vector<ScopePtr>, bool> parse(const unicode& data, const unicode& base_scope) = 0;
     virtual unicode base_scope_from_filename(const unicode& filename) = 0;
+    virtual bool supports_nested_lookups() const = 0;
 };
 
 class Scope {
