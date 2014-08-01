@@ -10,8 +10,8 @@ src/utils/sigc_lambda.h
 src/application.h
 src/application.cpp
 src/buffer.cpp
-src/search.h
-src/search.cpp
+src/find_bar.h
+src/find_bar.cpp
 src/base/glob.h
 src/base/glob.cpp
 src/autocomplete/base.h

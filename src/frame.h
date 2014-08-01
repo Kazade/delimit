@@ -27,7 +27,6 @@ public:
 
 
     Gtk::Box& _gtk_box() { return container_; }
-    void set_search_visible(bool value);
 
     void show_awesome_bar(bool value=true);
     bool is_awesome_bar_visible() const { return awesome_bar_.get_visible(); }
@@ -47,7 +46,6 @@ private:
     Gsv::View source_view_;
 
     delimit::AwesomeBar awesome_bar_;
-    delimit::Search search_;
 
     Buffer* buffer_;
 

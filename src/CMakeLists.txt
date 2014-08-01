@@ -6,7 +6,7 @@ set(
     ${CMAKE_SOURCE_DIR}/src/window.cpp
     ${CMAKE_SOURCE_DIR}/src/frame.cpp
     ${CMAKE_SOURCE_DIR}/src/buffer.cpp
-    ${CMAKE_SOURCE_DIR}/src/search.cpp
+    ${CMAKE_SOURCE_DIR}/src/find_bar.cpp
     ${CMAKE_SOURCE_DIR}/src/awesome_bar.cpp
     ${CMAKE_SOURCE_DIR}/src/utils.cpp
     ${CMAKE_SOURCE_DIR}/src/coverage/coverage.cpp

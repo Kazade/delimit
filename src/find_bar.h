@@ -9,10 +9,11 @@ namespace delimit {
 
 class Frame;
 class Buffer;
+class Window;
 
-class Search : public Gtk::Box {
+class FindBar {
 public:
-    Search(Frame* parent);
+    FindBar(Window& parent, Glib::RefPtr<Gtk::Builder>& builder);
 
     void on_entry_changed();
     void on_find_next_clicked();
@@ -29,8 +30,8 @@ public:
     void show();
     void hide() {
         clear_highlight();
-        find_entry_.set_text("");
-        Gtk::Box::hide();
+        find_entry_->set_text("");
+        find_bar_->set_reveal_child(false);
     }
 
     sigc::signal<void> signal_close_requested() { return signal_close_requested_; }
@@ -53,32 +54,31 @@ private:
 
     void toggle_replace(bool show) {
         if(show) {
-            replace_all_button_.show();
-            replace_button_.show();
-            replace_entry_.show();
+            replace_all_button_->show();
+            replace_button_->show();
+            replace_entry_->show();
         } else {
-            replace_all_button_.hide();
-            replace_button_.hide();
-            replace_entry_.hide();
+            replace_all_button_->hide();
+            replace_button_->hide();
+            replace_entry_->hide();
         }
     }
 
     Gdk::RGBA default_entry_colour_;
-    Gtk::Entry find_entry_;
-    Gtk::Entry replace_entry_;
-    Gtk::Button find_next_button_;
-    Gtk::Button replace_button_;
-    Gtk::Button replace_all_button_;
-    Gtk::Button close_button_;
 
-    Gtk::CheckButton case_sensitive_;
+    Gtk::Revealer* find_bar_;
+    Gtk::SearchEntry* find_entry_;
+    Gtk::Entry* replace_entry_;
+    Gtk::Button* find_next_button_;
+    Gtk::Button* replace_button_;
+    Gtk::Button* replace_all_button_;
+    Gtk::Button* close_button_;
+    Gtk::Switch* case_sensitive_;
 
-    void build_widgets();
+    void build_widgets(Glib::RefPtr<Gtk::Builder>& builder);
     void on_buffer_changed(Buffer* buffer);
 
-    Buffer* buffer();
-
-    Frame* frame_;
+    Window& window_;
 
     sigc::signal<void> signal_close_requested_;
 };

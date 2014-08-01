@@ -131,7 +131,7 @@ void Window::init_actions() {
     );
 
     add_global_action("find", Gtk::AccelKey(GDK_KEY_F, Gdk::CONTROL_MASK), [&]() {
-        frames_[current_frame_]->set_search_visible(true);
+        this->find_bar_->show();
     });
 
     add_global_action("awesome", Gtk::AccelKey(GDK_KEY_K, Gdk::CONTROL_MASK), [&]() {
@@ -142,7 +142,7 @@ void Window::init_actions() {
         if(frames_[current_frame_]->is_awesome_bar_visible()) {
             frames_[current_frame_]->show_awesome_bar(false);
         } else {
-            frames_[current_frame_]->set_search_visible(false);
+            this->find_bar_->hide();
         }
     });
 }
@@ -220,6 +220,8 @@ void Window::load_settings() {
 void Window::build_widgets() {
     std::string ui_file = fdo::xdg::find_data_file(UI_FILE).encode();
     auto builder = Gtk::Builder::create_from_file(ui_file);
+
+    find_bar_ = std::make_shared<FindBar>(*this, builder);
 
     builder->get_widget("search_window", gtk_search_window_);
     builder->get_widget("main_window", gtk_window_);

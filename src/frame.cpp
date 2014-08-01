@@ -70,10 +70,7 @@ Frame::Frame(Window& parent):
     container_(Gtk::ORIENTATION_VERTICAL),
     file_chooser_(true),
     awesome_bar_(this),
-    search_(this),
     buffer_(nullptr) {
-
-    search_._connect_signals();
 
     provider_ = Glib::RefPtr<Provider>(new Provider(&parent));
     build_widgets();
@@ -143,7 +140,6 @@ void Frame::build_widgets() {
     //file_chooser_box_.pack_start(file_chooser_, true, false, 0);
     //container_.pack_start(file_chooser_box_, false, false, 0);
     overlay_main_.pack_start(scrolled_window_, true, true, 0);
-    overlay_main_.pack_start(search_, false, false, 0);
 
 
     //Create a new overlay
@@ -200,9 +196,6 @@ void Frame::build_widgets() {
         //TODO: Add "Move" -> "To New File" for selections
     });
 
-
-    search_.set_no_show_all();
-
     auto coverage_attrs = Gsv::MarkAttributes::create();
     Gdk::RGBA coverage_colour;
     coverage_colour.set_rgba(1.0, 0.5, 0, 0.12);
@@ -227,16 +220,6 @@ void Frame::build_widgets() {
     );
 */
     source_view_.set_mark_attributes("linter", linter_attrs, 10);
-    set_search_visible(false);
-}
-
-void Frame::set_search_visible(bool value) {
-    if(value) {
-        search_.show();
-        search_.show_all_children();
-    } else {
-        search_.hide();
-    }
 }
 
 void Frame::detect_and_apply_indentation(Buffer* buffer) {

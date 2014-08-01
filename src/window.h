@@ -14,6 +14,7 @@
 #include "search/search_thread.h"
 #include "buffer.h"
 #include "frame.h"
+#include "find_bar.h"
 
 namespace delimit {
 
@@ -84,6 +85,8 @@ public:
     int new_file_count() const;
 
     const json::JSON settings() { return settings_; }
+
+    Buffer* current_buffer() { return frames_[current_frame_]->buffer(); }
 private:
     void load_settings();
 
@@ -156,6 +159,8 @@ private:
     std::vector<Buffer::ptr> open_buffers_;
     std::vector<Frame::ptr> frames_;
     int32_t current_frame_;
+
+    std::shared_ptr<FindBar> find_bar_;
 
     std::set<unicode> ignored_globs_; //For file tree
 
