@@ -72,8 +72,7 @@ private:
     Gtk::Button* replace_button_;
     Gtk::Button* replace_all_button_;
     Gtk::Button* close_button_;
-    Gtk::Switch case_sensitive_;
-    Gtk::Button* find_settings_;
+    Gtk::Switch* case_sensitive_;
 
     Gtk::VBox popover_box_;
     Gtk::Popover popover_;
