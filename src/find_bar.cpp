@@ -59,7 +59,9 @@ void FindBar::build_widgets(Glib::RefPtr<Gtk::Builder>& builder) {
     builder->get_widget("replace_button", replace_button_);
     builder->get_widget("replace_all_button", replace_all_button_);
     builder->get_widget("find_close_button", close_button_);
-    builder->get_widget("find_settings", find_settings_);
+    builder->get_widget("case_sensitive", case_sensitive_);
+
+    assert(case_sensitive_);
 
     find_entry_->signal_changed().connect(sigc::mem_fun(this, &FindBar::on_entry_changed));
     find_entry_->signal_activate().connect(sigc::mem_fun(this, &FindBar::on_entry_activated));
@@ -80,23 +82,6 @@ void FindBar::build_widgets(Glib::RefPtr<Gtk::Builder>& builder) {
     context->add_class("entry");
 
     default_entry_colour_ = context->get_color(Gtk::STATE_FLAG_FOCUSED);
-
-    Gtk::Label cs_label;
-    cs_label.set_text("Case sensitive");
-
-    Gtk::HBox case_sensitive_row_;
-    case_sensitive_row_.pack_start(cs_label, true, true, 0);
-    case_sensitive_row_.pack_end(case_sensitive_, true, true, 0);
-    case_sensitive_row_.show_all();
-
-    popover_box_.pack_start(case_sensitive_row_, true, true, 0);
-    popover_.add(popover_box_);
-    popover_.set_relative_to(*find_settings_);
-    popover_box_.show_all();
-
-    find_settings_->signal_clicked().connect([=]() {
-        popover_.show_all();
-    });
 }
 
 void FindBar::on_entry_changed() {
@@ -149,7 +134,7 @@ void FindBar::locate_matches(const unicode& string) {
     auto start = buf->begin();
     Gtk::TextIter end;
 
-    bool case_sensitive = case_sensitive_.get_active();
+    bool case_sensitive = case_sensitive_->get_active();
 
     while(start.forward_search(
               string.encode(), (case_sensitive) ? Gtk::TextSearchFlags(0) : Gtk::TEXT_SEARCH_CASE_INSENSITIVE,
@@ -284,7 +269,7 @@ int FindBar::highlight_all(const unicode& string, std::vector<Gtk::TextBuffer::i
     auto end_of_file = buf->end();
     auto end = start;
 
-    bool case_sensitive = case_sensitive_.get_active();
+    bool case_sensitive = case_sensitive_->get_active();
 
     //Remove any existing highlights
     buf->remove_tag_by_name(SEARCH_HIGHLIGHT_TAG, start, end_of_file);

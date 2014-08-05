@@ -366,18 +366,9 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkButton" id="find_settings">
+                          <object class="GtkSwitch" id="case_sensitive">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
-                            <property name="receives_default">True</property>
-                            <property name="relief">none</property>
-                            <child>
-                              <object class="GtkImage" id="image3">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="icon_name">gtk-properties</property>
-                              </object>
-                            </child>
                           </object>
                           <packing>
                             <property name="expand">False</property>
