@@ -76,6 +76,8 @@ void DocumentView::build_widgets() {
 
     g_signal_connect(linter_attrs->gobj(), "query-tooltip-markup", G_CALLBACK(get_tooltip), view_.gobj());
 
+    view_.set_mark_attributes("linter", linter_attrs, 10);
+
     apply_settings("text/plain");
 
     scrolled_window_.show_all();
@@ -287,6 +289,7 @@ void DocumentView::apply_language_to_buffer(const Glib::RefPtr<Gsv::Language>& l
 }
 
 void DocumentView::run_linters_and_stuff() {
+
     apply_language_to_buffer(guess_language_from_file(file_));
     apply_settings(guess_mimetype()); //Make sure we update the settings when we've reloaded the file
 
@@ -389,7 +392,7 @@ void DocumentView::open_file(const unicode& filename) {
 
 void DocumentView::close() {
     //Display a prompt encourage saving unless the file is new and empty
-    if(buffer()->get_modified() && !(is_new_file() && buffer_->get_text().size() == 0)) {
+    if(buffer() && buffer()->get_modified() && !(is_new_file() && buffer_->get_text().size() == 0)) {
         Gtk::MessageDialog dialog(window_._gtk_window(), "Do you want to save your work?", true, Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_YES_NO, true);
         dialog.set_message(_u("The file <i>{0}</i> has been changed since it was last saved.").format(name()).encode(), true);
         dialog.set_secondary_text("Do you want to save the file?");
