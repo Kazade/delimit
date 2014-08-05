@@ -74,7 +74,7 @@ void FindBar::build_widgets(Glib::RefPtr<Gtk::Builder>& builder) {
     });
 
     find_entry_->add_events(Gdk::KEY_PRESS_MASK);
-    //FIXME: case_sensitive_-signal_toggled().connect(sigc::mem_fun(this, &FindBar::on_case_sensitive_changed));
+    case_sensitive_->signal_state_changed().connect(sigc::mem_fun(this, &FindBar::on_case_sensitive_changed));
 
     auto context = Gtk::StyleContext::create();
     auto entry_path = find_entry_->get_path();
@@ -100,7 +100,7 @@ void FindBar::on_entry_changed() {
     if(!highlighted) {
         find_entry_->override_color(Gdk::RGBA("#FF0000"), Gtk::STATE_FLAG_FOCUSED);
     } else {
-        //FIXME: frame_->view().scroll_to(iters.at(0));
+        window_.current_buffer()->view().scroll_to(iters.at(0));
         find_entry_->override_color(default_entry_colour_, Gtk::STATE_FLAG_FOCUSED);
     }
 

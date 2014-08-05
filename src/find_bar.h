@@ -19,7 +19,7 @@ public:
     void on_replace_clicked();
     void on_replace_all_clicked();
 
-    void on_case_sensitive_changed() {
+    void on_case_sensitive_changed(const Gtk::StateType&) {
         on_entry_changed();
     }
 
