@@ -74,8 +74,6 @@ private:
     Gtk::Button* close_button_;
     Gtk::Switch* case_sensitive_;
 
-    Gtk::VBox popover_box_;
-    Gtk::Popover popover_;
 
     void build_widgets(Glib::RefPtr<Gtk::Builder>& builder);
     void on_document_switched(DocumentView& buffer);

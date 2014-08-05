@@ -7,6 +7,7 @@
 #include "window.h"
 #include "application.h"
 #include "search/search_thread.h"
+#include "utils.h"
 
 #include <kazbase/exceptions.h>
 #include <kazbase/unicode.h>
@@ -516,6 +517,34 @@ void Window::on_folder_changed(const Glib::RefPtr<Gio::File> &file, const Glib::
         Gtk::TreeRow node = *(file_tree_store_->get_iter(tree_row_lookup_.at(folder_path).get_path()));
         dirwalk(folder_path, &node);
     }
+
+    update_vcs_branch_in_tree();
+}
+
+void Window::update_vcs_branch_in_tree() {
+    auto root = file_tree_store_->get_iter(Gtk::TreeStore::Path("0")); //Get the root node
+
+    const Gtk::TreeRow& row = *root;
+
+    if(!row.get_value(file_tree_columns_.is_folder)) {
+        return;
+    }
+
+    unicode path = std::string(row.get_value(file_tree_columns_.full_path));
+    if(os::path::exists(os::path::join(path, ".git"))) {
+        unicode result = call_command(
+            _u("git rev-parse --abbrev-ref HEAD"),
+            path
+        );
+
+        if(!result.empty()) {
+            unicode new_name = _u("{0} [{1}]").format(
+                os::path::split(path).second,
+                result
+            );
+            row.set_value(file_tree_columns_.name, Glib::ustring(new_name.encode()));
+        }
+    }
 }
 
 void Window::watch_directory(const unicode& path) {
@@ -705,6 +734,8 @@ void Window::rebuild_file_tree(const unicode& path) {
     dirwalk(path, nullptr);
 
     window_file_tree_->expand_row(Gtk::TreeModel::Path("0"), false);
+
+    update_vcs_branch_in_tree();
 }
 
 void Window::rebuild_open_list() {

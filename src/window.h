@@ -177,6 +177,8 @@ private:
     json::JSON settings_;
 
     sigc::signal<void, DocumentView&> signal_document_switched_;
+
+    void update_vcs_branch_in_tree();
 };
 
 }
