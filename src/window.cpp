@@ -33,8 +33,7 @@ Window::Window():
     buffer_undo_(nullptr),
     main_paned_(nullptr),
     buffer_close_(nullptr),
-    type_(WINDOW_TYPE_FILE),
-    current_frame_(0) {
+    type_(WINDOW_TYPE_FILE) {
 
     L_DEBUG("Creating window with empty buffer");
     load_settings();
@@ -44,7 +43,7 @@ Window::Window():
     open_list_store_ = Gtk::ListStore::create(open_list_columns_);
 
     build_widgets();
-    new_buffer();
+    new_document();
 
     //Don't show the folder tree on FILE windows
     file_tree_scrolled_window_->get_parent()->remove(*file_tree_scrolled_window_);
@@ -64,8 +63,7 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
     buffer_undo_(nullptr),
     main_paned_(nullptr),
     buffer_close_(nullptr),    
-    type_(WINDOW_TYPE_FILE),
-    current_frame_(0) {
+    type_(WINDOW_TYPE_FILE) {
 
     load_settings();
 
@@ -98,13 +96,13 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
             L_DEBUG("not found.");
         }
 
-        new_buffer();
+        new_document();
 
     } else {
         type_ = WINDOW_TYPE_FILE;
 
         for(auto file: files) {
-            open_buffer(file);
+            open_document(file->get_path());
         }
 
         //Don't show the folder tree on FILE windows
@@ -113,7 +111,14 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
     }
 }
 
-
+void Window::show_awesome_bar(bool value) {
+    if(value) {
+        awesome_bar_->show();
+        awesome_bar_->show_all_children();
+    } else {
+        awesome_bar_->hide();
+    }
+}
 
 void Window::init_actions() {
     accel_group_ = Gtk::AccelGroup::create();
@@ -121,7 +126,6 @@ void Window::init_actions() {
     buffer_open_->add_accelerator("clicked", accel_group_, GDK_KEY_O, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
     folder_open_->add_accelerator("clicked", accel_group_, GDK_KEY_O, Gdk::CONTROL_MASK | Gdk::SHIFT_MASK, Gtk::ACCEL_VISIBLE);
     buffer_save_->add_accelerator("clicked", accel_group_, GDK_KEY_S, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-    window_split_->add_accelerator("clicked", accel_group_, GDK_KEY_T, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
     buffer_close_->add_accelerator("clicked", accel_group_, GDK_KEY_W, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
 
     _gtk_window().add_accel_group(accel_group_);
@@ -134,18 +138,18 @@ void Window::init_actions() {
     );
 
     add_global_action("find", Gtk::AccelKey(GDK_KEY_F, Gdk::CONTROL_MASK), [&]() {
-        frames_[current_frame_]->set_search_visible(true);
+        this->find_bar_->show();
     });
 
     add_global_action("awesome", Gtk::AccelKey(GDK_KEY_K, Gdk::CONTROL_MASK), [&]() {
-        frames_[current_frame_]->show_awesome_bar();
+        show_awesome_bar();
     });
 
     add_global_action("back_up", Gtk::AccelKey(GDK_KEY_Escape, Gdk::ModifierType(0)), [&]() {
-        if(frames_[current_frame_]->is_awesome_bar_visible()) {
-            frames_[current_frame_]->show_awesome_bar(false);
+        if(is_awesome_bar_visible()) {
+            show_awesome_bar(false);
         } else {
-            frames_[current_frame_]->set_search_visible(false);
+            this->find_bar_->hide();
         }
     });
 }
@@ -220,9 +224,16 @@ void Window::load_settings() {
     settings_ = settings;
 }
 
+void close_current_document(Window* window) {
+    window->current_buffer()->close();
+}
+
 void Window::build_widgets() {
     std::string ui_file = fdo::xdg::find_data_file(UI_FILE).encode();
     auto builder = Gtk::Builder::create_from_file(ui_file);
+
+    find_bar_ = std::make_shared<FindBar>(*this, builder);
+    awesome_bar_ = std::make_shared<AwesomeBar>(*this);
 
     builder->get_widget("search_window", gtk_search_window_);
     builder->get_widget("main_window", gtk_window_);
@@ -248,16 +259,30 @@ void Window::build_widgets() {
     builder->get_widget("buffer_save", buffer_save_);
     builder->get_widget("buffer_undo", buffer_undo_);
     builder->get_widget("buffer_redo", buffer_redo_);
-    builder->get_widget("window_split", window_split_);
     builder->get_widget("buffer_close", buffer_close_);
     builder->get_widget("error_counter", error_counter_);
     builder->get_widget("window_pane", main_paned_);
+
+
+    //THIS SUCKS SO BAD, 3.12 doesn't have a binding for GtkOverlay
+    overlay_ = GTK_OVERLAY(gtk_overlay_new());
+    g_object_ref(gtk_container_->gobj()); //Make sure we don't destroy the container
+
+    Gtk::Box* parent = dynamic_cast<Gtk::Box*>(gtk_container_->get_parent());
+    parent->remove(*gtk_container_); //Remove the container from the heirarchy
+    gtk_container_add(GTK_CONTAINER(overlay_), GTK_WIDGET(gtk_container_->gobj())); //Add the container to the overlay
+    gtk_overlay_add_overlay(GTK_OVERLAY(overlay_), GTK_WIDGET(awesome_bar_->gobj()));
+    parent->pack_start(*Glib::wrap(GTK_WIDGET(overlay_)), true, true, 0);
+    parent->reorder_child(*Glib::wrap(GTK_WIDGET(overlay_)), 0);
+    g_object_unref(gtk_container_->gobj()); //Undo reffing
+    gtk_widget_show(GTK_WIDGET(overlay_));
+
 
     buffer_new_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_new_clicked));
     buffer_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_clicked));
     buffer_save_->signal_clicked().connect(sigc::hide_return(sigc::mem_fun(this, &Window::toolbutton_save_clicked)));
     folder_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_folder_clicked));
-    buffer_close_->signal_clicked().connect(sigc::mem_fun(this, &Window::close_active_buffer));
+    buffer_close_->signal_clicked().connect(sigc::bind(&close_current_document, this));
     buffer_undo_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_undo_clicked));
     buffer_redo_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_redo_clicked));
 
@@ -272,7 +297,6 @@ void Window::build_widgets() {
     buffer_save_->reparent(header_bar_);
     buffer_undo_->reparent(header_bar_);
     buffer_redo_->reparent(header_bar_);
-    window_split_->reparent(header_bar_);
 
     auto original = buffer_close_->get_parent(); //Store the container
 
@@ -286,25 +310,14 @@ void Window::build_widgets() {
 
     gtk_window_->set_titlebar(header_bar_);
 
-    window_split_->signal_toggled().connect([&]() {
-        if(window_split_->get_active()) {
-            split();
-        } else {
-            unsplit();
-        }
-    });
-
     buffer_new_->set_icon_name("document-new");
     buffer_save_->set_icon_name("document-save");
     buffer_open_->set_icon_name("document-open");
     folder_open_->set_icon_name("folder-open");
     buffer_undo_->set_icon_name("edit-undo");
     buffer_redo_->set_icon_name("edit-redo");
-    window_split_->set_icon_name("window-new");
 
     assert(gtk_window_);
-
-    create_frame(); //Create the default frame
 
     init_actions();
 
@@ -326,6 +339,14 @@ void Window::build_widgets() {
     gtk_window_->set_icon_from_file(icon_file);
 
     gtk_window_->maximize();
+
+    gtk_window_->signal_delete_event().connect([&](GdkEventAny* evt) -> bool {
+         for(auto document: documents_) {
+             document->close();
+         }
+
+         return false;
+    });
 }
 
 void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column) {
@@ -335,7 +356,7 @@ void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::Tree
         Glib::ustring full_path = row[file_tree_columns_.full_path];
 
         if(Gio::File::create_for_path(full_path)->query_file_type() == Gio::FILE_TYPE_REGULAR) {
-            open_buffer(Gio::File::create_for_path(os::path::real_path(full_path.c_str()).encode()));
+            open_document(os::path::real_path(full_path.c_str()).encode());
         }
     }
 }
@@ -343,24 +364,25 @@ void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::Tree
 void Window::on_list_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column) {
     auto row = *(open_list_store_->get_iter(path));
 
-    Buffer::ptr buffer = row[open_list_columns_.buffer];
-    activate_buffer(buffer);
+    DocumentView::ptr buffer = row[open_list_columns_.buffer];
+    activate_document(buffer);
 }
 
 void Window::toolbutton_new_clicked() {
-    new_buffer();
+    new_document();
 }
 
 void Window::toolbutton_undo_clicked() {
-    if(current_frame_ >= 0 && current_frame_ < (int32_t) frames_.size()) {
-        frames_.at(current_frame_)->buffer()->_gtk_buffer()->undo();
+    if(current_document_) {
+        current_document_->buffer()->undo();
     }
 }
 
-void Window::toolbutton_redo_clicked() {
-    if(current_frame_ >= 0 && current_frame_ < (int32_t) frames_.size()) {
-        frames_.at(current_frame_)->buffer()->_gtk_buffer()->redo();
+void Window::toolbutton_redo_clicked() {    
+    if(current_document_) {
+        current_document_->buffer()->redo();
     }
+
 }
 
 void Window::toolbutton_open_clicked() {
@@ -378,7 +400,7 @@ void Window::toolbutton_open_clicked() {
     switch(result) {
         case Gtk::RESPONSE_OK: {
             std::string filename = dialog.get_filename();
-            open_buffer(Gio::File::create_for_path(filename));
+            open_document(filename);
         } default:
             break;
     }
@@ -413,12 +435,11 @@ bool Window::toolbutton_save_clicked() {
     dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
     dialog.add_button(Gtk::Stock::SAVE, Gtk::RESPONSE_OK);
 
-    Buffer* buffer = frames_[current_frame_]->buffer();
-    assert(buffer);
+    auto document = current_document_;
 
-    if(buffer) {
-        unicode path = buffer->path();
-        if(buffer->is_new_file()) {
+    if(document) {
+        unicode path = document->path();
+        if(document->is_new_file()) {
             int result = dialog.run();
             switch(result) {
                 case Gtk::RESPONSE_OK:
@@ -428,7 +449,7 @@ bool Window::toolbutton_save_clicked() {
                     return was_saved;
             }
         }
-        buffer->save(path);
+        document->save(path);
         was_saved = true;
     }
 
@@ -437,7 +458,7 @@ bool Window::toolbutton_save_clicked() {
 
 int Window::new_file_count() const {
     int i = 0;
-    for(auto buffer: open_buffers_) {
+    for(auto buffer: documents_) {
         if(buffer->is_new_file()) {
             ++i;
         }
@@ -689,9 +710,9 @@ void Window::rebuild_file_tree(const unicode& path) {
 void Window::rebuild_open_list() {
     open_list_store_->clear();
 
-    auto tmp = open_buffers_;
+    auto tmp = documents_;
 
-    std::sort(tmp.begin(), tmp.end(), [](Buffer::ptr lhs, Buffer::ptr rhs) {
+    std::sort(tmp.begin(), tmp.end(), [](DocumentView::ptr lhs, DocumentView::ptr rhs) {
         return lhs->name().lower() < rhs->name().lower();
     });
 
@@ -721,78 +742,69 @@ void Window::rebuild_open_list() {
 }
 
 
-void Window::split() {
-    assert(frames_.size() == 1);
-    create_frame();
-}
+void Window::on_document_modified(DocumentView& document) {
+    buffer_save_->set_sensitive(document.buffer()->get_modified());
 
-void Window::unsplit() {
-    assert(frames_.size() == 2);
+    unicode to_display = (document.is_new_file()) ? document.name() : document.path();
 
-    gtk_container_->remove();
-    frames_[0]->_gtk_box().reparent(*gtk_container_);
-    gtk_container_->show_all();
-
-    frames_.pop_back(); //Destroy the second frame
-}
-
-void Window::on_buffer_modified(Buffer* buffer) {
-    buffer_save_->set_sensitive(buffer->modified());
-
-    unicode to_display = (buffer->is_new_file()) ? buffer->name() : buffer->path();
-
-    if(type_ == WINDOW_TYPE_FOLDER && !path_.empty() && !buffer->path().empty()) {
+    if(type_ == WINDOW_TYPE_FOLDER && !path_.empty() && !document.path().empty()) {
         to_display = os::path::rel_path(to_display, path_);
     }
 
     header_bar_.set_subtitle(
         _u("{0}{1}").format(
-            to_display, buffer->modified() ? "*": ""
+            to_display, document.buffer()->get_modified() ? "*": ""
         ).encode().c_str()
     );
 }
 
-void Window::activate_buffer(Buffer::ptr buffer) {
-    assert(current_frame_ >= 0 && current_frame_ < (int32_t) frames_.size());
-    frames_[current_frame_]->set_buffer(buffer.get());
-    on_buffer_modified(buffer.get());
+void Window::activate_document(DocumentView::ptr document) {
+    if(current_document_ == document) {
+        return;
+    }
+
+    gtk_container_->remove();
+    gtk_container_->add(document->container());
+    current_document_ = document;
+
+    signal_document_switched_(*current_document_);
+    on_document_modified(*document);
 }
 
-void Window::new_buffer() {
-    Buffer::ptr buffer = std::make_shared<Buffer>(*this);
-
+void Window::append_document(DocumentView::ptr new_document) {
     //Watch for changes to the buffer
-    buffer->signal_modified_changed().connect(
-        sigc::mem_fun(this, &Window::on_buffer_modified)
+    new_document->signal_modified_changed().connect(
+        sigc::mem_fun(this, &Window::on_document_modified)
     );
 
-    buffer->signal_closed().connect(
-        sigc::mem_fun(this, &Window::close_buffer)
+    new_document->signal_closed().connect(
+        sigc::mem_fun(this, &Window::close_document)
     );
 
-    buffer->set_modified(true); //New file, mark as modified
+    documents_.push_back(new_document);
 
-    open_buffers_.push_back(buffer);
+}
 
-    activate_buffer(buffer);
+void Window::new_document() {
+    DocumentView::ptr new_document = std::make_shared<DocumentView>(*this);
+
+    append_document(new_document);
+    activate_document(new_document);
+
     rebuild_open_list();
 }
 
-void Window::close_active_buffer() {
-    frames_[current_frame_]->buffer()->close();
-}
+void Window::close_document(DocumentView& document) {
+    DocumentView::ptr prev, this_buf;
+    for(uint32_t i = 0; i < documents_.size(); ++i) {
+        auto buf = documents_[i];
 
-void Window::close_buffer(Buffer* buffer) {
-    Buffer::ptr prev, this_buf;
-    for(uint32_t i = 0; i < open_buffers_.size(); ++i) {
-        auto buf = open_buffers_[i];
-
-        if(buf.get() == buffer) {
+        if(buf.get() == &document) {
             this_buf = buf;
-            if(!prev && i + 1 < open_buffers_.size()) {
+            if(!prev && i + 1 < documents_.size()) {
                 //We closed the first file in the list, so point to the following one
                 //if we can
-                prev = open_buffers_[i + 1];
+                prev = documents_[i + 1];
             }
             break;
         }
@@ -801,89 +813,39 @@ void Window::close_buffer(Buffer* buffer) {
     }
 
     if(prev) {
-        activate_buffer(prev);
+        activate_document(prev);
     }
 
     //erase the buffer from the open buffers
-    open_buffers_.erase(std::remove(open_buffers_.begin(), open_buffers_.end(), this_buf), open_buffers_.end());
+    documents_.erase(std::remove(documents_.begin(), documents_.end(), this_buf), documents_.end());
 
     //Make sure we always have a document
-    if(open_buffers_.empty()) {
-        //Close the window... maybe revisit this
-        //FIXME: Gtk 3.10 supports actual closing rather than ugly killing
-//        gtk_window_->close();
-        gtk_widget_destroy(GTK_WIDGET(gtk_window_->gobj()));
+    if(documents_.empty()) {
+        gtk_window_->close();
         return;
     }
 
     rebuild_open_list();
 }
 
-void Window::close_buffer_for_file(const Glib::RefPtr<Gio::File>& file) {
-    for(auto buffer: open_buffers_) {
-        if(buffer->path() == file->get_path()) {
-            buffer->close();
-        }
-    }
-}
-
-void Window::open_buffer(const Glib::RefPtr<Gio::File> &file) {
-    if(!file->query_exists()) {
-        throw IOError(_u("Path does not exist: {0}").format(file->get_path()));
-    }
-
-    for(auto buffer: open_buffers_) {
-        if(buffer->path() == file->get_path()) {
+void Window::open_document(const unicode& file_path) {
+    for(auto buffer: documents_) {
+        if(buffer->path() == file_path) {
             //Just activate, don't open!
-            activate_buffer(buffer);
+            activate_document(buffer);
             return;
         }
     }
 
-    unicode name = os::path::split(file->get_path()).second;
+    unicode name = os::path::split(file_path).second;
 
-    Buffer::ptr buffer = std::make_shared<Buffer>(*this, file);
+    DocumentView::ptr buffer = std::make_shared<DocumentView>(*this, file_path);
 
-    //Watch for changes to the buffer
-    buffer->signal_modified_changed().connect(
-        sigc::mem_fun(this, &Window::on_buffer_modified)
-    );
-
-    buffer->signal_closed().connect(
-        sigc::mem_fun(this, &Window::close_buffer)
-    );
-
-    open_buffers_.push_back(buffer);
-
-    activate_buffer(buffer);
+    append_document(buffer);
+    activate_document(buffer);
     rebuild_open_list();
 }
 
-void Window::create_frame() {
-    assert(frames_.size() < (uint32_t) FRAME_LIMIT);
-
-    Frame::ptr frame = std::make_shared<Frame>(*this);
-
-    if(frames_.empty()) {
-        gtk_container_->add(frame->_gtk_box());
-    } else if(frames_.size() == 1) {
-        Gtk::Paned* pane = Gtk::manage(new Gtk::Paned);
-        gtk_container_->remove();
-        gtk_container_->add(*pane);
-
-        pane->show_all();
-
-        pane->add1(frames_[0]->_gtk_box());
-        pane->add2(frame->_gtk_box());
-
-        frame->set_buffer(frames_[0]->buffer());
-    } else {
-        throw std::logic_error("More than two frames not supported");
-    }
-
-    frame->_gtk_box().show_all();
-    frames_.push_back(frame);
-}
 
 void Window::set_undo_enabled(bool value) {
     buffer_undo_->set_sensitive(value);

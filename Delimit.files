@@ -10,8 +10,8 @@ src/utils/sigc_lambda.h
 src/application.h
 src/application.cpp
 src/buffer.cpp
-src/search.h
-src/search.cpp
+src/find_bar.h
+src/find_bar.cpp
 src/base/glob.h
 src/base/glob.cpp
 src/autocomplete/base.h
@@ -37,3 +37,7 @@ tests/CMakeLists.txt
 src/autocomplete/parsers/plain.h
 src/autocomplete/parsers/plain.cpp
 src/search/search_thread.h
+src/document_view.h
+src/document_view.cpp
+src/utils/indentation.h
+src/utils/indentation.cpp

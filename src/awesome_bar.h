@@ -5,11 +5,11 @@
 
 namespace delimit {
 
-class Frame;
+class Window;
 
 class AwesomeBar : public Gtk::VBox {
 public:
-    AwesomeBar(Frame* parent);
+    AwesomeBar(Window& parent);
 
     void show() {
         entry_.grab_focus();
@@ -17,7 +17,7 @@ public:
     }
 
 private:
-    Frame* frame_;
+    Window& window_;
 
     Gtk::Entry entry_;
 

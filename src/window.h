@@ -14,6 +14,8 @@
 #include "search/search_thread.h"
 #include "buffer.h"
 #include "frame.h"
+#include "find_bar.h"
+#include "document_view.h"
 
 namespace delimit {
 
@@ -49,7 +51,7 @@ public:
     }
 
     Gtk::TreeModelColumn<Glib::ustring> name;
-    Gtk::TreeModelColumn<Buffer::ptr> buffer;
+    Gtk::TreeModelColumn<DocumentView::ptr> buffer;
 };
 
 class Window {
@@ -59,11 +61,8 @@ public:
     Window();
     Window(const std::vector<Glib::RefPtr<Gio::File>>& files);
 
-    void split();
-    void unsplit();
-
-    void new_buffer();
-    void open_buffer(const Glib::RefPtr<Gio::File>& path);
+    void new_document();
+    void open_document(const unicode& path);
 
     WindowType type() const { return type_; }
 
@@ -84,14 +83,20 @@ public:
     int new_file_count() const;
 
     const json::JSON settings() { return settings_; }
+
+    DocumentView::ptr current_buffer() { return current_document_; }
+
+    void show_awesome_bar(bool value=true);
+    bool is_awesome_bar_visible() const { return awesome_bar_->get_visible(); }
+
+    sigc::signal<void, DocumentView&>& signal_document_switched() { return signal_document_switched_; }
 private:
+    void close_document(DocumentView &document);
+    void append_document(DocumentView::ptr document);
+
     void load_settings();
 
-    void close_buffer(Buffer* buffer);
-    void close_buffer_for_file(const Glib::RefPtr<Gio::File>& file);
-    void close_active_buffer();
-
-    void activate_buffer(Buffer::ptr buffer);
+    void activate_document(DocumentView::ptr buffer);
     void build_widgets();
     void init_actions();
 
@@ -103,7 +108,7 @@ private:
 
     void on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column);
     void on_list_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column);
-    void on_buffer_modified(Buffer* buffer);
+    void on_document_modified(DocumentView &document);
 
     void begin_search();
 
@@ -133,8 +138,8 @@ private:
     Gtk::ToolButton* buffer_save_;
     Gtk::ToolButton* buffer_undo_;
     Gtk::ToolButton* buffer_redo_;
-    Gtk::ToggleToolButton* window_split_;
     Gtk::Paned* main_paned_;
+    GtkOverlay* overlay_;
 
     Gtk::Button* buffer_close_;
     Gtk::Label* error_counter_;
@@ -148,14 +153,14 @@ private:
     void toolbutton_undo_clicked();
     void toolbutton_redo_clicked();
 
-    void create_frame();
-
     WindowType type_;
     unicode path_;
 
-    std::vector<Buffer::ptr> open_buffers_;
-    std::vector<Frame::ptr> frames_;
-    int32_t current_frame_;
+    std::vector<DocumentView::ptr> documents_;
+    DocumentView::ptr current_document_;
+
+    std::shared_ptr<FindBar> find_bar_;
+    std::shared_ptr<AwesomeBar> awesome_bar_;
 
     std::set<unicode> ignored_globs_; //For file tree
 
@@ -170,6 +175,8 @@ private:
     void add_global_action(const unicode& name, const Gtk::AccelKey& key, std::function<void ()> func);
 
     json::JSON settings_;
+
+    sigc::signal<void, DocumentView&> signal_document_switched_;
 };
 
 }
