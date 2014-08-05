@@ -254,7 +254,7 @@ void FindBar::on_find_next_clicked() {
     if(next > -1) {
         auto match = matches_[next];
         buf->select_range(match.first, match.second);
-        //FIXME: frame_->view().scroll_to(match.first);
+        window_.current_buffer()->view().scroll_to(match.first);
     }
 }
 
