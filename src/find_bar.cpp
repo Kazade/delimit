@@ -1,3 +1,4 @@
+#include <kazbase/logging.h>
 #include <cassert>
 #include "find_bar.h"
 #include "buffer.h"
@@ -18,7 +19,7 @@ FindBar::FindBar(Window& parent, Glib::RefPtr<Gtk::Builder>& builder):
 }
 
 void FindBar::_connect_signals() {
-    //FIXME: frame_->signal_buffer_changed().connect(sigc::mem_fun(this, &Search::on_buffer_changed));
+    window_.signal_document_switched().connect(sigc::mem_fun(this, &FindBar::on_document_switched));
     close_button_->signal_clicked().connect(sigc::mem_fun(this, &FindBar::hide));
     replace_button_->signal_clicked().connect(sigc::mem_fun(this, &FindBar::on_replace_clicked));
     replace_all_button_->signal_clicked().connect(sigc::mem_fun(this, &FindBar::on_replace_all_clicked));
@@ -35,19 +36,18 @@ void FindBar::show() {
 
     auto buffer = window_.current_buffer();
 
-    if(buffer->_gtk_buffer()->get_selection_bounds(start, end)) {
-        find_entry_->set_text(buffer->_gtk_buffer()->get_slice(start, end));
+    if(buffer->buffer()->get_selection_bounds(start, end)) {
+        find_entry_->set_text(buffer->buffer()->get_slice(start, end));
         find_entry_->select_region(0, -1);
     }
 }
 
-void FindBar::on_buffer_changed(Buffer *buffer)  {
-    if(buffer) {
-        //Create the buffer tag if necessary
-        if(!buffer->_gtk_buffer()->get_tag_table()->lookup(SEARCH_HIGHLIGHT_TAG)) {
-            auto tag = buffer->_gtk_buffer()->create_tag (SEARCH_HIGHLIGHT_TAG);
-            tag->property_background() = "#1EBCFF";
-        }
+void FindBar::on_document_switched(DocumentView& buffer)  {
+    //Create the buffer tag if necessary
+    if(!buffer.buffer()->get_tag_table()->lookup(SEARCH_HIGHLIGHT_TAG)) {
+        L_DEBUG("Creating search highlight tag");
+        auto tag = buffer.buffer()->create_tag (SEARCH_HIGHLIGHT_TAG);
+        tag->property_background() = "#1EBCFF";
     }
 }
 
@@ -59,7 +59,7 @@ void FindBar::build_widgets(Glib::RefPtr<Gtk::Builder>& builder) {
     builder->get_widget("replace_button", replace_button_);
     builder->get_widget("replace_all_button", replace_all_button_);
     builder->get_widget("find_close_button", close_button_);
-    builder->get_widget("case_sensitive", case_sensitive_);
+    builder->get_widget("find_settings", find_settings_);
 
     find_entry_->signal_changed().connect(sigc::mem_fun(this, &FindBar::on_entry_changed));
     find_entry_->signal_activate().connect(sigc::mem_fun(this, &FindBar::on_entry_activated));
@@ -80,6 +80,23 @@ void FindBar::build_widgets(Glib::RefPtr<Gtk::Builder>& builder) {
     context->add_class("entry");
 
     default_entry_colour_ = context->get_color(Gtk::STATE_FLAG_FOCUSED);
+
+    Gtk::Label cs_label;
+    cs_label.set_text("Case sensitive");
+
+    Gtk::HBox case_sensitive_row_;
+    case_sensitive_row_.pack_start(cs_label, true, true, 0);
+    case_sensitive_row_.pack_end(case_sensitive_, true, true, 0);
+    case_sensitive_row_.show_all();
+
+    popover_box_.pack_start(case_sensitive_row_, true, true, 0);
+    popover_.add(popover_box_);
+    popover_.set_relative_to(*find_settings_);
+    popover_box_.show_all();
+
+    find_settings_->signal_clicked().connect([=]() {
+        popover_.show_all();
+    });
 }
 
 void FindBar::on_entry_changed() {
@@ -128,11 +145,11 @@ void FindBar::locate_matches(const unicode& string) {
     matches_.clear();
     last_selected_match_ = -1;
 
-    auto buf = window_.current_buffer()->_gtk_buffer();
+    auto buf = window_.current_buffer()->buffer();
     auto start = buf->begin();
     Gtk::TextIter end;
 
-    bool case_sensitive = case_sensitive_->get_active();
+    bool case_sensitive = case_sensitive_.get_active();
 
     while(start.forward_search(
               string.encode(), (case_sensitive) ? Gtk::TextSearchFlags(0) : Gtk::TEXT_SEARCH_CASE_INSENSITIVE,
@@ -163,7 +180,7 @@ int32_t FindBar::find_next_match(const Gtk::TextIter& start) {
 }
 
 void FindBar::replace_text(Gtk::TextIter& start, Gtk::TextIter& end, Glib::ustring& replacement) {
-    auto buf = window_.current_buffer()->_gtk_buffer();
+    auto buf = window_.current_buffer()->buffer();
 
     if(buf->get_slice(start, end) == replacement) {
         return;
@@ -238,7 +255,7 @@ void FindBar::on_find_next_clicked() {
         return;
     }
 
-    auto buf = window_.current_buffer()->_gtk_buffer();
+    auto buf = window_.current_buffer()->buffer();
 
     auto start = buf->get_iter_at_mark(buf->get_insert());
 
@@ -262,12 +279,12 @@ int FindBar::highlight_all(const unicode& string) {
 }
 
 int FindBar::highlight_all(const unicode& string, std::vector<Gtk::TextBuffer::iterator>& start_iters) {
-    auto buf = window_.current_buffer()->_gtk_buffer();
+    auto buf = window_.current_buffer()->buffer();
     auto start = buf->begin();
     auto end_of_file = buf->end();
     auto end = start;
 
-    bool case_sensitive = case_sensitive_->get_active();
+    bool case_sensitive = case_sensitive_.get_active();
 
     //Remove any existing highlights
     buf->remove_tag_by_name(SEARCH_HIGHLIGHT_TAG, start, end_of_file);
@@ -290,7 +307,7 @@ int FindBar::highlight_all(const unicode& string, std::vector<Gtk::TextBuffer::i
 
 void FindBar::clear_highlight() {
     if(window_.current_buffer()) {
-        auto buf = window_.current_buffer()->_gtk_buffer();
+        auto buf = window_.current_buffer()->buffer();
         buf->remove_tag_by_name(SEARCH_HIGHLIGHT_TAG, buf->begin(), buf->end());
     }
 }

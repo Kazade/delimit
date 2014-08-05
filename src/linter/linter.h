@@ -6,8 +6,7 @@
 #include <kazbase/unicode.h>
 
 namespace delimit {
-    class Frame;
-    class Buffer;
+    class DocumentView;
 }
 
 namespace linter {
@@ -18,8 +17,8 @@ class Linter {
 public:
     typedef std::shared_ptr<Linter> ptr;
 
-    void apply_to_buffer(delimit::Buffer* buffer);
-    void clear_buffer(delimit::Buffer* buffer);
+    void apply_to_document(delimit::DocumentView* buffer);
+    void clear_document(delimit::DocumentView* buffer);
 
 private:
     virtual LinterResult find_problematic_lines(const unicode& filename, const unicode& project_root="") = 0;

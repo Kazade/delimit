@@ -8,15 +8,15 @@
 
 using namespace linter;
 
-void Linter::clear_buffer(delimit::Buffer* buffer) {
-    auto gbuf = buffer->_gtk_buffer();
+void Linter::clear_document(delimit::DocumentView* buffer) {
+    auto gbuf = buffer->buffer();
 
     gbuf->remove_source_marks(gbuf->begin(), gbuf->end(), Glib::ustring("linter"));
 }
 
-void Linter::apply_to_buffer(delimit::Buffer *buffer) {
-    auto gbuf = buffer->_gtk_buffer();
-    clear_buffer(buffer);
+void Linter::apply_to_document(delimit::DocumentView *buffer) {
+    auto gbuf = buffer->buffer();
+    clear_document(buffer);
 
     auto result = find_problematic_lines(buffer->path(), buffer->window().project_path());
     for(auto line_and_message: result) {

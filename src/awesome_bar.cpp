@@ -1,12 +1,12 @@
 #include <kazbase/unicode.h>
 #include "awesome_bar.h"
-#include "frame.h"
+#include "window.h"
 #include "buffer.h"
 
 namespace delimit {
 
-AwesomeBar::AwesomeBar(Frame *parent):
-    frame_(parent) {
+AwesomeBar::AwesomeBar(Window &parent):
+    window_(parent) {
 
     build_widgets();
 }
@@ -44,9 +44,9 @@ void AwesomeBar::populate(const unicode &text) {
             unicode number_text = text.lstrip(":");
             int line_number = number_text.to_int();
 
-            auto buffer = frame_->buffer()->_gtk_buffer();
+            auto buffer = window_.current_buffer()->buffer();
             auto iter = buffer->get_iter_at_line(line_number);
-            frame_->view().scroll_to(iter, 0, 0.5, 0.5);
+            window_.current_buffer()->view().scroll_to(iter, 0, 0.5, 0.5);
         } catch(std::exception& e) {
             return;
         }

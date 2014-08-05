@@ -69,20 +69,10 @@ Frame::Frame(Window& parent):
     parent_(parent),
     container_(Gtk::ORIENTATION_VERTICAL),
     file_chooser_(true),
-    awesome_bar_(this),
     buffer_(nullptr) {
 
     provider_ = Glib::RefPtr<Provider>(new Provider(&parent));
     build_widgets();
-}
-
-void Frame::show_awesome_bar(bool value) {
-    if(value) {
-        awesome_bar_.show();
-        awesome_bar_.show_all_children();
-    } else {
-        awesome_bar_.hide();
-    }
 }
 
 void Frame::apply_settings(const unicode& mimetype) {
@@ -136,21 +126,7 @@ void Frame::apply_settings(const unicode& mimetype) {
 
 void Frame::build_widgets() {
     scrolled_window_.add(source_view_);
-
-    //file_chooser_box_.pack_start(file_chooser_, true, false, 0);
-    //container_.pack_start(file_chooser_box_, false, false, 0);
-    overlay_main_.pack_start(scrolled_window_, true, true, 0);
-
-
-    //Create a new overlay
-    overlay_container_ = GTK_OVERLAY(gtk_overlay_new());
-    gtk_container_add(GTK_CONTAINER(overlay_container_), GTK_WIDGET(overlay_main_.gobj()));
-
-    container_.pack_start(*Glib::wrap(GTK_WIDGET(overlay_container_)), true, true, 0);
-
-    gtk_overlay_add_overlay(overlay_container_, GTK_WIDGET(awesome_bar_.gobj()));
-
-    show_awesome_bar(false);
+    container_.pack_start(scrolled_window_, true, true, 0);
 
     auto settings = Gio::Settings::create("org.gnome.desktop.interface");
     auto font_name = settings->get_string("monospace-font-name");

@@ -7,8 +7,7 @@
 
 namespace delimit {
 
-class Frame;
-class Buffer;
+class DocumentView;
 class Window;
 
 class FindBar {
@@ -73,10 +72,14 @@ private:
     Gtk::Button* replace_button_;
     Gtk::Button* replace_all_button_;
     Gtk::Button* close_button_;
-    Gtk::Switch* case_sensitive_;
+    Gtk::Switch case_sensitive_;
+    Gtk::Button* find_settings_;
+
+    Gtk::VBox popover_box_;
+    Gtk::Popover popover_;
 
     void build_widgets(Glib::RefPtr<Gtk::Builder>& builder);
-    void on_buffer_changed(Buffer* buffer);
+    void on_document_switched(DocumentView& buffer);
 
     Window& window_;
 

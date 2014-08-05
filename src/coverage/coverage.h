@@ -8,8 +8,7 @@
 #include <gtksourceviewmm.h>
 
 namespace delimit {
-    class Frame;
-    class Buffer;
+    class DocumentView;
 }
 
 namespace coverage {
@@ -18,8 +17,8 @@ class Coverage {
 public:
     typedef std::shared_ptr<Coverage> ptr;
 
-    void apply_to_buffer(delimit::Buffer* buffer);
-    void clear_buffer(delimit::Buffer* buffer);
+    void apply_to_document(delimit::DocumentView* buffer);
+    void clear_document(delimit::DocumentView* buffer);
 
 private:
     virtual std::vector<int32_t> find_uncovered_lines(const unicode& filename, const unicode& project_root="") = 0;

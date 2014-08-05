@@ -1,22 +1,21 @@
 #include <iostream>
 
 #include "coverage.h"
-#include "../frame.h"
-#include "../buffer.h"
 #include "../window.h"
 #include "../utils.h"
+#include "../document_view.h"
 
 using namespace coverage;
 
-void Coverage::clear_buffer(delimit::Buffer* buffer) {
-    auto gbuf = buffer->_gtk_buffer();
+void Coverage::clear_document(delimit::DocumentView* buffer) {
+    auto gbuf = buffer->buffer();
 
     gbuf->remove_source_marks(gbuf->begin(), gbuf->end(), Glib::ustring("coverage"));
 }
 
-void Coverage::apply_to_buffer(delimit::Buffer *buffer) {    
-    auto gbuf = buffer->_gtk_buffer();
-    clear_buffer(buffer);
+void Coverage::apply_to_document(delimit::DocumentView *buffer) {
+    auto gbuf = buffer->buffer();
+    clear_document(buffer);
 
     auto result = find_uncovered_lines(buffer->path(), buffer->window().project_path());
     for(auto line: result) {
