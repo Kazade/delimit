@@ -41,3 +41,6 @@ src/document_view.h
 src/document_view.cpp
 src/utils/indentation.h
 src/utils/indentation.cpp
+src/gtk/button_cell_renderer.h
+src/gtk/open_files_list.h
+src/gtk/open_files_list.cpp

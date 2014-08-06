@@ -26,7 +26,6 @@ Window::Window():
     gtk_container_(nullptr),
     file_tree_scrolled_window_(nullptr),
     window_file_tree_(nullptr),
-    open_file_list_(nullptr),
     buffer_new_(nullptr),
     buffer_open_(nullptr),
     folder_open_(nullptr),
@@ -41,14 +40,12 @@ Window::Window():
 
 
     file_tree_store_ = Gtk::TreeStore::create(file_tree_columns_);
-    open_list_store_ = Gtk::ListStore::create(open_list_columns_);
 
     build_widgets();
     new_document();
 
     //Don't show the folder tree on FILE windows
     file_tree_scrolled_window_->get_parent()->remove(*file_tree_scrolled_window_);
-    open_file_list_->set_vexpand(true);
 }
 
 Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
@@ -56,7 +53,6 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
     gtk_container_(nullptr),
     file_tree_scrolled_window_(nullptr),
     window_file_tree_(nullptr),
-    open_file_list_(nullptr),
     buffer_new_(nullptr),
     buffer_open_(nullptr),
     folder_open_(nullptr),
@@ -69,7 +65,6 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
     load_settings();
 
     file_tree_store_ = Gtk::TreeStore::create(file_tree_columns_);
-    open_list_store_ = Gtk::ListStore::create(open_list_columns_);
 
     build_widgets();
 
@@ -108,7 +103,6 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
 
         //Don't show the folder tree on FILE windows
         file_tree_scrolled_window_->get_parent()->remove(*file_tree_scrolled_window_);
-        open_file_list_->set_vexpand(true);
     }
 }
 
@@ -249,10 +243,13 @@ void Window::build_widgets() {
     window_file_tree_->signal_row_activated().connect(sigc::mem_fun(this, &Window::on_signal_row_activated));
     window_file_tree_->signal_test_expand_row().connect(sigc::mem_fun(this, &Window::on_tree_test_expand_row));
 
-    builder->get_widget("open_file_list", open_file_list_);
-    open_file_list_->set_model(open_list_store_);
-    open_file_list_->append_column("Name", open_list_columns_.name);
-    open_file_list_->signal_row_activated().connect(sigc::mem_fun(this, &Window::on_list_signal_row_activated));
+    Gtk::ListBox* open_files_list;
+    builder->get_widget("open_files_list", open_files_list);
+    open_files_list_ = std::make_shared<_Gtk::OpenFilesList>(*this, open_files_list);
+    open_files_list_->signal_row_activated().connect(sigc::mem_fun(this, &Window::on_list_signal_row_activated));
+    open_files_list_->signal_row_close_clicked().connect([&](DocumentView::ptr buffer) {
+        buffer->close();
+    });
 
     builder->get_widget("buffer_new", buffer_new_);
     builder->get_widget("buffer_open", buffer_open_);
@@ -362,11 +359,10 @@ void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::Tree
     }
 }
 
-void Window::on_list_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column) {
-    auto row = *(open_list_store_->get_iter(path));
-
-    DocumentView::ptr buffer = row[open_list_columns_.buffer];
-    activate_document(buffer);
+void Window::on_list_signal_row_activated(DocumentView::ptr buffer) {
+    if(buffer) {
+        activate_document(buffer);
+    }
 }
 
 void Window::toolbutton_new_clicked() {
@@ -739,7 +735,7 @@ void Window::rebuild_file_tree(const unicode& path) {
 }
 
 void Window::rebuild_open_list() {
-    open_list_store_->clear();
+    open_files_list_->clear();
 
     auto tmp = documents_;
 
@@ -759,16 +755,18 @@ void Window::rebuild_open_list() {
     }
 
     for(auto buffer: tmp) {
-        auto row = *(open_list_store_->append());
-
         unicode name = buffer->name();
 
         if(occurrance_count[name] > 1) {
             name = _u("{0} ({1})").format(name, os::path::dir_name(buffer->path().replace(path_, "").lstrip("/")));
         }
 
-        row[open_list_columns_.name] = Glib::ustring(name.encode());
-        row[open_list_columns_.buffer] = buffer;
+        _Gtk::OpenFilesEntry entry;
+
+        entry.name = Glib::ustring(name.encode());
+        entry.buffer = buffer;
+
+        open_files_list_->add_entry(entry);
     }
 }
 

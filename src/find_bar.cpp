@@ -61,8 +61,6 @@ void FindBar::build_widgets(Glib::RefPtr<Gtk::Builder>& builder) {
     builder->get_widget("find_close_button", close_button_);
     builder->get_widget("case_sensitive", case_sensitive_);
 
-    assert(case_sensitive_);
-
     find_entry_->signal_changed().connect(sigc::mem_fun(this, &FindBar::on_entry_changed));
     find_entry_->signal_activate().connect(sigc::mem_fun(this, &FindBar::on_entry_activated));
     find_entry_->signal_key_press_event().connect(sigc::mem_fun(this, &FindBar::on_entry_key_press));

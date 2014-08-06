@@ -16,6 +16,7 @@
 #include "frame.h"
 #include "find_bar.h"
 #include "document_view.h"
+#include "gtk/open_files_list.h"
 
 namespace delimit {
 
@@ -43,16 +44,7 @@ public:
     Gtk::TreeModelColumn<bool> is_dummy;
 };
 
-class OpenListColumns : public Gtk::TreeModelColumnRecord {
-public:
-    OpenListColumns() {
-        add(name);
-        add(buffer);
-    }
 
-    Gtk::TreeModelColumn<Glib::ustring> name;
-    Gtk::TreeModelColumn<DocumentView::ptr> buffer;
-};
 
 class Window {
 public:
@@ -107,7 +99,7 @@ private:
     bool on_tree_test_expand_row(const Gtk::TreeModel::iterator& iter, const Gtk::TreeModel::Path& path);
 
     void on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column);
-    void on_list_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column);
+    void on_list_signal_row_activated(DocumentView::ptr buffer);
     void on_document_modified(DocumentView &document);
 
     void begin_search();
@@ -121,13 +113,13 @@ private:
 
     Gtk::ScrolledWindow* file_tree_scrolled_window_;
     Gtk::TreeView* window_file_tree_;
-    Gtk::TreeView* open_file_list_;
+
 
     FileTreeColumns file_tree_columns_;
     Glib::RefPtr<Gtk::TreeStore> file_tree_store_;
 
-    OpenListColumns open_list_columns_;
-    Glib::RefPtr<Gtk::ListStore> open_list_store_;
+    std::shared_ptr<_Gtk::OpenFilesList> open_files_list_;
+    std::vector<_Gtk::OpenFilesEntry> open_files_store_;
 
     Gtk::HeaderBar header_bar_;
 
