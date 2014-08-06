@@ -133,7 +133,6 @@ private:
     Gtk::Paned* main_paned_;
     GtkOverlay* overlay_;
 
-    Gtk::Button* buffer_close_;
     Gtk::Label* error_counter_;
 
     Glib::RefPtr<Gtk::ActionGroup> actions_;

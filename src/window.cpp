@@ -32,7 +32,6 @@ Window::Window():
     buffer_save_(nullptr),
     buffer_undo_(nullptr),
     main_paned_(nullptr),
-    buffer_close_(nullptr),
     type_(WINDOW_TYPE_FILE) {
 
     L_DEBUG("Creating window with empty buffer");
@@ -59,7 +58,6 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
     buffer_save_(nullptr),
     buffer_undo_(nullptr),
     main_paned_(nullptr),
-    buffer_close_(nullptr),    
     type_(WINDOW_TYPE_FILE) {
 
     load_settings();
@@ -121,7 +119,7 @@ void Window::init_actions() {
     buffer_open_->add_accelerator("clicked", accel_group_, GDK_KEY_O, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
     folder_open_->add_accelerator("clicked", accel_group_, GDK_KEY_O, Gdk::CONTROL_MASK | Gdk::SHIFT_MASK, Gtk::ACCEL_VISIBLE);
     buffer_save_->add_accelerator("clicked", accel_group_, GDK_KEY_S, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
-    buffer_close_->add_accelerator("clicked", accel_group_, GDK_KEY_W, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
+    //buffer_close_->add_accelerator("clicked", accel_group_, GDK_KEY_W, Gdk::CONTROL_MASK, Gtk::ACCEL_VISIBLE);
 
     _gtk_window().add_accel_group(accel_group_);
 
@@ -257,7 +255,6 @@ void Window::build_widgets() {
     builder->get_widget("buffer_save", buffer_save_);
     builder->get_widget("buffer_undo", buffer_undo_);
     builder->get_widget("buffer_redo", buffer_redo_);
-    builder->get_widget("buffer_close", buffer_close_);
     builder->get_widget("error_counter", error_counter_);
     builder->get_widget("window_pane", main_paned_);
 
@@ -280,7 +277,6 @@ void Window::build_widgets() {
     buffer_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_clicked));
     buffer_save_->signal_clicked().connect(sigc::hide_return(sigc::mem_fun(this, &Window::toolbutton_save_clicked)));
     folder_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_folder_clicked));
-    buffer_close_->signal_clicked().connect(sigc::bind(&close_current_document, this));
     buffer_undo_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_undo_clicked));
     buffer_redo_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_redo_clicked));
 
@@ -296,13 +292,10 @@ void Window::build_widgets() {
     buffer_undo_->reparent(header_bar_);
     buffer_redo_->reparent(header_bar_);
 
-    auto original = buffer_close_->get_parent(); //Store the container
+    auto original = error_counter_->get_parent(); //Store the container
 
     original->remove(*error_counter_);
     header_bar_.pack_end(*error_counter_);
-
-    original->remove(*buffer_close_);
-    header_bar_.pack_end(*buffer_close_);
 
     original->get_parent()->remove(*original); //Remove the original container
 

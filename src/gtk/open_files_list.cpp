@@ -31,13 +31,15 @@ void OpenFilesList::add_entry(const OpenFilesEntry& entry) {
     Gtk::Button* button = Gtk::manage(new Gtk::Button());
 
     button->set_relief(Gtk::RELIEF_NONE);
-    button->set_image_from_icon_name("window-close");
+    button->set_image_from_icon_name("gtk-close", Gtk::ICON_SIZE_MENU);
 
     button->signal_clicked().connect([entry, this]() {
         this->signal_row_close_clicked_(entry.buffer);
     });
 
-    box->pack_start(*label, true, true, 0);
+    label->set_margin_left(10);
+
+    box->pack_start(*label, false, false, 0);
     box->pack_end(*button, false, false, 0);
 
     list_box_->set_margin_left(0);
