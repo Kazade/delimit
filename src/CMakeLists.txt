@@ -9,6 +9,7 @@ set(
     ${CMAKE_SOURCE_DIR}/src/awesome_bar.cpp
     ${CMAKE_SOURCE_DIR}/src/utils.cpp
     ${CMAKE_SOURCE_DIR}/src/utils/indentation.cpp
+    ${CMAKE_SOURCE_DIR}/src/gtk/open_files_list.cpp
     ${CMAKE_SOURCE_DIR}/src/coverage/coverage.cpp
     ${CMAKE_SOURCE_DIR}/src/linter/linter.cpp
     ${CMAKE_SOURCE_DIR}/src/autocomplete/base.cpp
