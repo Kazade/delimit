@@ -263,6 +263,7 @@
                           <object class="GtkSearchEntry" id="find_entry">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
+                            <property name="margin_top">2</property>
                             <property name="width_chars">40</property>
                             <property name="primary_icon_name">edit-find-symbolic</property>
                             <property name="primary_icon_activatable">False</property>
@@ -281,6 +282,7 @@
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="margin_left">3</property>
+                            <property name="relief">none</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -293,6 +295,7 @@
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="margin_left">10</property>
+                            <property name="margin_top">2</property>
                             <property name="width_chars">40</property>
                           </object>
                           <packing>
@@ -308,6 +311,7 @@
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="margin_left">3</property>
+                            <property name="relief">none</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -322,6 +326,7 @@
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="margin_left">3</property>
+                            <property name="relief">none</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -357,6 +362,7 @@
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
+                            <property name="relief">none</property>
                             <property name="popup">find_menu</property>
                             <property name="direction">up</property>
                             <child>

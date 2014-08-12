@@ -65,6 +65,11 @@ void DocumentView::build_widgets() {
     auto manager = Gsv::StyleSchemeManager::get_default();
     view_.get_source_buffer()->set_style_scheme(manager->get_scheme("delimit"));
 
+    auto provider = Gsv::CompletionWords::create("", Glib::RefPtr<Gdk::Pixbuf>());
+    provider->register_provider(buffer_);
+    provider->property_priority().set_value(1);
+    view_.get_completion()->add_provider(provider);
+
     auto coverage_attrs = Gsv::MarkAttributes::create();
     Gdk::RGBA coverage_colour;
     coverage_colour.set_rgba(1.0, 0.5, 0, 0.12);
