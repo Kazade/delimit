@@ -75,6 +75,8 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
         rebuild_file_tree(files[0]->get_path());
         path_ = files[0]->get_path();
 
+        awesome_bar_->repopulate_files();
+
         //Look for a .gitignore file in the directory
         auto ignore_file = os::path::join(path_, ".gitignore");
         L_DEBUG(_u("Checking for .gitignore at {0}...").format(ignore_file));
@@ -365,7 +367,7 @@ void Window::toolbutton_new_clicked() {
 void Window::toolbutton_undo_clicked() {
     if(current_document_) {
         current_document_->buffer()->undo();
-    }
+    }        
 }
 
 void Window::toolbutton_redo_clicked() {    

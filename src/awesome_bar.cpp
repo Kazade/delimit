@@ -1,4 +1,5 @@
 #include <kazbase/unicode.h>
+#include <iostream>
 #include "awesome_bar.h"
 #include "window.h"
 #include "buffer.h"
@@ -9,6 +10,33 @@ AwesomeBar::AwesomeBar(Window &parent):
     window_(parent) {
 
     build_widgets();
+}
+
+void recursive_populate(std::vector<unicode>* output, const unicode& directory)  {
+
+    for(auto thing: os::path::list_dir(directory)) {
+        //FIXME: Should use gitignore
+        if(thing.starts_with(".") || thing.ends_with(".pyc")) continue;
+
+        auto full_path = os::path::join(directory, thing);
+        if(os::path::is_dir(full_path)) {
+            Glib::signal_idle().connect_once(sigc::bind(&recursive_populate, output, full_path));
+        } else {
+            output->push_back(full_path);
+        }
+    }
+}
+
+void AwesomeBar::repopulate_files() {
+    project_files_.clear();
+
+    if(!window_.project_path().empty()) {
+        //If this is a project window, then crawl to get the file list
+        recursive_populate(&project_files_, window_.project_path());
+
+    } else {
+        //FIXME: We need to just look at open files, and keep this updated
+    }
 }
 
 void AwesomeBar::build_widgets() {
@@ -31,6 +59,10 @@ void AwesomeBar::build_widgets() {
 
     Pango::FontDescription desc("sans-serif 26");
     entry_.override_font(desc);
+
+    pack_start(list_revealer_, true, true, 0);
+
+    list_revealer_.add(list_);
 }
 
 void AwesomeBar::execute() {
@@ -39,6 +71,13 @@ void AwesomeBar::execute() {
 }
 
 void AwesomeBar::populate(const unicode &text) {
+
+    //Clear the listing
+    for(auto child: list_.get_children()) {
+        list_.remove(*child);
+    }
+    list_revealer_.set_reveal_child(false);
+
     if(text.starts_with(":") && text.length() > 1) {
         try {
             unicode number_text = text.lstrip(":");
@@ -50,6 +89,29 @@ void AwesomeBar::populate(const unicode &text) {
         } catch(std::exception& e) {
             return;
         }
+    } else if(!text.empty()) {
+        int counter = 0;
+        for(auto file: project_files_) {
+            if(file.starts_with(text) || file.contains(text)) {
+                Gtk::Label* label = Gtk::manage(new Gtk::Label(file.encode()));
+                label->set_margin_top(10);
+                label->set_margin_bottom(10);
+                label->set_margin_left(10);
+                label->set_margin_right(10);
+                label->set_alignment(0, 0.5);
+                list_.append(*label);
+
+                if(++counter == 50) {
+                    break;
+                }
+            }
+        }
+
+        list_.show_all();
+    }
+
+    if(!list_.get_children().empty()) {
+        list_revealer_.set_reveal_child(true);
     }
 }
 

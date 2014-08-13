@@ -16,15 +16,20 @@ public:
         Gtk::VBox::show();
     }
 
+    void repopulate_files();
 private:
     Window& window_;
 
     Gtk::Entry entry_;
+    Gtk::Revealer list_revealer_;
+    Gtk::ListBox list_;
 
     void build_widgets();
 
     void populate(const unicode& text);
     void execute();
+
+    std::vector<unicode> project_files_;
 };
 
 }
