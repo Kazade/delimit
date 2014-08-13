@@ -23,6 +23,7 @@ private:
     Gtk::Entry entry_;
     Gtk::Revealer list_revealer_;
     Gtk::ListBox list_;
+    Gtk::ScrolledWindow list_window_;
 
     void build_widgets();
 
@@ -30,6 +31,8 @@ private:
     void execute();
 
     std::vector<unicode> project_files_;
+
+    std::vector<unicode> displayed_files_;
 };
 
 }

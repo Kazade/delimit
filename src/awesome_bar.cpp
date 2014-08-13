@@ -39,7 +39,7 @@ void AwesomeBar::repopulate_files() {
     }
 }
 
-void AwesomeBar::build_widgets() {
+void AwesomeBar::build_widgets() { 
     set_margin_left(20);
     set_margin_right(20);
     set_margin_top(20);
@@ -60,9 +60,20 @@ void AwesomeBar::build_widgets() {
     Pango::FontDescription desc("sans-serif 26");
     entry_.override_font(desc);
 
-    pack_start(list_revealer_, true, true, 0);
+    pack_start(list_revealer_, false, true, 0);
 
-    list_revealer_.add(list_);
+    list_window_.set_size_request(-1, 500);
+
+    list_window_.add(list_);
+    list_revealer_.add(list_window_);
+
+    list_.set_hexpand(false);
+
+    list_.signal_row_activated().connect([this](Gtk::ListBoxRow* row){
+        auto file = displayed_files_.at(row->get_index());
+        window_.open_document(file);
+        hide();
+    });
 }
 
 void AwesomeBar::execute() {
@@ -71,6 +82,7 @@ void AwesomeBar::execute() {
 }
 
 void AwesomeBar::populate(const unicode &text) {
+    Pango::FontDescription desc("sans-serif 12");
 
     //Clear the listing
     for(auto child: list_.get_children()) {
@@ -91,20 +103,36 @@ void AwesomeBar::populate(const unicode &text) {
         }
     } else if(!text.empty()) {
         int counter = 0;
+        std::vector<unicode> to_add;
+
         for(auto file: project_files_) {
             if(file.starts_with(text) || file.contains(text)) {
-                Gtk::Label* label = Gtk::manage(new Gtk::Label(file.encode()));
-                label->set_margin_top(10);
-                label->set_margin_bottom(10);
-                label->set_margin_left(10);
-                label->set_margin_right(10);
-                label->set_alignment(0, 0.5);
-                list_.append(*label);
 
-                if(++counter == 50) {
+                to_add.push_back(file);
+
+                if(++counter == 30) {
                     break;
                 }
-            }
+            }            
+        }
+
+        std::sort(to_add.begin(), to_add.end());
+
+        displayed_files_.clear();
+        for(auto file: to_add) {
+            auto to_display = file.slice(window_.project_path().length() + 1, nullptr);
+            Gtk::Label* label = Gtk::manage(new Gtk::Label(to_display.encode()));
+            label->set_margin_top(10);
+            label->set_margin_bottom(10);
+            label->set_margin_left(10);
+            label->set_margin_right(10);
+            label->set_alignment(0, 0.5);
+            label->set_hexpand(false);
+            label->set_line_wrap_mode(Pango::WRAP_CHAR);
+            label->set_line_wrap(true);
+            label->override_font(desc);
+            list_.append(*label);
+            displayed_files_.push_back(file);
         }
 
         list_.show_all();
