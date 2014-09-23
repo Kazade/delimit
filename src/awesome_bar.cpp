@@ -163,15 +163,24 @@ void AwesomeBar::populate(const unicode &text) {
             }
         }
 
-        to_add.resize(DISPLAY_LIMIT);
+        if(to_add.size() > DISPLAY_LIMIT) {
+            std::partial_sort(
+                to_add.begin(),
+                to_add.begin() + DISPLAY_LIMIT,
+                to_add.end(),
+                [text](const unicode& lhs, const unicode& rhs) {
+                    return levenshtein_distance(lhs, text) < levenshtein_distance(rhs, text);
+                }
+            );
+        } else {
+            std::sort(to_add.begin(), to_add.end(),
+                [text](const unicode& lhs, const unicode& rhs) {
+                  return levenshtein_distance(lhs, text) < levenshtein_distance(rhs, text);
+                }
+            );
+        }
 
-        std::sort(
-            to_add.begin(),
-            to_add.end(),
-            [text](const unicode& lhs, const unicode& rhs) {
-                return levenshtein_distance(lhs, text) < levenshtein_distance(rhs, text);
-            }
-        );
+        to_add.resize(DISPLAY_LIMIT);
 
         displayed_files_.clear();
         for(auto file: to_add) {
