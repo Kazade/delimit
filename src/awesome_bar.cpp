@@ -6,6 +6,42 @@
 
 namespace delimit {
 
+template<class T>
+unsigned int levenshtein_distance(const T &s1, const T & s2) {
+    const size_t len1 = s1.length(), len2 = s2.length();
+    std::vector<unsigned int> col(len2+1), prevCol(len2+1);
+
+    for (unsigned int i = 0; i < prevCol.size(); i++)
+        prevCol[i] = i;
+    for (unsigned int i = 0; i < len1; i++) {
+        col[0] = i+1;
+        for (unsigned int j = 0; j < len2; j++)
+            col[j+1] = std::min( std::min(prevCol[1 + j] + 1, col[j] + 1),
+                                prevCol[j] + (s1[i]==s2[j] ? 0 : 1) );
+        col.swap(prevCol);
+    }
+    return prevCol[len2];
+}
+
+uint32_t rank(const unicode& str, const unicode& search_text) {
+    int i = 0;
+    for(auto c: search_text) {
+        bool this_c_found = false;
+        for(; i < (int) str.length(); ++i) {
+            if(str[i] == c) {
+                this_c_found = true;
+                break;
+            }
+        }
+
+        if(!this_c_found) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
 AwesomeBar::AwesomeBar(Window &parent):
     window_(parent) {
 
@@ -13,7 +49,8 @@ AwesomeBar::AwesomeBar(Window &parent):
 }
 
 void recursive_populate(std::vector<unicode>* output, const unicode& directory)  {
-
+    const int CYCLES_UNTIL_REFRESH = 15;
+    int cycles_until_gtk_update = CYCLES_UNTIL_REFRESH;
     for(auto thing: os::path::list_dir(directory)) {
         //FIXME: Should use gitignore
         if(thing.starts_with(".") || thing.ends_with(".pyc")) continue;
@@ -23,6 +60,16 @@ void recursive_populate(std::vector<unicode>* output, const unicode& directory) 
             Glib::signal_idle().connect_once(sigc::bind(&recursive_populate, output, full_path));
         } else {
             output->push_back(full_path);
+
+            cycles_until_gtk_update--;
+            if(!cycles_until_gtk_update) {
+                cycles_until_gtk_update = CYCLES_UNTIL_REFRESH;
+
+                //Keep the window responsive
+                while(Gtk::Main::events_pending()) {
+                    Gtk::Main::iteration();
+                }
+            }
         }
     }
 }
@@ -101,22 +148,30 @@ void AwesomeBar::populate(const unicode &text) {
         } catch(std::exception& e) {
             return;
         }
-    } else if(!text.empty()) {
-        int counter = 0;
+    } else if(!text.empty()) {        
+        const int DISPLAY_LIMIT = 30;
+
         std::vector<unicode> to_add;
 
         for(auto file: project_files_) {
-            if(file.starts_with(text) || file.contains(text)) {
-
+            auto rel = file.slice(window_.project_path().length() + 1, nullptr);
+            if(rank(rel, text) > 0) {
                 to_add.push_back(file);
-
-                if(++counter == 30) {
+                if(to_add.size() > 1500) {
                     break;
                 }
-            }            
+            }
         }
 
-        std::sort(to_add.begin(), to_add.end());
+        to_add.resize(DISPLAY_LIMIT);
+
+        std::sort(
+            to_add.begin(),
+            to_add.end(),
+            [text](const unicode& lhs, const unicode& rhs) {
+                return levenshtein_distance(lhs, text) < levenshtein_distance(rhs, text);
+            }
+        );
 
         displayed_files_.clear();
         for(auto file: to_add) {
