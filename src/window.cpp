@@ -334,11 +334,12 @@ void Window::build_widgets() {
     gtk_window_->maximize();
 
     gtk_window_->signal_delete_event().connect([&](GdkEventAny* evt) -> bool {
-         for(auto document: documents_) {
-             document->close();
-         }
+        auto copy = documents_;
+        for(auto document: copy) {
+            document->close();
+        }
 
-         return false;
+        return false;
     });
 }
 
