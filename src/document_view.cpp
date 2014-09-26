@@ -78,10 +78,66 @@ void DocumentView::build_widgets() {
 
     auto linter_attrs = Gsv::MarkAttributes::create();
     linter_attrs->set_icon_name("dialog-error");
-
     g_signal_connect(linter_attrs->gobj(), "query-tooltip-markup", G_CALLBACK(get_tooltip), view_.gobj());
-
     view_.set_mark_attributes("linter", linter_attrs, 10);
+
+    auto breakpoint = Gsv::MarkAttributes::create();
+    breakpoint->set_icon_name("stop");
+    view_.set_mark_attributes("breakpoint", breakpoint, 11);
+    view_.add_events(Gdk::BUTTON_PRESS_MASK);
+    view_.signal_button_press_event().connect([&](GdkEventButton* evt) -> bool {
+        if(evt->type == GDK_2BUTTON_PRESS && evt->window == view_.get_window(Gtk::TEXT_WINDOW_LEFT)->gobj()) {
+            //The user clicked within the left gutter
+            if(evt->button == 1) {
+                //Left click
+                int x_buf, y_buf;
+
+                view_.window_to_buffer_coords(
+                    Gtk::TEXT_WINDOW_LEFT,
+                    int(evt->x), int(evt->y),
+                    x_buf, y_buf
+                );
+
+                //Line bounds
+                Gtk::TextBuffer::iterator iter;
+                int line_top;
+                view_.get_line_at_y(iter, y_buf, line_top);
+                auto mark_list = buffer_->get_source_marks_at_iter(iter, "breakpoint");
+                if(!mark_list.empty()) {
+                    for(auto& mark: mark_list) {
+                        buffer_->delete_mark(mark);
+                    }
+
+                    auto end_iter = iter;
+                    end_iter.forward_line();
+
+                    unicode line = buffer_->get_slice(iter, end_iter).c_str();
+                    if(line.contains("import ipdb; ipdb.set_trace()")) {
+                        buffer_->erase(iter, end_iter);
+                    }
+                } else {
+                    buffer_->create_source_mark("breakpoint", iter);
+
+                    auto end_iter = iter;
+                    end_iter.forward_line();
+
+                    unicode line_text = buffer_->get_slice(iter, end_iter).c_str();
+
+                    uint32_t i = 0;
+                    for(; i < line_text.length(); ++i) {
+                        if(line_text[i] != ' ' && line_text[i] != '\t') {
+                            break;
+                        }
+                    }
+
+                    auto indentation = line_text.slice(nullptr, i);
+                    auto replacement_text = _u("{0}import ipdb; ipdb.set_trace();\n").format(indentation);
+                    buffer_->insert(iter, replacement_text.encode());
+                }
+            }
+        }
+        return false;
+    });
 
     apply_settings("text/plain");
 

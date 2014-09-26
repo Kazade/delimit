@@ -24,7 +24,7 @@ std::pair<IndentType, int> detect_indentation(const unicode& text) {
         }
 
         if(whitespace.starts_with("\t")) {
-            return std::make_pair(INDENT_TABS, 0); //Guess tab indentation
+            return std::make_pair(INDENT_TABS, whitespace.length()); //Guess tab indentation
         } else {
             uint32_t i = 0;
 
