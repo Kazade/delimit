@@ -11,7 +11,7 @@ unicode call_command(unicode command, unicode cwd) {
     if(!cwd.empty()) {
         scommand = _u("cd {0}; {1}").format(cwd, scommand).encode();
     }
-    std::string cmd = scommand + " >> " + tmpname;
+    std::string cmd = scommand + " &> " + tmpname;
     std::system(cmd.c_str());
     std::ifstream file(tmpname, std::ios::in );
     std::vector<unicode> lines;

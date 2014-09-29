@@ -62,8 +62,9 @@ LinterResult PythonLinter::find_problematic_lines(const unicode& filename, const
 
     for(auto line: result.split("\n")) {
         try {
-            unicode message = line.split(":")[2];
-            int32_t lineno = line.split(":")[1].to_int() - 1;
+            auto parts = line.split(":");
+            unicode message = parts[parts.size()-1];
+            int32_t lineno = parts[1].to_int() - 1;
             ret.push_back(std::make_pair(lineno, message));
 
             std::cout << lineno << ": " << message << std::endl;
