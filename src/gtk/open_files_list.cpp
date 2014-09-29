@@ -28,14 +28,20 @@ void OpenFilesList::clear() {
 void OpenFilesList::add_entry(const OpenFilesEntry& entry) {
     Gtk::HBox* box = Gtk::manage(new Gtk::HBox());
     Gtk::Label* label = Gtk::manage(new Gtk::Label(entry.name.encode()));
-    Gtk::Button* button = Gtk::manage(new Gtk::Button());
+    Gtk::EventBox* button = Gtk::manage(new Gtk::EventBox());
+    Gtk::Image* close_icon = Gtk::manage(new Gtk::Image());
 
-    button->set_relief(Gtk::RELIEF_NONE);
-    button->set_image_from_icon_name("gtk-close", Gtk::ICON_SIZE_MENU);
+    close_icon->set_from_icon_name("gtk-close", Gtk::ICON_SIZE_MENU);
+    button->add(*close_icon);
 
-    button->signal_clicked().connect([entry, this]() {
-        this->signal_row_close_clicked_(entry.buffer);
-    });
+    auto buffer = entry.buffer;
+    std::function<void (GdkEventButton*)> cb2 = [this, buffer](GdkEventButton* evt) {
+        this->signal_row_close_clicked_(buffer);
+    };
+
+    button->signal_button_press_event().connect(
+        sigc::bind_return(cb2, false)
+    );
 
     label->set_margin_left(10);
 
