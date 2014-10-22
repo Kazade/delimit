@@ -24,14 +24,19 @@ unsigned int levenshtein_distance(const T &s1, const T & s2) {
 }
 
 uint32_t rank(const unicode& str, const unicode& search_text) {
+    int score = 0;
     int i = 0;
     for(auto c: search_text) {
+        int since_last = 5;
         bool this_c_found = false;
         for(; i < (int) str.length(); ++i) {
             if(str[i] == c) {
                 this_c_found = true;
+                score += std::max(since_last, 1);
+                ++i;
                 break;
             }
+            since_last--;
         }
 
         if(!this_c_found) {
@@ -39,7 +44,10 @@ uint32_t rank(const unicode& str, const unicode& search_text) {
         }
     }
 
-    return 1;
+    auto length_penalty = abs(str.length() - search_text.length());
+
+    //We scale up the score so that the occurance count and length penalty have little effect
+    return (score * 100) + str.count(search_text) - length_penalty;
 }
 
 AwesomeBar::AwesomeBar(Window &parent):
@@ -151,36 +159,66 @@ void AwesomeBar::populate(const unicode &text) {
     } else if(!text.empty()) {        
         const int DISPLAY_LIMIT = 30;
 
-        std::vector<unicode> to_add;
+        struct Entry {
+            unicode path;
+            unicode rel;
+            uint32_t rank;
+        };
 
-        for(auto file: project_files_) {
-            auto rel = file.slice(window_.project_path().length() + 1, nullptr);
-            if(rank(rel, text) > 0) {
-                to_add.push_back(file);
-                if(to_add.size() > 1500) {
-                    break;
-                }
+        static std::unordered_map<unicode, std::vector<Entry> > CACHE;
+
+        std::vector<unicode> to_add;
+        std::vector<Entry> haystack;
+
+        unicode longest_cached;
+
+        //Work out what the longest entry in the cache was
+        for(auto p: CACHE) {
+            if(p.first.length() > longest_cached.length()) {
+                longest_cached = p.first;
             }
         }
 
-        if(to_add.size() > DISPLAY_LIMIT) {
-            std::partial_sort(
-                to_add.begin(),
-                to_add.begin() + DISPLAY_LIMIT,
-                to_add.end(),
-                [text](const unicode& lhs, const unicode& rhs) {
-                    return levenshtein_distance(lhs, text) < levenshtein_distance(rhs, text);
+        std::cout << "Longest: " << longest_cached << " Text: " << text << std::endl;
+
+        //Wipe out the cache if the text no longer matches
+        if(longest_cached.empty() || text.length() < longest_cached.length() || !(text.starts_with(longest_cached))) {
+            std::cout << "Clearing the cache" << std::endl;
+            CACHE.clear();
+
+            //Reset the CACHE
+            haystack.reserve(project_files_.size());
+            for(auto file: project_files_) {
+                auto rel = file.slice(window_.project_path().length() + 1, nullptr);
+                auto rk = rank(rel.lower(), text.lower());
+                if(rk) {
+                    haystack.push_back(Entry{file, rel, rk});
                 }
-            );
+            }
+
+            CACHE[text] = haystack;
         } else {
-            std::sort(to_add.begin(), to_add.end(),
-                [text](const unicode& lhs, const unicode& rhs) {
-                  return levenshtein_distance(lhs, text) < levenshtein_distance(rhs, text);
+            std::cout << "Hitting the cache" << std::endl;
+            //We can use the cache
+            auto old_haystack = CACHE[longest_cached];
+
+            haystack.reserve(old_haystack.size());
+            //Update the rank with the new text
+            for(auto& entry: old_haystack) {
+                entry.rank = rank(entry.rel.lower(), text.lower());
+                if(entry.rank) {
+                    haystack.push_back(entry);
                 }
-            );
+            }
+
+            CACHE[text] = haystack;
         }
 
-        to_add.resize(DISPLAY_LIMIT);
+        std::sort(haystack.begin(), haystack.end(), [](const Entry& lhs, const Entry& rhs) -> bool { return lhs.rank > rhs.rank; });
+
+        for(int i = 0; i < std::min(DISPLAY_LIMIT, (int)haystack.size()); ++i) {
+            to_add.push_back(haystack[i].path);
+        }
 
         displayed_files_.clear();
         for(auto file: to_add) {

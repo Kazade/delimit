@@ -104,6 +104,8 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
         //Don't show the folder tree on FILE windows
         file_tree_scrolled_window_->get_parent()->remove(*file_tree_scrolled_window_);
     }
+
+    header_bar_.set_title(_u("Delimit{0}").format((project_path().empty() ? "" : _u(" - ") + this->project_path())).encode());
 }
 
 void Window::show_awesome_bar(bool value) {
