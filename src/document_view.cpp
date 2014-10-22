@@ -264,11 +264,12 @@ void DocumentView::trim_trailing_newlines() {
                 break;
             }
         }
-
-        itr.forward_line(); //This maintains a newline at the end of the file, should probably make this optional
-
         buffer()->erase(itr, buffer_end);
     }
+
+    auto current = buffer()->get_insert()->get_iter().get_offset();
+    buffer()->insert(buffer()->end(), "\n"); //Make sure we have a newline at the end
+    buffer()->place_cursor(buffer()->get_iter_at_offset(current));
 }
 
 bool is_whitespace(Gtk::TextIter& iter) {
