@@ -407,7 +407,7 @@ void Window::toolbutton_open_folder_clicked() {
     switch(result) {
         case Gtk::RESPONSE_OK: {
             //If we have no open documents, close this window
-            if(documents_.empty()) {
+            if(documents_.empty() && type_ == WINDOW_TYPE_FILE) {
                 gtk_window_->close();
             }
 
