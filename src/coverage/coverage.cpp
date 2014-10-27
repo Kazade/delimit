@@ -36,7 +36,7 @@ void Coverage::apply_to_document(delimit::DocumentView *buffer) {
     std::cout << "Done adding marks" <<std::endl;
 }
 
-std::vector<int32_t> PythonCoverage::find_uncovered_lines(const unicode &filename, const unicode &project_root) {
+unicode PythonCoverage::find_coverage_file(const unicode& filename, const unicode& project_root) {
     //Search up to the project root, to find the coverage file
     unicode current_dir = os::path::abs_path(os::path::dir_name(filename));
     while(current_dir != project_root) {
@@ -53,9 +53,22 @@ std::vector<int32_t> PythonCoverage::find_uncovered_lines(const unicode &filenam
         current_dir = next_level;
     }
 
-    if(!os::path::exists(os::path::join(current_dir, ".coverage"))) {
+
+    unicode final = os::path::join(current_dir, ".coverage");
+    if(os::path::exists(final)) {
+        return final;
+    } else {
+        return "";
+    }
+}
+
+std::vector<int32_t> PythonCoverage::find_uncovered_lines(const unicode &filename, const unicode &project_root) {
+    unicode coverage_file = find_coverage_file(filename, project_root);
+    if(coverage_file.empty()) {
         return std::vector<int32_t>();
     }
+
+    unicode current_dir = os::path::dir_name(coverage_file);
 
     unicode coverage_command;
 

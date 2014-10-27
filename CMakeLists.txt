@@ -9,7 +9,6 @@ pkg_check_modules(GTKSOURCEVIEWMM gtksourceviewmm-3.0)
 pkg_check_modules(SQLITE sqlite3)
 pkg_check_modules(PCRE libpcre)
 
-find_package(Boost COMPONENTS system date_time regex thread REQUIRED)
 FIND_PACKAGE(KAZBASE REQUIRED)
 
 link_libraries(

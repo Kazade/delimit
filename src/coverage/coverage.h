@@ -29,6 +29,9 @@ public:
     typedef std::shared_ptr<PythonCoverage> ptr;
 
     std::vector<int32_t> find_uncovered_lines(const unicode &filename, const unicode& project_root="");
+
+private:
+    unicode find_coverage_file(const unicode &filename, const unicode &project_root);
 };
 
 }
