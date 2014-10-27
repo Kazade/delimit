@@ -237,9 +237,6 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <child>
-<<<<<<< Updated upstream
-                      <placeholder/>
-=======
                       <object class="GtkAlignment" id="no_files_alignment">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
@@ -285,7 +282,6 @@
                           </object>
                         </child>
                       </object>
->>>>>>> Stashed changes
                     </child>
                   </object>
                   <packing>
