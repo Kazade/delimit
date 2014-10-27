@@ -852,6 +852,7 @@ void Window::close_document(DocumentView& document) {
     if(documents_.empty()) {
         gtk_container_->remove();
         gtk_container_->add(*no_files_alignment_);
+        header_bar_.set_subtitle("");
     }
 
     rebuild_open_list();
