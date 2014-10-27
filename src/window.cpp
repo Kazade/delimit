@@ -406,6 +406,11 @@ void Window::toolbutton_open_folder_clicked() {
     int result = dialog.run();
     switch(result) {
         case Gtk::RESPONSE_OK: {
+            //If we have no open documents, close this window
+            if(documents_.empty()) {
+                gtk_window_->close();
+            }
+
             std::string filename = dialog.get_filename();
 
             Gio::Application::type_vec_files files;
@@ -414,10 +419,6 @@ void Window::toolbutton_open_folder_clicked() {
             Glib::RefPtr<Gtk::Application> app = gtk_window_->get_application();
             Glib::RefPtr<Application>::cast_dynamic(app)->add_window(window);
 
-            //If we have no open documents, close this window
-            if(documents_.empty()) {
-                gtk_window_->close();
-            }
         } default:
             break;
     }
