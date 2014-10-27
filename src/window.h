@@ -110,6 +110,7 @@ private:
 
     Gtk::ApplicationWindow* gtk_window_;
     Gtk::Alignment* gtk_container_;
+    Gtk::Alignment* no_files_alignment_;
 
     Gtk::ScrolledWindow* file_tree_scrolled_window_;
     Gtk::TreeView* window_file_tree_;

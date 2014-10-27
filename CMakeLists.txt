@@ -17,7 +17,6 @@ link_libraries(
     ${PCRE_LIBRARIES}
 )
 
-
 include_directories(
     ${KAZBASE_INCLUDE_DIRS}
     ${SQLITE_INCLUDE_DIRS}
