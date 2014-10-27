@@ -214,10 +214,13 @@ void AwesomeBar::populate(const unicode &text) {
             CACHE[text] = haystack;
         }
 
-        std::sort(haystack.begin(), haystack.end(), [](const Entry& lhs, const Entry& rhs) -> bool { return lhs.rank > rhs.rank; });
+        int to_display = std::min(DISPLAY_LIMIT, (int) haystack.size());
+        if(to_display) {
+            std::partial_sort(haystack.begin(), haystack.begin() + to_display, haystack.end(), [](const Entry& lhs, const Entry& rhs) -> bool { return lhs.rank > rhs.rank; });
 
-        for(int i = 0; i < std::min(DISPLAY_LIMIT, (int)haystack.size()); ++i) {
-            to_add.push_back(haystack[i].path);
+            for(int i = 0; i < to_display; ++i) {
+                to_add.push_back(haystack[i].path);
+            }
         }
 
         displayed_files_.clear();
