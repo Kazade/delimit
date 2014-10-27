@@ -2,6 +2,8 @@
 
 Delimit is a text editor that I'm building for *my* usage pattern. It won't support a plugin infrastructure, or try to do everything - just the things I care about.
 
+![Delimit](.screenshot.png?raw=true "Delimit")
+
 ## Compiling and running
 
 From the root of the project:

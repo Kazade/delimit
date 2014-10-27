@@ -359,7 +359,11 @@ void DocumentView::run_linters_and_stuff() {
     auto language = buffer()->get_language();
     unicode name = (language) ? unicode(language->get_name()) : "";
     if(name == "Python") {
-        coverage_ = std::make_shared<coverage::PythonCoverage>();
+        if(!coverage_) {
+            coverage_ = std::make_shared<coverage::PythonCoverage>();
+            //Connect to the coverage updated signal and re-run this function if that happens
+            coverage_->signal_coverage_updated().connect(std::bind(&DocumentView::run_linters_and_stuff, this));
+        }
         coverage_->apply_to_document(this);
 
         linter_ = std::make_shared<linter::PythonLinter>();

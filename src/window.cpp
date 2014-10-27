@@ -41,8 +41,6 @@ Window::Window():
     file_tree_store_ = Gtk::TreeStore::create(file_tree_columns_);
 
     build_widgets();
-    new_document();
-
     //Don't show the folder tree on FILE windows
     file_tree_scrolled_window_->get_parent()->remove(*file_tree_scrolled_window_);
 }
@@ -91,8 +89,6 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
         } else {
             L_DEBUG("not found.");
         }
-
-        new_document();
 
     } else {
         type_ = WINDOW_TYPE_FILE;
@@ -261,7 +257,7 @@ void Window::build_widgets() {
     builder->get_widget("buffer_redo", buffer_redo_);
     builder->get_widget("error_counter", error_counter_);
     builder->get_widget("window_pane", main_paned_);
-
+    builder->get_widget("no_files_alignment", no_files_alignment_);
 
     //THIS SUCKS SO BAD, 3.12 doesn't have a binding for GtkOverlay
     overlay_ = GTK_OVERLAY(gtk_overlay_new());
@@ -417,6 +413,11 @@ void Window::toolbutton_open_folder_clicked() {
             auto window = std::make_shared<delimit::Window>(files);
             Glib::RefPtr<Gtk::Application> app = gtk_window_->get_application();
             Glib::RefPtr<Application>::cast_dynamic(app)->add_window(window);
+
+            //If we have no open documents, close this window
+            if(documents_.empty()) {
+                gtk_window_->close();
+            }
         } default:
             break;
     }
@@ -846,10 +847,10 @@ void Window::close_document(DocumentView& document) {
     //erase the buffer from the open buffers
     documents_.erase(std::remove(documents_.begin(), documents_.end(), this_buf), documents_.end());
 
-    //Make sure we always have a document
+    //Redisplay the "no files" message when we close the last open file
     if(documents_.empty()) {
-        gtk_window_->close();
-        return;
+        gtk_container_->remove();
+        gtk_container_->add(*no_files_alignment_);
     }
 
     rebuild_open_list();

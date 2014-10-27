@@ -6,6 +6,8 @@
 #include <memory>
 #include <kazbase/unicode.h>
 #include <gtksourceviewmm.h>
+#include <kazbase/signals.h>
+#include <unordered_map>
 
 namespace delimit {
     class DocumentView;
@@ -20,6 +22,10 @@ public:
     void apply_to_document(delimit::DocumentView* buffer);
     void clear_document(delimit::DocumentView* buffer);
 
+    sig::signal<void ()>& signal_coverage_updated() { return signal_coverage_updated_; }
+protected:
+    sig::signal<void ()> signal_coverage_updated_;
+
 private:
     virtual std::vector<int32_t> find_uncovered_lines(const unicode& filename, const unicode& project_root="") = 0;
 };
@@ -29,6 +35,13 @@ public:
     typedef std::shared_ptr<PythonCoverage> ptr;
 
     std::vector<int32_t> find_uncovered_lines(const unicode &filename, const unicode& project_root="");
+
+private:
+    unicode find_coverage_file(const unicode &filename, const unicode &project_root);
+
+
+    typedef Glib::RefPtr<Gio::FileMonitor> FileMonitor;
+    std::unordered_map<unicode, FileMonitor> coverage_monitors_;
 };
 
 }
