@@ -68,6 +68,20 @@ std::vector<int32_t> PythonCoverage::find_uncovered_lines(const unicode &filenam
         return std::vector<int32_t>();
     }
 
+    if(coverage_monitors_.find(coverage_file) == coverage_monitors_.end()) {
+        // If this is a coverage file we've never seen before, then start watching!
+        auto file = Gio::File::create_for_path(coverage_file.encode());
+        auto monitor = file->monitor_file();
+        monitor->signal_changed().connect([&](const Glib::RefPtr<Gio::File>&, const Glib::RefPtr<Gio::File>&, Gio::FileMonitorEvent evt) {
+            if(evt == Gio::FILE_MONITOR_EVENT_CHANGES_DONE_HINT || evt == Gio::FILE_MONITOR_EVENT_CREATED) {
+                signal_coverage_updated_();
+            } else if(evt == Gio::FILE_MONITOR_EVENT_DELETED) {
+                coverage_monitors_.erase(coverage_file);
+            }
+        });
+        coverage_monitors_[coverage_file] = monitor;
+    }
+
     unicode current_dir = os::path::dir_name(coverage_file);
 
     unicode coverage_command;

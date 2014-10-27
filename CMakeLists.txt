@@ -17,13 +17,6 @@ link_libraries(
     ${PCRE_LIBRARIES}
 )
 
-link_libraries(
-    ${Boost_SYSTEM_LIBRARY}
-    ${Boost_DATE_TIME_LIBRARY}
-    ${Boost_REGEX_LIBRARY}
-    ${Boost_THREAD_LIBRARY}
-)
-
 
 include_directories(
     ${KAZBASE_INCLUDE_DIRS}
