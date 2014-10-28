@@ -410,6 +410,7 @@ void DocumentView::finish_read(Glib::RefPtr<Gio::File> file, Glib::RefPtr<Gio::A
 
     signal_loaded_(*this);
 
+    detect_and_apply_indentation();
     Glib::signal_idle().connect_once(sigc::bind(&DocumentView::run_linters_and_stuff, this));
 }
 
