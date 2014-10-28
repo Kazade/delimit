@@ -7,7 +7,7 @@
         "draw_whitespace_spaces": true,
         "draw_whitespace_tabs": true,
         "highlight_current_line": true,
-        "detect_indentation": false
+        "detect_indentation": true
     },
     "application/javascript": {
         "insert_spaces_instead_of_tabs": false

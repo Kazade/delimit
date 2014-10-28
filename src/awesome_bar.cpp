@@ -24,30 +24,52 @@ unsigned int levenshtein_distance(const T &s1, const T & s2) {
 }
 
 uint32_t rank(const unicode& str, const unicode& search_text) {
-    int score = 0;
-    int i = 0;
-    for(auto c: search_text) {
-        int since_last = 10;
-        bool this_c_found = false;
-        for(; i < (int) str.length(); ++i) {
-            if(str[i] == c) {
-                this_c_found = true;
-                score += std::max(since_last, 1);
-                ++i;
-                break;
-            }
-            since_last--;
-        }
-
-        if(!this_c_found) {
-            return 0;
+    //First, find all the locations of the first character in the search
+    std::vector<int> start_positions;
+    for(int j = 0; j < (int) str.length(); ++j) {
+        if(str[j] == search_text[0]) {
+            start_positions.push_back(j);
         }
     }
 
-    auto length_penalty = abs(str.length() - search_text.length());
+    int highest_score = 0;
+    for(int start_pos: start_positions) {
+        int score = 0;
 
+        unicode to_search = str.slice(start_pos, nullptr);
+
+        int i = 0;
+        for(auto c: search_text) {
+            int since_last = 10;
+            bool this_c_found = false;
+            for(; i < (int) to_search.length(); ++i) {
+                if(to_search[i] == c) {
+                    this_c_found = true;
+                    score += std::max(since_last, 1);
+                    ++i;
+                    break;
+                }
+                since_last--;
+            }
+
+            if(!this_c_found) {
+                score = 0;
+                break;
+            }
+        }
+
+        if(score > highest_score) {
+            highest_score = score;
+        }
+    }
+
+    if(!highest_score) {
+        return 0;
+    }
+
+    auto length_penalty = abs(str.length() - search_text.length());
     //We scale up the score so that the occurance count and length penalty have little effect
-    return (score * 100); + (str.count(search_text) * 10) - length_penalty;
+    return (highest_score * 100) - length_penalty;
 }
 
 AwesomeBar::AwesomeBar(Window &parent):
