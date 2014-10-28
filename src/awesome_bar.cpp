@@ -27,7 +27,7 @@ uint32_t rank(const unicode& str, const unicode& search_text) {
     int score = 0;
     int i = 0;
     for(auto c: search_text) {
-        int since_last = 5;
+        int since_last = 10;
         bool this_c_found = false;
         for(; i < (int) str.length(); ++i) {
             if(str[i] == c) {
@@ -47,7 +47,7 @@ uint32_t rank(const unicode& str, const unicode& search_text) {
     auto length_penalty = abs(str.length() - search_text.length());
 
     //We scale up the score so that the occurance count and length penalty have little effect
-    return (score * 100) + str.count(search_text) - length_penalty;
+    return (score * 100); + (str.count(search_text) * 10) - length_penalty;
 }
 
 AwesomeBar::AwesomeBar(Window &parent):
@@ -136,7 +136,7 @@ void AwesomeBar::execute() {
     entry_.set_text("");
 }
 
-std::vector<unicode> AwesomeBar::filter_project_files(const unicode& search_text) {
+std::vector<unicode> AwesomeBar::filter_project_files(const unicode& search_text, uint64_t filter_task_id) {
     const int DISPLAY_LIMIT = 30;
 
     struct Entry {
@@ -152,19 +152,18 @@ std::vector<unicode> AwesomeBar::filter_project_files(const unicode& search_text
 
     unicode longest_cached;
 
-    //Work out what the longest entry in the cache was
-    for(auto p: CACHE) {
-        if(p.first.length() > longest_cached.length()) {
-            longest_cached = p.first;
+    {
+        std::lock_guard<std::mutex> lock(filter_cache_lock);
+        //Work out what the longest entry in the cache was
+        for(auto p: CACHE) {
+            if(p.first.length() > longest_cached.length()) {
+                longest_cached = p.first;
+            }
         }
     }
 
     //Wipe out the cache if the text no longer matches
     if(longest_cached.empty() || search_text.length() < longest_cached.length() || !(search_text.starts_with(longest_cached))) {
-        std::cout << "Clearing the cache" << std::endl;
-        CACHE.clear();
-
-        //Reset the CACHE
         haystack.reserve(project_files_.size());
         for(auto file: project_files_) {
             auto rel = file.slice(window_.project_path().length() + 1, nullptr);
@@ -174,8 +173,21 @@ std::vector<unicode> AwesomeBar::filter_project_files(const unicode& search_text
             }
         }
 
+        //Reset the CACHE
+        std::lock_guard<std::mutex> lock(filter_cache_lock);
+
+        //A new task was spawned so abandon this one
+        if(filter_task_id_ != filter_task_id) {
+            std::cout << "Abandoning task" << std::endl;
+            return std::vector<unicode>();
+        }
+
+        std::cout << "Clearing the cache" << std::endl;
+        CACHE.clear();
         CACHE[search_text] = haystack;
     } else {
+        std::lock_guard<std::mutex> lock(filter_cache_lock);
+
         std::cout << "Hitting the cache" << std::endl;
         //We can use the cache
         auto old_haystack = CACHE[longest_cached];
@@ -189,7 +201,19 @@ std::vector<unicode> AwesomeBar::filter_project_files(const unicode& search_text
             }
         }
 
+        //A new task was spawned so abandon this one
+        if(filter_task_id_ != filter_task_id) {
+            std::cout << "Abandoning task" << std::endl;
+            return std::vector<unicode>();
+        }
+
         CACHE[search_text] = haystack;
+    }
+
+    //A new task was spawned so abandon this one
+    if(filter_task_id_ != filter_task_id) {
+        std::cout << "Abandoning task" << std::endl;
+        return std::vector<unicode>();
     }
 
     int to_display = std::min(DISPLAY_LIMIT, (int) haystack.size());
@@ -225,6 +249,9 @@ void AwesomeBar::populate_results(const std::vector<unicode>& to_add) {
     }
 
     list_.show_all();
+    if(!list_.get_children().empty()) {
+        list_revealer_.set_reveal_child(true);
+    }
 }
 
 void AwesomeBar::populate(const unicode &text) {
@@ -247,13 +274,24 @@ void AwesomeBar::populate(const unicode &text) {
         }
     } else if(!text.empty()) {        
 
-        auto to_add = filter_project_files(text);
-        populate_results(to_add);
+        filter_task_ = std::make_shared<std::future<std::vector<unicode>>>(
+            std::async(std::launch::async, std::bind(&AwesomeBar::filter_project_files, this, text, ++filter_task_id_))
+        );
+        auto copy = filter_task_;
+        Glib::signal_idle().connect([&, copy]() -> bool {
+            if(!filter_task_ || filter_task_.get() != copy.get()) {
+                //A new task was submitted or the task was cancelled
+                return false;
+            }
 
-    }
+            if(filter_task_->wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+                populate_results(filter_task_->get());
+                filter_task_.reset();
+                return false;
+            }
 
-    if(!list_.get_children().empty()) {
-        list_revealer_.set_reveal_child(true);
+            return true;
+        });
     }
 }
 
