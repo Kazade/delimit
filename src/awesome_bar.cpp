@@ -136,9 +136,98 @@ void AwesomeBar::execute() {
     entry_.set_text("");
 }
 
-void AwesomeBar::populate(const unicode &text) {
+std::vector<unicode> AwesomeBar::filter_project_files(const unicode& search_text) {
+    const int DISPLAY_LIMIT = 30;
+
+    struct Entry {
+        unicode path;
+        unicode rel;
+        uint32_t rank;
+    };
+
+    static std::unordered_map<unicode, std::vector<Entry> > CACHE;
+
+    std::vector<unicode> to_add;
+    std::vector<Entry> haystack;
+
+    unicode longest_cached;
+
+    //Work out what the longest entry in the cache was
+    for(auto p: CACHE) {
+        if(p.first.length() > longest_cached.length()) {
+            longest_cached = p.first;
+        }
+    }
+
+    //Wipe out the cache if the text no longer matches
+    if(longest_cached.empty() || search_text.length() < longest_cached.length() || !(search_text.starts_with(longest_cached))) {
+        std::cout << "Clearing the cache" << std::endl;
+        CACHE.clear();
+
+        //Reset the CACHE
+        haystack.reserve(project_files_.size());
+        for(auto file: project_files_) {
+            auto rel = file.slice(window_.project_path().length() + 1, nullptr);
+            auto rk = rank(rel.lower(), search_text.lower());
+            if(rk) {
+                haystack.push_back(Entry{file, rel, rk});
+            }
+        }
+
+        CACHE[search_text] = haystack;
+    } else {
+        std::cout << "Hitting the cache" << std::endl;
+        //We can use the cache
+        auto old_haystack = CACHE[longest_cached];
+
+        haystack.reserve(old_haystack.size());
+        //Update the rank with the new text
+        for(auto& entry: old_haystack) {
+            entry.rank = rank(entry.rel.lower(), search_text.lower());
+            if(entry.rank) {
+                haystack.push_back(entry);
+            }
+        }
+
+        CACHE[search_text] = haystack;
+    }
+
+    int to_display = std::min(DISPLAY_LIMIT, (int) haystack.size());
+    if(to_display) {
+        std::partial_sort(haystack.begin(), haystack.begin() + to_display, haystack.end(), [](const Entry& lhs, const Entry& rhs) -> bool { return lhs.rank > rhs.rank; });
+
+        for(int i = 0; i < to_display; ++i) {
+            to_add.push_back(haystack[i].path);
+        }
+    }
+
+    return to_add;
+}
+
+void AwesomeBar::populate_results(const std::vector<unicode>& to_add) {
     Pango::FontDescription desc("sans-serif 12");
 
+    displayed_files_.clear();
+    for(auto file: to_add) {
+        auto to_display = file.slice(window_.project_path().length() + 1, nullptr);
+        Gtk::Label* label = Gtk::manage(new Gtk::Label(to_display.encode()));
+        label->set_margin_top(10);
+        label->set_margin_bottom(10);
+        label->set_margin_left(10);
+        label->set_margin_right(10);
+        label->set_alignment(0, 0.5);
+        label->set_hexpand(false);
+        label->set_line_wrap_mode(Pango::WRAP_CHAR);
+        label->set_line_wrap(true);
+        label->override_font(desc);
+        list_.append(*label);
+        displayed_files_.push_back(file);
+    }
+
+    list_.show_all();
+}
+
+void AwesomeBar::populate(const unicode &text) {
     //Clear the listing
     for(auto child: list_.get_children()) {
         list_.remove(*child);
@@ -157,90 +246,10 @@ void AwesomeBar::populate(const unicode &text) {
             return;
         }
     } else if(!text.empty()) {        
-        const int DISPLAY_LIMIT = 30;
 
-        struct Entry {
-            unicode path;
-            unicode rel;
-            uint32_t rank;
-        };
+        auto to_add = filter_project_files(text);
+        populate_results(to_add);
 
-        static std::unordered_map<unicode, std::vector<Entry> > CACHE;
-
-        std::vector<unicode> to_add;
-        std::vector<Entry> haystack;
-
-        unicode longest_cached;
-
-        //Work out what the longest entry in the cache was
-        for(auto p: CACHE) {
-            if(p.first.length() > longest_cached.length()) {
-                longest_cached = p.first;
-            }
-        }
-
-        std::cout << "Longest: " << longest_cached << " Text: " << text << std::endl;
-
-        //Wipe out the cache if the text no longer matches
-        if(longest_cached.empty() || text.length() < longest_cached.length() || !(text.starts_with(longest_cached))) {
-            std::cout << "Clearing the cache" << std::endl;
-            CACHE.clear();
-
-            //Reset the CACHE
-            haystack.reserve(project_files_.size());
-            for(auto file: project_files_) {
-                auto rel = file.slice(window_.project_path().length() + 1, nullptr);
-                auto rk = rank(rel.lower(), text.lower());
-                if(rk) {
-                    haystack.push_back(Entry{file, rel, rk});
-                }
-            }
-
-            CACHE[text] = haystack;
-        } else {
-            std::cout << "Hitting the cache" << std::endl;
-            //We can use the cache
-            auto old_haystack = CACHE[longest_cached];
-
-            haystack.reserve(old_haystack.size());
-            //Update the rank with the new text
-            for(auto& entry: old_haystack) {
-                entry.rank = rank(entry.rel.lower(), text.lower());
-                if(entry.rank) {
-                    haystack.push_back(entry);
-                }
-            }
-
-            CACHE[text] = haystack;
-        }
-
-        int to_display = std::min(DISPLAY_LIMIT, (int) haystack.size());
-        if(to_display) {
-            std::partial_sort(haystack.begin(), haystack.begin() + to_display, haystack.end(), [](const Entry& lhs, const Entry& rhs) -> bool { return lhs.rank > rhs.rank; });
-
-            for(int i = 0; i < to_display; ++i) {
-                to_add.push_back(haystack[i].path);
-            }
-        }
-
-        displayed_files_.clear();
-        for(auto file: to_add) {
-            auto to_display = file.slice(window_.project_path().length() + 1, nullptr);
-            Gtk::Label* label = Gtk::manage(new Gtk::Label(to_display.encode()));
-            label->set_margin_top(10);
-            label->set_margin_bottom(10);
-            label->set_margin_left(10);
-            label->set_margin_right(10);
-            label->set_alignment(0, 0.5);
-            label->set_hexpand(false);
-            label->set_line_wrap_mode(Pango::WRAP_CHAR);
-            label->set_line_wrap(true);
-            label->override_font(desc);
-            list_.append(*label);
-            displayed_files_.push_back(file);
-        }
-
-        list_.show_all();
     }
 
     if(!list_.get_children().empty()) {

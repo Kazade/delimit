@@ -27,6 +27,9 @@ private:
 
     void build_widgets();
 
+    std::vector<unicode> filter_project_files(const unicode& search_text);
+    void populate_results(const std::vector<unicode>& to_add);
+
     void populate(const unicode& text);
     void execute();
 
