@@ -797,6 +797,11 @@ void Window::activate_document(DocumentView::ptr document) {
 
     signal_document_switched_(*current_document_);
     on_document_modified(*document);
+
+    //When we activate a document, make sure we update the linting
+    Glib::signal_idle().connect_once([document]() {
+        document->run_linters_and_stuff(true);
+    });
 }
 
 void Window::append_document(DocumentView::ptr new_document) {

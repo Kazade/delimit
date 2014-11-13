@@ -50,6 +50,7 @@ public:
     void set_error_count(uint32_t error_count) { error_count_ = error_count; }
     uint32_t error_count() const { return error_count_; }
 
+    void run_linters_and_stuff(bool force=false);
 private:
     Window& window_;
 
@@ -74,7 +75,7 @@ private:
     void trim_trailing_newlines();
     void trim_trailing_whitespace();
 
-    void run_linters_and_stuff();
+
     void create_buffer();
     void build_widgets();
     void connect_signals();
