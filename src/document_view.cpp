@@ -58,6 +58,17 @@ gchar* get_tooltip(GtkSourceMarkAttributes *attrs,
     return g_strdup_printf("No message");
 }
 
+bool DocumentView::completion_visible() const {
+    return completion_visible_;
+}
+
+void DocumentView::hide_completion() {
+    auto comp = view_.get_completion();
+    if(comp) {
+        comp->hide();
+    }
+}
+
 void DocumentView::build_widgets() {
     scrolled_window_.add(view_);
     view_.set_buffer(buffer_);
@@ -69,6 +80,8 @@ void DocumentView::build_widgets() {
     provider->register_provider(buffer_);
     provider->property_priority().set_value(1);
     view_.get_completion()->add_provider(provider);
+    view_.get_completion()->signal_show().connect([&]() { completion_visible_ = true; });
+    view_.get_completion()->signal_hide().connect([&]() { completion_visible_ = false; });
 
     auto coverage_attrs = Gsv::MarkAttributes::create();
     Gdk::RGBA coverage_colour;

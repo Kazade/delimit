@@ -139,10 +139,14 @@ void Window::init_actions() {
     });
 
     add_global_action("back_up", Gtk::AccelKey(GDK_KEY_Escape, Gdk::ModifierType(0)), [&]() {
-        if(is_awesome_bar_visible()) {
-            show_awesome_bar(false);
+        if(this->current_buffer()->completion_visible()) {
+            this->current_buffer()->hide_completion();
         } else {
-            this->find_bar_->hide();
+            if(is_awesome_bar_visible()) {
+                show_awesome_bar(false);
+            } else {
+                this->find_bar_->hide();
+            }
         }
     });
 }

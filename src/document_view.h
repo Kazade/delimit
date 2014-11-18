@@ -50,8 +50,14 @@ public:
     void set_error_count(uint32_t error_count) { error_count_ = error_count; }
     uint32_t error_count() const { return error_count_; }
 
+    bool completion_visible() const;
+    void hide_completion();
 private:
     Window& window_;
+
+    // Annoyingly, the completion object doesn't have a get_visible function, only show/hide signals
+    // so we need to maintain whether or not the completion window is visible ourselves
+    bool completion_visible_ = false;
 
     sigc::signal<void, GioFilePtr, GioFilePtr, Gio::FileMonitorEvent> signal_file_changed_;
     sigc::signal<void, DocumentView&> signal_closed_;
