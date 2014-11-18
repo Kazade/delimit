@@ -106,6 +106,7 @@ private:
 
     Gtk::Dialog* gtk_search_window_;
     std::shared_ptr<SearchThread> search_thread_;
+    Gtk::Entry* search_text_entry_;
 
 
     Gtk::ApplicationWindow* gtk_window_;

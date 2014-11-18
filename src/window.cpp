@@ -163,7 +163,7 @@ void Window::begin_search() {
         }
 
         std::vector<unicode> files_to_search;
-        unicode search_text;
+        unicode search_text = search_text_entry_->get_text();
 
         //Start the search thread
         search_thread_ = std::make_shared<SearchThread>(files_to_search, search_text, false);
@@ -175,6 +175,8 @@ void Window::begin_search() {
                 if(!match) {
                     break;
                 }
+
+                std::cout << match.filename << std::endl;
             }
 
             return search_thread_ && search_thread_->running();
@@ -233,6 +235,7 @@ void Window::build_widgets() {
     awesome_bar_ = std::make_shared<AwesomeBar>(*this);
 
     builder->get_widget("search_window", gtk_search_window_);
+    builder->get_widget("search_text_entry", search_text_entry_);
     builder->get_widget("main_window", gtk_window_);
 
     builder->get_widget("window_container", gtk_container_);

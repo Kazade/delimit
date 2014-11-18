@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <queue>
+#include <mutex>
 #include <kazbase/unicode.h>
 #include <thread>
 #include <kazbase/file_utils.h>
@@ -67,6 +68,7 @@ public:
                 Result new_result;
 
                 //TOOD: Populate new_result
+                new_result.filename = file;
 
                 push_result(new_result);
             }
@@ -76,13 +78,20 @@ public:
     }
 
     std::shared_ptr<Result> pop_result() {
-        //TODO: Lock
+        std::lock_guard<std::mutex> lock(lock_);
+
+        if(results_.empty()) {
+            return std::shared_ptr<Result>();
+        }
+
         auto res = std::make_shared<Result>(results_.front());
         results_.pop();
         return res;
     }
 
 private:
+    std::mutex lock_;
+
     std::vector<unicode> files_to_search_;
     unicode search_text_;
     bool is_regex_;
@@ -91,7 +100,7 @@ private:
     std::queue<Result> results_;
 
     void push_result(Result new_result) {
-        //TODO: Lock
+        std::lock_guard<std::mutex> lock(lock_);
         results_.push(new_result);
     }
 
