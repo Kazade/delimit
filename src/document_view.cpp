@@ -343,6 +343,22 @@ Glib::RefPtr<Gsv::Language> guess_language_from_file(const GioFilePtr& file) {
 
     if(lang) {
         L_DEBUG(_u("Detected {0}").format(lang->get_name()));
+    } else {
+        //Extra checks
+
+        std::vector<char> buffer(1024);
+        file->read()->read(&buffer[0], 1024);
+
+        auto line = unicode(buffer.begin(), buffer.end()).split("\n")[0].lower();
+        auto language_ids = lm->get_language_ids();
+
+        if(line.starts_with("#!")) {
+            if(line.contains("python")) {
+                lang = lm->get_language("python");
+            } else {
+                L_INFO(_u("Unrecognized #! {}").format(line));
+            }
+        }
     }
     return lang;
 }
