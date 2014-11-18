@@ -86,6 +86,11 @@ void DocumentView::build_widgets() {
     view_.set_mark_attributes("breakpoint", breakpoint, 11);
     view_.add_events(Gdk::BUTTON_PRESS_MASK);
     view_.signal_button_press_event().connect([&](GdkEventButton* evt) -> bool {
+
+        if(buffer_->get_language()->get_name() != "Python") {
+            return false;
+        }
+
         if(evt->type == GDK_2BUTTON_PRESS && evt->window == view_.get_window(Gtk::TEXT_WINDOW_LEFT)->gobj()) {
             //The user clicked within the left gutter
             if(evt->button == 1) {
