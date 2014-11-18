@@ -23,6 +23,8 @@ public:
     void clear_document(delimit::DocumentView* buffer);
 
     sig::signal<void ()>& signal_coverage_updated() { return signal_coverage_updated_; }
+
+    virtual ~Coverage() {}
 protected:
     sig::signal<void ()> signal_coverage_updated_;
 
@@ -35,6 +37,8 @@ public:
     typedef std::shared_ptr<PythonCoverage> ptr;
 
     std::vector<int32_t> find_uncovered_lines(const unicode &filename, const unicode& project_root="");
+
+    ~PythonCoverage();
 
 private:
     unicode find_coverage_file(const unicode &filename, const unicode &project_root);

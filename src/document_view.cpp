@@ -384,7 +384,11 @@ void DocumentView::apply_language_to_buffer(const Glib::RefPtr<Gsv::Language>& l
     buffer_->set_language(language);
 }
 
-void DocumentView::run_linters_and_stuff() {
+void DocumentView::run_linters_and_stuff(bool force) {
+    if(!force && window().current_buffer().get() != this) {
+        //Only run linters on the active document
+        return;
+    }
 
     apply_language_to_buffer(guess_language_from_file(file_));
     apply_settings(guess_mimetype()); //Make sure we update the settings when we've reloaded the file
@@ -394,9 +398,10 @@ void DocumentView::run_linters_and_stuff() {
     unicode name = (language) ? unicode(language->get_name()) : "";
     if(name == "Python") {
         if(!coverage_) {
+            std::cout << "COVERAGE: Creating coverage" << std::endl;
             coverage_ = std::make_shared<coverage::PythonCoverage>();
             //Connect to the coverage updated signal and re-run this function if that happens
-            coverage_->signal_coverage_updated().connect(std::bind(&DocumentView::run_linters_and_stuff, this));
+            coverage_->signal_coverage_updated().connect(std::bind(&DocumentView::run_linters_and_stuff, this, false));
         }
         coverage_->apply_to_document(this);
 
@@ -445,7 +450,8 @@ void DocumentView::finish_read(Glib::RefPtr<Gio::File> file, Glib::RefPtr<Gio::A
     signal_loaded_(*this);
 
     detect_and_apply_indentation();
-    Glib::signal_idle().connect_once(sigc::bind(&DocumentView::run_linters_and_stuff, this));
+    std::function<void ()> func = std::bind(&DocumentView::run_linters_and_stuff, this, false);
+    Glib::signal_idle().connect_once(func);
 }
 
 void DocumentView::connect_file_monitor() {
