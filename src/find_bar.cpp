@@ -26,6 +26,12 @@ void FindBar::_connect_signals() {
 }
 
 void FindBar::show() {
+    auto buffer = window_.current_buffer();
+
+    if(!buffer) {
+        return;
+    }
+
     find_bar_->set_reveal_child(true);
     find_entry_->grab_focus();
 
@@ -33,8 +39,6 @@ void FindBar::show() {
 
     //If there is some text selected in the buffer, use that as the default text
     Gtk::TextIter start, end;
-
-    auto buffer = window_.current_buffer();
 
     if(buffer->buffer()->get_selection_bounds(start, end)) {
         find_entry_->set_text(buffer->buffer()->get_slice(start, end));

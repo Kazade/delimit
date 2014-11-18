@@ -34,6 +34,7 @@ public:
 
     bool running() const { return is_running_; }
     void stop() { is_running_ = false; }
+    void join() { thread_.join(); }
 
     void run() {
         /*
