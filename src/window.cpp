@@ -153,6 +153,16 @@ void Window::init_actions() {
 
 void Window::begin_search() {
     gtk_search_window_->set_transient_for(*gtk_window_);
+
+    if(type() == WINDOW_TYPE_FILE) {
+        // Hide the glob matching options - we'll just be searching the open files
+        excluding_glob_box_->hide();
+        matching_glob_box_->hide();
+    } else {
+        excluding_glob_box_->show();
+        matching_glob_box_->show();
+    }
+
     int response = gtk_search_window_->run();
 
     if(response == Gtk::RESPONSE_OK) {
@@ -163,7 +173,7 @@ void Window::begin_search() {
         }
 
         std::vector<unicode> files_to_search;
-        unicode search_text = search_text_entry_->get_text();
+        unicode search_text = search_text_entry_->get_text().c_str();
 
         //Start the search thread
         search_thread_ = std::make_shared<SearchThread>(files_to_search, search_text, false);
@@ -176,7 +186,12 @@ void Window::begin_search() {
                     break;
                 }
 
-                std::cout << match.filename << std::endl;
+                std::cout << match->filename << std::endl;
+            }
+
+            if(search_thread_ && !search_thread_->running()) {
+                search_thread_->join();
+                search_thread_.reset();
             }
 
             return search_thread_ && search_thread_->running();
@@ -237,6 +252,8 @@ void Window::build_widgets() {
     builder->get_widget("search_window", gtk_search_window_);
     builder->get_widget("search_text_entry", search_text_entry_);
     builder->get_widget("main_window", gtk_window_);
+    builder->get_widget("excluding_glob_box", excluding_glob_box_);
+    builder->get_widget("matching_glob_box", matching_glob_box_);
 
     builder->get_widget("window_container", gtk_container_);
     builder->get_widget("window_file_tree", window_file_tree_);
@@ -692,7 +709,9 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
         //If the node already exists for this path, don't add it again
         if(tree_row_lookup_.find(full_name) != tree_row_lookup_.end()) {
             iter = file_tree_store_->get_iter(tree_row_lookup_[full_name].get_path());
-        } else {
+        }
+
+        if(!iter) {
             if(node) {
                 L_DEBUG("Adding child node: " + full_name.encode());
                 iter = file_tree_store_->append(node->children());

@@ -23,8 +23,9 @@ void Linter::apply_to_document(delimit::DocumentView *buffer) {
         auto line = line_and_message.first;
         auto message = line_and_message.second;
 
-        auto last_line = gbuf->end().get_line();
-        assert(line >= 0 && line <= last_line);
+        if(line < 0 || line > buffer->buffer()->end().get_line()) {
+            continue;
+        }
 
         auto iter = gbuf->get_iter_at_line(line);
         assert(iter.get_line() == line);
