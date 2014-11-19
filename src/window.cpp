@@ -709,7 +709,9 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
         //If the node already exists for this path, don't add it again
         if(tree_row_lookup_.find(full_name) != tree_row_lookup_.end()) {
             iter = file_tree_store_->get_iter(tree_row_lookup_[full_name].get_path());
-        } else {
+        }
+
+        if(!iter) {
             if(node) {
                 L_DEBUG("Adding child node: " + full_name.encode());
                 iter = file_tree_store_->append(node->children());
