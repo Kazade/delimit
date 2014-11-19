@@ -44,3 +44,6 @@ src/utils/indentation.cpp
 src/gtk/button_cell_renderer.h
 src/gtk/open_files_list.h
 src/gtk/open_files_list.cpp
+src/project_info.h
+src/project_info.cpp
+tests/test_project_info.h
