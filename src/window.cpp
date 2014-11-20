@@ -145,7 +145,7 @@ void Window::init_actions() {
     });
 
     add_global_action("back_up", Gtk::AccelKey(GDK_KEY_Escape, Gdk::ModifierType(0)), [&]() {
-        if(this->current_buffer()->completion_visible()) {
+        if(this->current_buffer() && this->current_buffer()->completion_visible()) {
             this->current_buffer()->hide_completion();
         } else {
             if(is_awesome_bar_visible()) {

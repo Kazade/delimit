@@ -342,7 +342,9 @@ std::vector<Token> Python::tokenize(const unicode& data) {
                         result.push_back(Token({TokenType::NEWLINE, token, spos, epos}));
                     }
                 } else if(initial == _u("#")) {
-                    assert(!token.ends_with("\n"));
+                    if(token.ends_with("\n")) {
+                        throw ValueError(_u("Unexpected newline at end of token '{0}', line was:\n{1}").format(token, line));
+                    }
                     result.push_back(Token({TokenType::COMMENT, token, spos, epos}));
                 } else if(triple_quoted.count(token.encode())) {
                     auto tok_str = token.encode();

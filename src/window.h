@@ -84,6 +84,8 @@ public:
     bool is_awesome_bar_visible() const { return awesome_bar_->get_visible(); }
 
     sigc::signal<void, DocumentView&>& signal_document_switched() { return signal_document_switched_; }
+
+    ProjectInfo& project_info() { return info_; }
 private:
     void close_document(DocumentView &document);
     void append_document(DocumentView::ptr document);

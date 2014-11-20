@@ -88,7 +88,6 @@ SymbolArray ProjectInfo::find_symbols(const unicode& filename, Glib::RefPtr<Gsv:
 }
 
 void ProjectInfo::offline_update(const unicode& filename) {
-    std::cout << "Running update" << std::endl;
     auto file = Gio::File::create_for_path(filename.encode());
     if(!file->query_exists()) {
         return;
@@ -97,9 +96,9 @@ void ProjectInfo::offline_update(const unicode& filename) {
     auto lang = guess_language_from_file(file);
     auto stream = file->read();
 
-    // Lock the members for update
-    std::lock_guard<std::mutex> lock(mutex_);
     {
+        // Lock the members for update
+        std::lock_guard<std::mutex> lock(mutex_);
         auto it = symbols_by_filename_.find(filename);
         if(it != symbols_by_filename_.end()) {
             for(auto& symbol: (*it).second) {

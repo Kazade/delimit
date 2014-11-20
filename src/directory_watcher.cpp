@@ -1,6 +1,8 @@
 #include <type_traits>
 #include <sigc++/sigc++.h>
 #include <kazbase/os.h>
+#include <kazbase/logging.h>
+
 #include "directory_watcher.h"
 #include <iostream>
 #include "utils.h"
@@ -72,11 +74,22 @@ bool DirectoryWatcher::do_add_watcher(const unicode& path) {
     }
 
     // Trigger added signals
-    directory_created_(abs);
+    try {
+        directory_created_(abs);
+    } catch(...) {
+        // We never want a signal to kill the recursive process
+        L_ERROR("An error was detected while calling the file created signal");
+    }
+
     for(auto f: os::path::list_dir(abs)) {
         auto fp = os::path::abs_path(os::path::join(abs, f));
         if(os::path::is_file(fp)) {
-            file_created_(fp);
+            try {
+                file_created_(fp);
+            } catch(...) {
+                // We never want a signal to kill the recursive process
+                L_ERROR("An error was detected while calling the file created signal");
+            }
         }
     }
 

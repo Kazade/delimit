@@ -109,8 +109,8 @@ void AwesomeBar::repopulate_files() {
 
     if(!window_.project_path().empty()) {
         //If this is a project window, then crawl to get the file list
-        recursive_populate(&project_files_, window_.project_path());
-
+        //recursive_populate(&project_files_, window_.project_path());
+        project_files_ = window_.project_info().file_paths();
     } else {
         //FIXME: We need to just look at open files, and keep this updated
     }
@@ -153,21 +153,22 @@ void AwesomeBar::build_widgets() {
     });
 }
 
+struct Entry {
+    unicode path;
+    unicode rel;
+    uint32_t rank;
+};
+
+static std::unordered_map<unicode, std::vector<Entry> > CACHE;
+
 void AwesomeBar::execute() {
     hide();
     entry_.set_text("");
 }
 
+
 std::vector<unicode> AwesomeBar::filter_project_files(const unicode& search_text, uint64_t filter_task_id) {
     const int DISPLAY_LIMIT = 30;
-
-    struct Entry {
-        unicode path;
-        unicode rel;
-        uint32_t rank;
-    };
-
-    static std::unordered_map<unicode, std::vector<Entry> > CACHE;
 
     std::vector<unicode> to_add;
     std::vector<Entry> haystack;
@@ -295,6 +296,7 @@ void AwesomeBar::populate(const unicode &text) {
             return;
         }
     } else if(!text.empty()) {        
+        repopulate_files();
 
         filter_task_ = std::make_shared<std::future<std::vector<unicode>>>(
             std::async(std::launch::async, std::bind(&AwesomeBar::filter_project_files, this, text, ++filter_task_id_))
