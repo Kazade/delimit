@@ -84,7 +84,7 @@ bool DirectoryWatcher::do_add_watcher(const unicode& path) {
     for(auto file_or_dir: os::path::list_dir(abs)) {
         auto full = os::path::join(abs, file_or_dir);
         if(os::path::is_dir(full) && !full.ends_with(".") && !file_or_dir.starts_with(".")) {
-            add_watcher(full);
+            do_add_watcher(full);
         }
     }
 
