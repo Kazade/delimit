@@ -18,6 +18,8 @@ set(
     ${CMAKE_SOURCE_DIR}/src/autocomplete/provider.cpp
     ${CMAKE_SOURCE_DIR}/src/autocomplete/parsers/python.cpp
     ${CMAKE_SOURCE_DIR}/src/autocomplete/parsers/plain.cpp
+    ${CMAKE_SOURCE_DIR}/src/directory_watcher.cpp
+    ${CMAKE_SOURCE_DIR}/src/project_info.cpp
 )
 
 add_executable(delimit ${DELIMIT_SOURCES})

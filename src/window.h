@@ -17,6 +17,8 @@
 #include "find_bar.h"
 #include "document_view.h"
 #include "gtk/open_files_list.h"
+#include "project_info.h"
+#include "directory_watcher.h"
 
 namespace delimit {
 
@@ -150,6 +152,9 @@ private:
 
     WindowType type_;
     unicode path_;
+    ProjectInfo info_;
+    std::shared_ptr<DirectoryWatcher> dirwatcher_;
+
 
     std::vector<DocumentView::ptr> documents_;
     DocumentView::ptr current_document_;

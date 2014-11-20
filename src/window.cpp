@@ -67,11 +67,17 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
     if(files.size() == 1 && files[0]->query_file_type() == Gio::FILE_TYPE_DIRECTORY) {
         type_ = WINDOW_TYPE_FOLDER;
 
-        auto recent_manager = Gtk::RecentManager::get_default();
-        recent_manager->add_item(_u("file://{0}").format(files[0]->get_path()).encode());
-
-        rebuild_file_tree(files[0]->get_path());
         path_ = files[0]->get_path();
+
+        dirwatcher_ = std::make_shared<DirectoryWatcher>(path_);
+        dirwatcher_->signal_file_created().connect(std::bind(&ProjectInfo::add_or_update, &info_, std::placeholders::_1));
+        dirwatcher_->signal_file_removed().connect(std::bind(&ProjectInfo::remove, &info_, std::placeholders::_1));
+
+        auto recent_manager = Gtk::RecentManager::get_default();
+        recent_manager->add_item(_u("file://{0}").format(path_).encode());
+
+        rebuild_file_tree(path_);
+
 
         awesome_bar_->repopulate_files();
 
