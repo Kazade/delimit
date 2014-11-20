@@ -1,34 +1,75 @@
+#include <type_traits>
+#include <sigc++/sigc++.h>
 #include <kazbase/os.h>
 #include "directory_watcher.h"
 #include <iostream>
+#include "utils.h"
+
+namespace sigc
+{
+    template <typename Functor>
+    struct functor_trait<Functor, false>
+    {
+        typedef decltype (::sigc::mem_fun (std::declval<Functor&> (),
+                                           &Functor::operator())) _intermediate;
+
+        typedef typename _intermediate::result_type result_type;
+        typedef Functor functor_type;
+    };
+}
 
 namespace delimit {
 
 DirectoryWatcher::DirectoryWatcher(const unicode &root) {
 
     //Add a watcher for the directory
-    add_watcher(root);
+    add_watcher_in_background(root);
+}
+
+void DirectoryWatcher::add_watcher_in_background(const unicode& path) {
+    struct Wrapper {
+        std::future<bool> future;
+    };
+
+    auto wrapper = std::make_shared<Wrapper>();
+    wrapper->future = std::async(std::launch::async, std::bind(&DirectoryWatcher::do_add_watcher, this, path));
+
+    Glib::signal_idle().connect([=]() -> bool {
+        if(wrapper->future.wait_for(std::chrono::milliseconds(1)) == std::future_status::ready) {
+            return false;
+        }
+
+        return true;
+    });
 }
 
 void DirectoryWatcher::add_watcher(const unicode& path) {
+    do_add_watcher(path);
+}
+
+bool DirectoryWatcher::do_add_watcher(const unicode& path) {
     std::cout << "Watching: " << path << std::endl;
 
     unicode abs = os::path::abs_path(path);
 
     auto file = Gio::File::create_for_path(abs.encode());
     if(!file->query_exists()) {
-        return;
+        return false;
     }
 
     if(!os::path::is_dir(abs)) {
-        return;
+        return false;
     }
 
-    if(monitors_.find(abs) != monitors_.end()) {
-        return;
-    }
+    {
+        // Lock while we check/update the monitors list
+        std::lock_guard<std::mutex> lock(monitor_mutex_);
+        if(monitors_.find(abs) != monitors_.end()) {
+            return false;
+        }
 
-    monitors_[abs] = file->monitor_directory(Gio::FILE_MONITOR_SEND_MOVED);
+        monitors_[abs] = file->monitor_directory(Gio::FILE_MONITOR_SEND_MOVED);
+    }
 
     // Trigger added signals
     directory_created_(abs);
@@ -46,9 +87,13 @@ void DirectoryWatcher::add_watcher(const unicode& path) {
             add_watcher(full);
         }
     }
+
+    return true;
 }
 
 void DirectoryWatcher::remove_watcher(const unicode& path) {
+    std::lock_guard<std::mutex> lock(monitor_mutex_);
+
     auto start = monitors_.find(path);
 
     for(; start != monitors_.end();) {
@@ -76,7 +121,7 @@ void DirectoryWatcher::on_directory_changed(const Glib::RefPtr<Gio::File>& file,
     switch(type) {
         case Gio::FILE_MONITOR_EVENT_CREATED: {
             if(os::path::is_dir(file->get_path())) {
-                add_watcher(file->get_path()); //Directory created so add a watcher
+                add_watcher_in_background(file->get_path()); //Directory created so add a watcher
             } else {
                 file_created_(file->get_path());
             }
@@ -93,7 +138,7 @@ void DirectoryWatcher::on_directory_changed(const Glib::RefPtr<Gio::File>& file,
         case Gio::FILE_MONITOR_EVENT_MOVED: {
             if(os::path::is_dir(file->get_path())) {
                 remove_watcher(file->get_path()); //Directory removed so delete watcher
-                add_watcher(other_file->get_path()); // Add the new directory
+                add_watcher_in_background(other_file->get_path()); // Add the new directory
             } else {
                 file_removed_(file->get_path());
                 file_created_(other_file->get_path());
