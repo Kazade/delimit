@@ -217,7 +217,7 @@ std::vector<Token> Python::tokenize(const unicode& data) {
             line = lines.at(lnum);
         }
 
-        std::cout << line << std::endl;
+        //std::cout << line << std::endl;
 
         lnum += 1; //Increment the line counter
         int32_t pos = 0, max = line.length(); //Store the line boundaries

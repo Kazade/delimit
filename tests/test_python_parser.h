@@ -40,9 +40,9 @@ public:
         auto scopes_and_success = parser.parse(test_data, "test.testing");
         auto scopes = scopes_and_success.first;
 
-        for(auto scope: scopes) {
+        /*for(auto scope: scopes) {
             std::cout << scope->path() << " = " << _u(",").join(scope->inherited_paths()) << std::endl;
-        }
+        }*/
 /*
         assert_equal("A", scopes.at(0)->path());
         assert_equal("object", scopes.at(0)->inherited_paths().at(0));

@@ -1,8 +1,9 @@
-#include "utils.h"
-
 #include <vector>
 #include <fstream>
 #include <string>
+#include <kazbase/logging.h>
+
+#include "utils.h"
 
 unicode call_command(unicode command, unicode cwd) {
     char tmpname [L_tmpnam];
@@ -31,7 +32,7 @@ unicode call_command(unicode command, unicode cwd) {
 }
 
 
-Glib::RefPtr<Gsv::Language> guess_language_from_file(const GioFilePtr& file) {
+Glib::RefPtr<Gsv::Language> guess_language_from_file(const Glib::RefPtr<Gio::File>& file) {
     Glib::RefPtr<Gsv::LanguageManager> lm = Gsv::LanguageManager::get_default();
     Glib::RefPtr<Gsv::Language> lang = lm->guess_language(file->get_path(), Glib::ustring());
 

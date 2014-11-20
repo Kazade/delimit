@@ -12,10 +12,13 @@ ADD_CUSTOM_COMMAND(
 set(
     DELIMIT_SOURCES
     ${CMAKE_SOURCE_DIR}/src/autocomplete/parsers/python.cpp
+    ${CMAKE_SOURCE_DIR}/src/autocomplete/parsers/plain.cpp
     ${CMAKE_SOURCE_DIR}/src/autocomplete/base.cpp
+    ${CMAKE_SOURCE_DIR}/src/project_info.cpp
+    ${CMAKE_SOURCE_DIR}/src/utils.cpp
 )
 
-
 ADD_EXECUTABLE(tests ${TEST_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${DELIMIT_SOURCES})
+target_link_libraries(tests ${GTKMM_LIBRARIES} ${GTKSOURCEVIEWMM_LIBRARIES})
 
 ADD_TEST(suite tests)
