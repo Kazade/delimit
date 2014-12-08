@@ -31,6 +31,8 @@ void OpenFilesList::add_entry(const OpenFilesEntry& entry) {
     Gtk::EventBox* button = Gtk::manage(new Gtk::EventBox());
     Gtk::Image* close_icon = Gtk::manage(new Gtk::Image());
 
+    label->set_ellipsize(Pango::EllipsizeMode::ELLIPSIZE_MIDDLE);
+
     close_icon->set_from_icon_name("gtk-close", Gtk::ICON_SIZE_MENU);
     button->add(*close_icon);
 
