@@ -7,6 +7,7 @@ set(
     ${CMAKE_SOURCE_DIR}/src/document_view.cpp
     ${CMAKE_SOURCE_DIR}/src/find_bar.cpp
     ${CMAKE_SOURCE_DIR}/src/awesome_bar.cpp
+    ${CMAKE_SOURCE_DIR}/src/project_info.cpp
     ${CMAKE_SOURCE_DIR}/src/utils.cpp
     ${CMAKE_SOURCE_DIR}/src/utils/indentation.cpp
     ${CMAKE_SOURCE_DIR}/src/gtk/open_files_list.cpp

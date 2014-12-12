@@ -44,7 +44,7 @@ public:
     Gtk::TreeModelColumn<bool> is_dummy;
 };
 
-
+class ProjectInfo;
 
 class Window {
 public:
@@ -174,6 +174,8 @@ private:
     sigc::signal<void, DocumentView&> signal_document_switched_;
 
     void update_vcs_branch_in_tree();
+
+    std::shared_ptr<ProjectInfo> info_;
 };
 
 }

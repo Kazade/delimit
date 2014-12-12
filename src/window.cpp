@@ -8,6 +8,7 @@
 #include "application.h"
 #include "search/search_thread.h"
 #include "utils.h"
+#include "project_info.h"
 
 #include <kazbase/exceptions.h>
 #include <kazbase/unicode.h>
@@ -32,7 +33,8 @@ Window::Window():
     buffer_save_(nullptr),
     buffer_undo_(nullptr),
     main_paned_(nullptr),
-    type_(WINDOW_TYPE_FILE) {
+    type_(WINDOW_TYPE_FILE),
+    info_(new ProjectInfo()){
 
     L_DEBUG("Creating window with empty buffer");
     load_settings();
@@ -56,7 +58,8 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
     buffer_save_(nullptr),
     buffer_undo_(nullptr),
     main_paned_(nullptr),
-    type_(WINDOW_TYPE_FILE) {
+    type_(WINDOW_TYPE_FILE),
+    info_(new ProjectInfo()){
 
     load_settings();
 
@@ -73,7 +76,8 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
         rebuild_file_tree(files[0]->get_path());
         path_ = files[0]->get_path();
 
-        awesome_bar_->repopulate_files();
+        info_->recursive_populate(path_);
+        //awesome_bar_->repopulate_files();
 
         //Look for a .gitignore file in the directory
         auto ignore_file = os::path::join(path_, ".gitignore");

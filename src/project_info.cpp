@@ -1,5 +1,8 @@
 #include <thread>
 #include <iostream>
+
+#include <kazbase/os.h>
+
 #include "project_info.h"
 #include "utils.h"
 
@@ -101,8 +104,6 @@ void ProjectInfo::offline_update(const unicode& filename) {
     // Lock the members for update
     std::lock_guard<std::mutex> lock(mutex_);
     {        
-        auto it = symbols_by_filename_.find(filename);
-
         SymbolArray symbols = find_symbols(filename, lang, stream);
 
         filenames_.insert(filename);
@@ -147,5 +148,30 @@ void ProjectInfo::remove(const unicode& filename) {
     symbols_by_filename_.erase(filename);
 }
 
+void ProjectInfo::recursive_populate(const unicode& directory)  {
+    const int CYCLES_UNTIL_REFRESH = 15;
+    int cycles_until_gtk_update = CYCLES_UNTIL_REFRESH;
+    for(auto thing: os::path::list_dir(directory)) {
+        //FIXME: Should use gitignore
+        if(thing.starts_with(".") || thing.ends_with(".pyc")) continue;
+
+        auto full_path = os::path::join(directory, thing);
+        if(os::path::is_dir(full_path)) {
+            Glib::signal_idle().connect_once(sigc::bind(sigc::mem_fun(this, &ProjectInfo::recursive_populate), full_path));
+        } else {
+            add_or_update(full_path);
+
+            cycles_until_gtk_update--;
+            if(!cycles_until_gtk_update) {
+                cycles_until_gtk_update = CYCLES_UNTIL_REFRESH;
+
+                //Keep the window responsive
+                while(Gtk::Main::events_pending()) {
+                    Gtk::Main::iteration();
+                }
+            }
+        }
+    }
+}
 
 }

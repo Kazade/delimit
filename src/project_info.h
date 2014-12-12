@@ -55,6 +55,8 @@ public:
     void add_or_update(const unicode& filename);
     void remove(const unicode& filename);
 
+    void recursive_populate(const unicode& root_dir);
+
 private:
     std::mutex mutex_;
 
