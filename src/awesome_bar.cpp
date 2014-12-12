@@ -110,7 +110,6 @@ void AwesomeBar::repopulate_files() {
     if(!window_.project_path().empty()) {
         //If this is a project window, then crawl to get the file list
         recursive_populate(&project_files_, window_.project_path());
-
     } else {
         //FIXME: We need to just look at open files, and keep this updated
     }

@@ -88,7 +88,6 @@ SymbolArray ProjectInfo::find_symbols(const unicode& filename, Glib::RefPtr<Gsv:
 }
 
 void ProjectInfo::offline_update(const unicode& filename) {
-    std::cout << "Running update" << std::endl;
     auto file = Gio::File::create_for_path(filename.encode());
     if(!file->query_exists()) {
         return;
