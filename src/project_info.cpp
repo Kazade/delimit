@@ -97,25 +97,20 @@ void ProjectInfo::offline_update(const unicode& filename) {
     auto lang = guess_language_from_file(file);
     auto stream = file->read();
 
+    remove(filename);
+
     // Lock the members for update
     std::lock_guard<std::mutex> lock(mutex_);
-    {
+    {        
         auto it = symbols_by_filename_.find(filename);
-        if(it != symbols_by_filename_.end()) {
-            for(auto& symbol: (*it).second) {
-                // Wipe out the symbol from the all symbols array
-                symbols_.erase(symbol);
-            }
-            (*it).second.clear(); // Wipe out the symbols by filename
-        }
 
         SymbolArray symbols = find_symbols(filename, lang, stream);
 
         filenames_.insert(filename);
         symbols_by_filename_[filename] = symbols;
-        for(Symbol symbol: symbols) {
-            symbols_.insert(symbol);// Insert all the found symbols
-        }
+
+        // Insert all the found symbols
+        symbols_.insert(symbols_.end(), symbols.begin(), symbols.end());
     }
 }
 
@@ -124,7 +119,7 @@ std::vector<unicode> ProjectInfo::file_paths() const {
 }
 
 SymbolArray ProjectInfo::symbols() const {
-    return std::vector<Symbol>(symbols_.begin(), symbols_.end());
+    return symbols_;
 }
 
 void ProjectInfo::clear_old_futures() {
@@ -147,7 +142,7 @@ void ProjectInfo::remove(const unicode& filename) {
     filenames_.erase(filename);
 
     for(auto symbol: symbols_by_filename_[filename]) {
-        symbols_.erase(symbol);
+        symbols_.erase(std::remove(symbols_.begin(), symbols_.end(), symbol), symbols_.end());
     }
 
     symbols_by_filename_.erase(filename);

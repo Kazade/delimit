@@ -29,8 +29,8 @@ public:
         assert_equal(3, symbols.size());
 
         assert_equal("A", symbols[0].name);
-        assert_equal("main", symbols[0].name);
-        assert_equal("a", symbols[0].name);
+        assert_equal("main", symbols[1].name);
+        assert_equal("a", symbols[2].name);
     }
 };
 

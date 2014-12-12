@@ -60,7 +60,7 @@ private:
 
     std::unordered_map<unicode, SymbolArray> symbols_by_filename_;
     std::set<unicode> filenames_;
-    std::set<Symbol> symbols_;
+    SymbolArray symbols_;
 
     void clear_old_futures();
     void offline_update(const unicode& filename);
