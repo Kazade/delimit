@@ -255,7 +255,7 @@ std::vector<Token> Python::tokenize(const unicode& data) {
                 if(line[pos] == ' ') {
                     column += 1;
                 } else if(line[pos] == '\t') {
-                    column = (column / tabsize + 1) * tabsize;
+                    column = (column / (tabsize + 1)) * tabsize;
                 } else if(line[pos] == '\f') {
                     column = 0;
                 } else {
@@ -315,7 +315,6 @@ std::vector<Token> Python::tokenize(const unicode& data) {
         std::pair<int, int> spos;
         std::pair<int, int> epos;
         while(pos < max) {
-           // std::cout << pos << std::endl;
             auto pseudomatch = pseudoprog.match(line, pos);
             if(pseudomatch) {
                 std::pair<int, int> start_end = pseudomatch.span(1);
