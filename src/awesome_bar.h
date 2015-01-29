@@ -14,6 +14,7 @@ public:
     AwesomeBar(Window& parent);
 
     void show() {
+        entry_.set_text("");
         entry_.grab_focus();
         Gtk::VBox::show();
     }
