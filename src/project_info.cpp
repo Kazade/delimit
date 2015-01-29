@@ -3,6 +3,7 @@
 #include <queue>
 
 #include <kazbase/os.h>
+#include <kazbase/logging.h>
 
 #include "project_info.h"
 #include "utils.h"
@@ -106,13 +107,17 @@ void ProjectInfo::offline_update(const unicode& filename) {
     // Lock the members for update
     std::lock_guard<std::mutex> lock(mutex_);
     {        
-        SymbolArray symbols = find_symbols(filename, lang, stream);
+        try {
+            SymbolArray symbols = find_symbols(filename, lang, stream);
+            filenames_.insert(filename);
+            symbols_by_filename_[filename] = symbols;
 
-        filenames_.push_back(filename);
-        symbols_by_filename_[filename] = symbols;
-
-        // Insert all the found symbols
-        symbols_.insert(symbols_.end(), symbols.begin(), symbols.end());
+            // Insert all the found symbols
+            symbols_.insert(symbols_.end(), symbols.begin(), symbols.end());
+        } catch (std::exception& e) {
+            L_ERROR(_u("An error occurred while indexing: {0}").format(filename));
+            return;
+        }
     }
 }
 
@@ -134,9 +139,14 @@ void ProjectInfo::clear_old_futures() {
     }
 }
 
-void ProjectInfo::add_or_update(const unicode& filename) {
+void ProjectInfo::add_or_update(const unicode& filename, bool offline) {
     clear_old_futures();
-    futures_.push_back(std::async(std::launch::async, std::bind(&ProjectInfo::offline_update, this, filename)));
+
+    if(offline) {
+        futures_.push_back(std::async(std::launch::async, std::bind(&ProjectInfo::offline_update, this, filename)));
+    } else {
+        offline_update(filename);
+    }
 }
 
 void ProjectInfo::remove(const unicode& filename) {

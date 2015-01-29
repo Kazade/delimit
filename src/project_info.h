@@ -52,7 +52,7 @@ public:
     std::vector<unicode> file_paths() const;
     SymbolArray symbols() const;
 
-    void add_or_update(const unicode& filename);
+    void add_or_update(const unicode& filename, bool offline=true);
     void remove(const unicode& filename);
 
     void recursive_populate(const unicode& root_dir);
