@@ -191,13 +191,15 @@ std::vector<unicode> AwesomeBar::filter_project_files(const unicode& search_text
 
     int to_display = std::min(DISPLAY_LIMIT, (int) haystack.size());
 
+    int project_path_length = window_.project_path().length() + 1;
+
     try {
-        std::partial_sort(haystack.begin(), haystack.begin() + to_display, haystack.end(), [&](const unicode& lhs, const unicode& rhs) -> bool {
+        std::partial_sort(haystack.begin(), haystack.begin() + to_display, haystack.end(), [=](const unicode& lhs, const unicode& rhs) -> bool {
             if(this->filter_task_id_ != filter_task_id) {
                 throw TaskTerminatedError();
             }
-            auto lhs_rel = lhs.slice(window_.project_path().length() + 1, nullptr);
-            auto rhs_rel = rhs.slice(window_.project_path().length() + 1, nullptr);
+            auto lhs_rel = lhs.slice(project_path_length, nullptr);
+            auto rhs_rel = rhs.slice(project_path_length, nullptr);
             return rank(lhs_rel, lower_text) > rank(rhs_rel, lower_text);
         });
     } catch(TaskTerminatedError&e ) {

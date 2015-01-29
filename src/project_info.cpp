@@ -109,7 +109,7 @@ void ProjectInfo::offline_update(const unicode& filename) {
     {        
         try {
             SymbolArray symbols = find_symbols(filename, lang, stream);
-            filenames_.insert(filename);
+            //filenames_.insert(filename);
             symbols_by_filename_[filename] = symbols;
 
             // Insert all the found symbols
@@ -204,8 +204,6 @@ void ProjectInfo::update_files(const std::vector<unicode> &new_files) {
             filenames_including_character_[c].insert(&file);
         }
     }
-
-    std::cout << "Files updated" << std::endl;
 }
 
 void ProjectInfo::recursive_populate(const unicode& directory)  {
@@ -218,7 +216,7 @@ void ProjectInfo::recursive_populate(const unicode& directory)  {
      */
     all_files->signal_level_complete().connect([=](const std::vector<unicode>& result, int level) {
         Glib::signal_idle().connect_once([=]() {
-            if(level == 5) { //Perform an update at level 5, this is normally what you are interested in
+            if((level % 5) == 0) { //Perform an update every 5 levels
                 update_files(result);
             }
         });

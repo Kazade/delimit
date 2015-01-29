@@ -37,13 +37,15 @@ private:
             unicode file_or_folder = level.front();
             level.pop();
 
-            if(os::path::is_dir(file_or_folder)) {
-                std::cout << file_or_folder << std::endl;
-                auto files = os::path::list_dir(file_or_folder);
-                for(auto file: files) {
-                    if(file == ".") continue;
-                    if(file == "..") continue;
+            if(file_or_folder.starts_with(".") || file_or_folder.ends_with(".pyc")) {
+                continue;
+            }
 
+            unicode abs_path = os::path::real_path(file_or_folder);
+
+            if(os::path::is_dir(abs_path)) {
+                auto files = os::path::list_dir(abs_path);
+                for(auto file: files) {
                     temp_.push(os::path::join(file_or_folder, file));
                 }
             }
