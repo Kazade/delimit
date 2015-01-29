@@ -47,3 +47,5 @@ src/gtk/open_files_list.cpp
 src/project_info.h
 src/project_info.cpp
 tests/test_project_info.h
+src/utils/bfs.h
+tests/test_bfs.h

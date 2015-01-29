@@ -1,11 +1,13 @@
 #include <thread>
 #include <iostream>
+#include <queue>
 
 #include <kazbase/os.h>
 
 #include "project_info.h"
 #include "utils.h"
-
+#include "utils/bfs.h"
+#include "utils/sigc_lambda.h"
 #include "autocomplete/parsers/python.h"
 #include "autocomplete/parsers/plain.h"
 
@@ -106,7 +108,7 @@ void ProjectInfo::offline_update(const unicode& filename) {
     {        
         SymbolArray symbols = find_symbols(filename, lang, stream);
 
-        filenames_.insert(filename);
+        filenames_.push_back(filename);
         symbols_by_filename_[filename] = symbols;
 
         // Insert all the found symbols
@@ -139,7 +141,7 @@ void ProjectInfo::add_or_update(const unicode& filename) {
 
 void ProjectInfo::remove(const unicode& filename) {
     std::lock_guard<std::mutex> lock(mutex_);
-    filenames_.erase(filename);
+    //filenames_.erase(filename);
 
     for(auto symbol: symbols_by_filename_[filename]) {
         symbols_.erase(std::remove(symbols_.begin(), symbols_.end(), symbol), symbols_.end());
@@ -148,30 +150,86 @@ void ProjectInfo::remove(const unicode& filename) {
     symbols_by_filename_.erase(filename);
 }
 
-void ProjectInfo::recursive_populate(const unicode& directory)  {
-    const int CYCLES_UNTIL_REFRESH = 15;
-    int cycles_until_gtk_update = CYCLES_UNTIL_REFRESH;
-    for(auto thing: os::path::list_dir(directory)) {
-        //FIXME: Should use gitignore
-        if(thing.starts_with(".") || thing.ends_with(".pyc")) continue;
+std::vector<unicode> ProjectInfo::filenames_including(const std::vector<char32_t>& characters) {
+    std::unordered_set<unicode*> results;
+    std::unordered_set<unicode*> new_results;
 
-        auto full_path = os::path::join(directory, thing);
-        if(os::path::is_dir(full_path)) {
-            Glib::signal_idle().connect_once(sigc::bind(sigc::mem_fun(this, &ProjectInfo::recursive_populate), full_path));
-        } else {
-            add_or_update(full_path);
+    std::unordered_set<char32_t> distinct_chars(characters.begin(), characters.end());
 
-            cycles_until_gtk_update--;
-            if(!cycles_until_gtk_update) {
-                cycles_until_gtk_update = CYCLES_UNTIL_REFRESH;
+    results.reserve(10000);
+    for(char32_t c: distinct_chars) {
+        auto& tmp = filenames_including_character_[c];
+        if(results.empty()) {
+            results.insert(tmp.begin(), tmp.end());
+            continue;
+        }
 
-                //Keep the window responsive
-                while(Gtk::Main::events_pending()) {
-                    Gtk::Main::iteration();
-                }
+        new_results.clear();
+        new_results.reserve(results.size());
+        for(auto ptr: tmp) {
+            if(results.count(ptr)) {
+                new_results.insert(ptr);
             }
         }
+        results = new_results;
     }
+
+    std::vector<unicode> ret;
+    ret.reserve(results.size());
+
+    for(auto ptr: results) {
+        ret.push_back(*ptr);
+    }
+
+    return ret;
+}
+
+void ProjectInfo::update_files(const std::vector<unicode> &new_files) {
+    filenames_.assign(new_files.begin(), new_files.end());
+    filenames_including_character_.clear();
+
+    for(auto& file: filenames_) {
+        std::unordered_set<char32_t> distinct(file.begin(), file.end());
+        for(char32_t c: distinct) {
+            filenames_including_character_[c].insert(&file);
+        }
+    }
+
+    std::cout << "Files updated" << std::endl;
+}
+
+void ProjectInfo::recursive_populate(const unicode& directory)  {
+    auto all_files = std::make_shared<BFS>(directory);
+
+    /*
+     *  When each level of the tree has been processed, update the files list in the idle
+     *  of the main thread. This way, we can keep scanning in the background without blocking
+     *  the main thread.
+     */
+    all_files->signal_level_complete().connect([=](const std::vector<unicode>& result, int level) {
+        Glib::signal_idle().connect_once([=]() {
+            if(level == 5) { //Perform an update at level 5, this is normally what you are interested in
+                update_files(result);
+            }
+        });
+    });
+
+    struct Wrapper {
+        std::future<std::vector<unicode>> wrapped;
+    };
+
+    auto wrapper = std::make_shared<Wrapper>();
+    wrapper->wrapped = std::async(std::launch::async, std::bind(&BFS::run, all_files));
+
+    Glib::signal_idle().connect([=]() -> bool {
+        if(wrapper->wrapped.wait_for(std::chrono::milliseconds(1)) == std::future_status::ready) {
+            auto result = wrapper->wrapped.get();
+            update_files(result);
+            return false;
+        }
+
+        return true;
+    });
 }
 
 }

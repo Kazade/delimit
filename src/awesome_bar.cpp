@@ -3,6 +3,7 @@
 #include "awesome_bar.h"
 #include "window.h"
 #include "buffer.h"
+#include "project_info.h"
 
 namespace delimit {
 
@@ -157,96 +158,54 @@ void AwesomeBar::execute() {
     entry_.set_text("");
 }
 
+class TaskTerminatedError : public std::exception {};
+
 std::vector<unicode> AwesomeBar::filter_project_files(const unicode& search_text, uint64_t filter_task_id) {
+    static std::unordered_map<unicode, std::vector<unicode>> cache;
+
+    unicode longest_cache_match;
+
+    unicode lower_text = search_text.lower();
+
+    for(auto it = cache.begin(); it != cache.end();) {
+        if(lower_text.starts_with(it->first)) {
+            if(it->first.length() > longest_cache_match.length()) {
+                longest_cache_match = it->first;
+            }
+        } else {
+            it = cache.erase(it);
+            continue;
+        }
+        ++it;
+    }
+
+
     const int DISPLAY_LIMIT = 30;
 
-    struct Entry {
-        unicode path;
-        unicode rel;
-        uint32_t rank;
-    };
-
-    static std::unordered_map<unicode, std::vector<Entry> > CACHE;
-
-    std::vector<unicode> to_add;
-    std::vector<Entry> haystack;
-
-    unicode longest_cached;
-
-    {
-        std::lock_guard<std::mutex> lock(filter_cache_lock);
-        //Work out what the longest entry in the cache was
-        for(auto p: CACHE) {
-            if(p.first.length() > longest_cached.length()) {
-                longest_cached = p.first;
-            }
-        }
-    }
-
-    //Wipe out the cache if the text no longer matches
-    if(longest_cached.empty() || search_text.length() < longest_cached.length() || !(search_text.starts_with(longest_cached))) {
-        haystack.reserve(project_files_.size());
-        for(auto file: project_files_) {
-            auto rel = file.slice(window_.project_path().length() + 1, nullptr);
-            auto rk = rank(rel.lower(), search_text.lower());
-            if(rk) {
-                haystack.push_back(Entry{file, rel, rk});
-            }
-        }
-
-        //Reset the CACHE
-        std::lock_guard<std::mutex> lock(filter_cache_lock);
-
-        //A new task was spawned so abandon this one
-        if(filter_task_id_ != filter_task_id) {
-            std::cout << "Abandoning task" << std::endl;
-            return std::vector<unicode>();
-        }
-
-        std::cout << "Clearing the cache" << std::endl;
-        CACHE.clear();
-        CACHE[search_text] = haystack;
+    std::vector<unicode> haystack;
+    if(longest_cache_match.empty()) {
+        haystack = this->window_.info()->filenames_including(std::vector<char32_t>(lower_text.begin(), lower_text.end()));
     } else {
-        std::lock_guard<std::mutex> lock(filter_cache_lock);
-
-        std::cout << "Hitting the cache" << std::endl;
-        //We can use the cache
-        auto old_haystack = CACHE[longest_cached];
-
-        haystack.reserve(old_haystack.size());
-        //Update the rank with the new text
-        for(auto& entry: old_haystack) {
-            entry.rank = rank(entry.rel.lower(), search_text.lower());
-            if(entry.rank) {
-                haystack.push_back(entry);
-            }
-        }
-
-        //A new task was spawned so abandon this one
-        if(filter_task_id_ != filter_task_id) {
-            std::cout << "Abandoning task" << std::endl;
-            return std::vector<unicode>();
-        }
-
-        CACHE[search_text] = haystack;
-    }
-
-    //A new task was spawned so abandon this one
-    if(filter_task_id_ != filter_task_id) {
-        std::cout << "Abandoning task" << std::endl;
-        return std::vector<unicode>();
+        haystack = cache[longest_cache_match];
     }
 
     int to_display = std::min(DISPLAY_LIMIT, (int) haystack.size());
-    if(to_display) {
-        std::partial_sort(haystack.begin(), haystack.begin() + to_display, haystack.end(), [](const Entry& lhs, const Entry& rhs) -> bool { return lhs.rank > rhs.rank; });
 
-        for(int i = 0; i < to_display; ++i) {
-            to_add.push_back(haystack[i].path);
-        }
+    try {
+        std::partial_sort(haystack.begin(), haystack.begin() + to_display, haystack.end(), [&](const unicode& lhs, const unicode& rhs) -> bool {
+            if(this->filter_task_id_ != filter_task_id) {
+                throw TaskTerminatedError();
+            }
+            auto lhs_rel = lhs.slice(window_.project_path().length() + 1, nullptr);
+            auto rhs_rel = rhs.slice(window_.project_path().length() + 1, nullptr);
+            return rank(lhs_rel, lower_text) > rank(rhs_rel, lower_text);
+        });
+    } catch(TaskTerminatedError&e ) {
+        return std::vector<unicode>();
     }
 
-    return to_add;
+    cache[lower_text] = std::vector<unicode>(haystack.begin(), haystack.begin() + to_display);
+    return cache[lower_text];
 }
 
 void AwesomeBar::populate_results(const std::vector<unicode>& to_add) {

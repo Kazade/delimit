@@ -3,7 +3,7 @@
 
 #include <unordered_map>
 #include <kazbase/unicode.h>
-#include <set>
+#include <unordered_set>
 #include <gtksourceviewmm.h>
 #include <mutex>
 #include <future>
@@ -57,11 +57,18 @@ public:
 
     void recursive_populate(const unicode& root_dir);
 
+    std::vector<unicode> filenames_including(const std::vector<char32_t>& characters);
+
 private:
+    void update_files(const std::vector<unicode>& new_files);
+
     std::mutex mutex_;
 
     std::unordered_map<unicode, SymbolArray> symbols_by_filename_;
-    std::set<unicode> filenames_;
+
+    std::vector<unicode> filenames_;
+    std::unordered_map<char32_t, std::unordered_set<unicode*> > filenames_including_character_;
+
     SymbolArray symbols_;
 
     void clear_old_futures();

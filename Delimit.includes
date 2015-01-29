@@ -2,3 +2,4 @@
 /usr/include/gtksourceviewmm-3.0/
 src
 tests
+src/utils
