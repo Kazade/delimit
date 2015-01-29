@@ -167,21 +167,25 @@ std::vector<unicode> ProjectInfo::filenames_including(const std::vector<char32_t
     std::unordered_set<char32_t> distinct_chars(characters.begin(), characters.end());
 
     results.reserve(10000);
-    for(char32_t c: distinct_chars) {
-        auto& tmp = filenames_including_character_[c];
-        if(results.empty()) {
-            results.insert(tmp.begin(), tmp.end());
-            continue;
-        }
 
-        new_results.clear();
-        new_results.reserve(results.size());
-        for(auto ptr: tmp) {
-            if(results.count(ptr)) {
-                new_results.insert(ptr);
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        for(char32_t c: distinct_chars) {
+            auto& tmp = filenames_including_character_[c];
+            if(results.empty()) {
+                results.insert(tmp.begin(), tmp.end());
+                continue;
             }
+
+            new_results.clear();
+            new_results.reserve(results.size());
+            for(auto ptr: tmp) {
+                if(results.count(ptr)) {
+                    new_results.insert(ptr);
+                }
+            }
+            results = new_results;
         }
-        results = new_results;
     }
 
     std::vector<unicode> ret;
@@ -195,6 +199,8 @@ std::vector<unicode> ProjectInfo::filenames_including(const std::vector<char32_t
 }
 
 void ProjectInfo::update_files(const std::vector<unicode> &new_files) {
+    std::lock_guard<std::mutex> lock(mutex_);
+
     filenames_.assign(new_files.begin(), new_files.end());
     filenames_including_character_.clear();
 
@@ -214,12 +220,10 @@ void ProjectInfo::recursive_populate(const unicode& directory)  {
      *  of the main thread. This way, we can keep scanning in the background without blocking
      *  the main thread.
      */
-    all_files->signal_level_complete().connect([=](const std::vector<unicode>& result, int level) {
-        Glib::signal_idle().connect_once([=]() {
-            if((level % 5) == 0) { //Perform an update every 5 levels
-                update_files(result);
-            }
-        });
+    all_files->signal_level_complete().connect([=](const std::vector<unicode>& result, int level) {        
+        if((level % 5) == 0) { //Perform an update every 5 levels
+            update_files(result);
+        }
     });
 
     struct Wrapper {

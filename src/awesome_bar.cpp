@@ -224,6 +224,7 @@ void AwesomeBar::populate_results(const std::vector<unicode>& to_add) {
         label->set_alignment(0, 0.5);
         label->set_hexpand(false);
         label->set_line_wrap_mode(Pango::WRAP_CHAR);
+        label->set_ellipsize(Pango::ELLIPSIZE_MIDDLE);
         label->set_line_wrap(true);
         label->override_font(desc);
         list_.append(*label);
