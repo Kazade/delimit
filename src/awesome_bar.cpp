@@ -161,53 +161,40 @@ void AwesomeBar::execute() {
 class TaskTerminatedError : public std::exception {};
 
 std::vector<unicode> AwesomeBar::filter_project_files(const unicode& search_text, uint64_t filter_task_id) {
-    static std::unordered_map<unicode, std::vector<unicode>> cache;
-
-    unicode longest_cache_match;
-
     unicode lower_text = search_text.lower();
 
-    for(auto it = cache.begin(); it != cache.end();) {
-        if(lower_text.starts_with(it->first)) {
-            if(it->first.length() > longest_cache_match.length()) {
-                longest_cache_match = it->first;
-            }
-        } else {
-            it = cache.erase(it);
-            continue;
-        }
-        ++it;
-    }
-
-
-    const int DISPLAY_LIMIT = 30;
+    const int DISPLAY_LIMIT = 15;
 
     std::vector<unicode> haystack;
-    if(longest_cache_match.empty()) {
-        haystack = this->window_.info()->filenames_including(std::vector<char32_t>(lower_text.begin(), lower_text.end()));
-    } else {
-        haystack = cache[longest_cache_match];
+
+    if(this->filter_task_id_ != filter_task_id) {
+        return std::vector<unicode>();
     }
+
+    haystack = this->window_.info()->filenames_including(std::vector<char32_t>(lower_text.begin(), lower_text.end()));
 
     int to_display = std::min(DISPLAY_LIMIT, (int) haystack.size());
 
     int project_path_length = window_.project_path().length() + 1;
 
     try {
+        if(this->filter_task_id_ != filter_task_id) {
+            return std::vector<unicode>();
+        }
+
         std::partial_sort(haystack.begin(), haystack.begin() + to_display, haystack.end(), [=](const unicode& lhs, const unicode& rhs) -> bool {
             if(this->filter_task_id_ != filter_task_id) {
                 throw TaskTerminatedError();
             }
-            auto lhs_rel = lhs.slice(project_path_length, nullptr);
-            auto rhs_rel = rhs.slice(project_path_length, nullptr);
+            auto lhs_rel = lhs.slice(project_path_length, nullptr).lower();
+            auto rhs_rel = rhs.slice(project_path_length, nullptr).lower();
             return rank(lhs_rel, lower_text) > rank(rhs_rel, lower_text);
         });
     } catch(TaskTerminatedError&e ) {
         return std::vector<unicode>();
     }
 
-    cache[lower_text] = std::vector<unicode>(haystack.begin(), haystack.begin() + to_display);
-    return cache[lower_text];
+    return std::vector<unicode>(haystack.begin(), haystack.begin() + to_display);
 }
 
 void AwesomeBar::populate_results(const std::vector<unicode>& to_add) {
@@ -255,11 +242,11 @@ void AwesomeBar::populate(const unicode &text) {
         } catch(std::exception& e) {
             return;
         }
-    } else if(!text.empty()) {        
-
+    } else if(!text.empty()) {
         filter_task_ = std::make_shared<std::future<std::vector<unicode>>>(
             std::async(std::launch::async, std::bind(&AwesomeBar::filter_project_files, this, text, ++filter_task_id_))
         );
+
         auto copy = filter_task_;
         Glib::signal_idle().connect([&, copy]() -> bool {
             if(!filter_task_ || filter_task_.get() != copy.get()) {

@@ -46,7 +46,9 @@ private:
             if(os::path::is_dir(abs_path)) {
                 auto files = os::path::list_dir(abs_path);
                 for(auto file: files) {
-                    temp_.push(os::path::join(file_or_folder, file));
+                    if(!file.starts_with(".")) {
+                        temp_.push(os::path::join(file_or_folder, file));
+                    }
                 }
             }
 

@@ -179,7 +179,7 @@ std::vector<unicode> ProjectInfo::filenames_including(const std::vector<char32_t
         new_results.clear();
         new_results.reserve(results.size());
         for(auto ptr: tmp) {
-            if(results.count(ptr)) {
+            if(results.find(ptr) != results.end()) {
                 new_results.insert(ptr);
             }
         }
@@ -203,7 +203,8 @@ void ProjectInfo::update_files(const std::vector<unicode> &new_files) {
     filenames_including_character_.clear();
 
     for(auto& file: filenames_) {
-        std::unordered_set<char32_t> distinct(file.begin(), file.end());
+        unicode lower_file = file.lower();
+        std::unordered_set<char32_t> distinct(lower_file.begin(), lower_file.end());
         for(char32_t c: distinct) {
             filenames_including_character_[c].insert(&file);
         }
