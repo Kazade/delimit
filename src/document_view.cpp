@@ -74,6 +74,8 @@ void DocumentView::build_widgets() {
     scrolled_window_.add(view_);
     view_.set_buffer(buffer_);
 
+    view_.signal_populate_popup().connect(sigc::mem_fun(this, &DocumentView::populate_popup));
+
     auto manager = Gsv::StyleSchemeManager::get_default();
     view_.get_source_buffer()->set_style_scheme(manager->get_scheme("delimit"));
 
@@ -581,6 +583,39 @@ void DocumentView::apply_settings(const unicode& mimetype) {
 
     view_.override_font(fdesc);
     current_settings_ = default_settings;
+}
+
+void DocumentView::populate_popup(Gtk::Menu* menu) {
+    std::set<Glib::ustring> items_to_remove = {
+        "_Undo",
+        "_Redo",
+        "_Delete",
+        "C_hange Case",
+        "Select _All"
+    };
+
+    Gtk::MenuItem* comment = Gtk::manage(new Gtk::MenuItem("Comment Lines"));
+    Gtk::MenuItem* uncomment = Gtk::manage(new Gtk::MenuItem("Uncomment Lines"));
+
+    //menu->add(*Gtk::manage(new Gtk::SeparatorMenuItem()));
+    menu->add(*comment);
+    menu->add(*uncomment);
+    menu->show_all();
+
+    for(Gtk::Widget* item: menu->get_children()) {
+        Gtk::MenuItem* itm = dynamic_cast<Gtk::MenuItem*>(item);
+        if(itm) {
+            auto label = itm->get_label();
+            if(label == "") {
+                itm->hide(); //Hide separators
+            } else {
+                std::cout << label << std::endl;
+                if(items_to_remove.count(label)) {
+                    itm->hide();
+                }
+            }
+        }
+    }
 }
 
 }

@@ -104,6 +104,8 @@ private:
     void apply_settings(const unicode& mimetype);
     std::pair<unicode, int> get_font_name_and_size_from_dconf();
     json::JSON current_settings_;
+
+    void populate_popup(Gtk::Menu* menu);
 };
 
 
