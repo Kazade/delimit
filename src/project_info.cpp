@@ -168,24 +168,22 @@ std::vector<unicode> ProjectInfo::filenames_including(const std::vector<char32_t
 
     results.reserve(10000);
 
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        for(char32_t c: distinct_chars) {
-            auto& tmp = filenames_including_character_[c];
-            if(results.empty()) {
-                results.insert(tmp.begin(), tmp.end());
-                continue;
-            }
-
-            new_results.clear();
-            new_results.reserve(results.size());
-            for(auto ptr: tmp) {
-                if(results.count(ptr)) {
-                    new_results.insert(ptr);
-                }
-            }
-            results = new_results;
+    std::lock_guard<std::mutex> lock(mutex_);
+    for(char32_t c: distinct_chars) {
+        auto& tmp = filenames_including_character_[c];
+        if(results.empty()) {
+            results.insert(tmp.begin(), tmp.end());
+            continue;
         }
+
+        new_results.clear();
+        new_results.reserve(results.size());
+        for(auto ptr: tmp) {
+            if(results.count(ptr)) {
+                new_results.insert(ptr);
+            }
+        }
+        results = new_results;
     }
 
     std::vector<unicode> ret;
