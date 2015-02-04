@@ -101,7 +101,7 @@ void DocumentView::build_widgets() {
     view_.add_events(Gdk::BUTTON_PRESS_MASK);
     view_.signal_button_press_event().connect([&](GdkEventButton* evt) -> bool {
 
-        if(buffer_->get_language()->get_name() != "Python") {
+        if(!buffer_->get_language() || buffer_->get_language()->get_name() != "Python") {
             return false;
         }
 
