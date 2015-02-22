@@ -9,6 +9,7 @@
 #include <kazbase/file_utils.h>
 #include <kazbase/regex.h>
 #include <kazbase/os.h>
+#include <kazbase/logging.h>
 
 struct Match {
     int line;
@@ -62,9 +63,11 @@ public:
                 continue;
             }
 
+            L_DEBUG(_u("Reading file {0}").format(file));
             auto data = file_utils::read(file);
             auto matches = re.search(data);
 
+            L_DEBUG(_u("Found {0} matches").format(matches.size()));
             for(auto match: matches) {
                 Result new_result;
 

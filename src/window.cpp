@@ -176,7 +176,7 @@ void Window::begin_search() {
             search_thread_.reset();
         }
 
-        std::vector<unicode> files_to_search;
+        std::vector<unicode> files_to_search = info()->file_paths();
         unicode search_text = search_text_entry_->get_text().c_str();
 
         //Start the search thread
