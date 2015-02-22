@@ -376,6 +376,9 @@ void Window::build_widgets() {
 
     tasks_book_->set_no_show_all();
     tasks_header_->set_no_show_all();
+    tasks_buttons_->set_no_show_all();
+
+    set_task_tabs_visible(false); //Hide on new window
     set_tasks_visible(false); //Hide the tasks on launch
 
     // Initialize existing tab buttons
@@ -413,6 +416,11 @@ void Window::build_widgets() {
             }
         }
     });
+
+}
+
+void Window::set_task_tabs_visible(bool value) {
+    tasks_buttons_->set_visible(value);
 }
 
 void Window::set_tasks_visible(bool value) {
@@ -898,6 +906,8 @@ void Window::activate_document(DocumentView::ptr document) {
     Glib::signal_idle().connect_once([document]() {
         document->run_linters_and_stuff(true);
     });
+
+    set_task_tabs_visible(true);
 }
 
 void Window::append_document(DocumentView::ptr new_document) {
@@ -953,6 +963,10 @@ void Window::close_document(DocumentView& document) {
         gtk_container_->remove();
         gtk_container_->add(*no_files_alignment_);
         header_bar_.set_subtitle("");
+
+        set_task_tabs_visible(false);
+        set_tasks_visible(false);
+        find_bar_->hide();
     }
 
     rebuild_open_list();

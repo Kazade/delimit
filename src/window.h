@@ -88,6 +88,7 @@ public:
     void set_tasks_visible(bool value=true);
     void set_task_active(uint32_t index);
     void set_task_in_progress(uint32_t index, bool value=true);
+    void set_task_tabs_visible(bool value=true);
 
 private:
     struct TaskState {
