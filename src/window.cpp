@@ -263,6 +263,12 @@ void Window::build_widgets() {
     builder->get_widget("window_file_tree", window_file_tree_);
     builder->get_widget("file_tree_scrolled_window", file_tree_scrolled_window_);
 
+    builder->get_widget("tasks_book", tasks_book_);
+    builder->get_widget("tasks_hide", tasks_hide_button_);
+    builder->get_widget("tasks_progress", tasks_progress_);
+    builder->get_widget("tasks_header", tasks_header_);
+    builder->get_widget("tasks_buttons", tasks_buttons_);
+
     window_file_tree_->set_model(file_tree_store_);
     //window_file_tree_->append_column("Icon", file_tree_columns_.image);
     window_file_tree_->append_column("Name", file_tree_columns_.name);
@@ -367,6 +373,66 @@ void Window::build_widgets() {
 
         return false;
     });
+
+    tasks_book_->set_no_show_all();
+    tasks_header_->set_no_show_all();
+    set_tasks_visible(false); //Hide the tasks on launch
+
+    // Initialize existing tab buttons
+    int i = 0;
+    for(auto child: tasks_buttons_->get_children()) {
+        Gtk::ToggleButton* button = dynamic_cast<Gtk::ToggleButton*>(child);
+
+        // If a button is toggled, and it's now active, then show the tasks
+        // and activate that tab. Otherwise, hide the tasks
+        button->signal_toggled().connect([=]() {
+            if(button->get_active()) {
+                set_tasks_visible();
+                set_task_active(i);
+
+                for(auto other_child: tasks_buttons_->get_children()) {
+                    if(other_child == child) continue;
+
+                    Gtk::ToggleButton* other_button = dynamic_cast<Gtk::ToggleButton*>(child);
+                    other_button->set_active(false);
+                }
+            } else {
+                set_tasks_visible(false);
+            }
+        });
+        ++i;
+    }
+
+    /* When the hide button is clicked, find the active button and set it inactive */
+    tasks_hide_button_->signal_clicked().connect([=]() {
+        for(auto child: tasks_buttons_->get_children()) {
+            Gtk::ToggleButton* button = dynamic_cast<Gtk::ToggleButton*>(child);
+            if(button->get_active()) {
+                button->set_active(false);
+                break;
+            }
+        }
+    });
+}
+
+void Window::set_tasks_visible(bool value) {
+    tasks_book_->set_visible(value);
+    tasks_header_->set_visible(value);
+    tasks_progress_->set_visible(task_states_[active_task_].in_progress);
+
+    tasks_book_->set_show_tabs(false);
+    tasks_book_->set_current_page(active_task_);
+}
+
+void Window::set_task_active(uint32_t index) {
+    assert(index < task_states_.size());
+    set_tasks_visible(true);
+    active_task_ = index;
+}
+
+void Window::set_task_in_progress(uint32_t index, bool value) {
+    task_states_[index].in_progress = value;
+    tasks_progress_->set_visible(task_states_[active_task_].in_progress);
 }
 
 void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column) {
