@@ -176,6 +176,10 @@ void Window::begin_search() {
             search_thread_.reset();
         }
 
+        set_task_active(0);
+        set_task_in_progress(0);
+        set_task_tabs_visible();
+
         std::vector<unicode> files_to_search = info()->file_paths();
         unicode search_text = search_text_entry_->get_text().c_str();
 
@@ -189,13 +193,12 @@ void Window::begin_search() {
                 if(!match) {
                     break;
                 }
-
-                std::cout << match->filename << std::endl;
             }
 
             if(search_thread_ && !search_thread_->running()) {
                 search_thread_->join();
                 search_thread_.reset();
+                set_task_in_progress(0, false);
             }
 
             return search_thread_ && search_thread_->running();
