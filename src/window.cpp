@@ -176,7 +176,11 @@ void Window::begin_search() {
             search_thread_.reset();
         }
 
-        std::vector<unicode> files_to_search;
+        set_task_active(0);
+        set_task_in_progress(0);
+        set_task_tabs_visible();
+
+        std::vector<unicode> files_to_search = info()->file_paths();
         unicode search_text = search_text_entry_->get_text().c_str();
 
         //Start the search thread
@@ -189,13 +193,12 @@ void Window::begin_search() {
                 if(!match) {
                     break;
                 }
-
-                std::cout << match->filename << std::endl;
             }
 
             if(search_thread_ && !search_thread_->running()) {
                 search_thread_->join();
                 search_thread_.reset();
+                set_task_in_progress(0, false);
             }
 
             return search_thread_ && search_thread_->running();
@@ -262,6 +265,12 @@ void Window::build_widgets() {
     builder->get_widget("window_container", gtk_container_);
     builder->get_widget("window_file_tree", window_file_tree_);
     builder->get_widget("file_tree_scrolled_window", file_tree_scrolled_window_);
+
+    builder->get_widget("tasks_book", tasks_book_);
+    builder->get_widget("tasks_hide", tasks_hide_button_);
+    builder->get_widget("tasks_progress", tasks_progress_);
+    builder->get_widget("tasks_header", tasks_header_);
+    builder->get_widget("tasks_buttons", tasks_buttons_);
 
     window_file_tree_->set_model(file_tree_store_);
     //window_file_tree_->append_column("Icon", file_tree_columns_.image);
@@ -367,6 +376,74 @@ void Window::build_widgets() {
 
         return false;
     });
+
+    tasks_book_->set_no_show_all();
+    tasks_header_->set_no_show_all();
+    tasks_buttons_->set_no_show_all();
+
+    set_task_tabs_visible(false); //Hide on new window
+    set_tasks_visible(false); //Hide the tasks on launch
+
+    // Initialize existing tab buttons
+    int i = 0;
+    for(auto child: tasks_buttons_->get_children()) {
+        Gtk::ToggleButton* button = dynamic_cast<Gtk::ToggleButton*>(child);
+
+        // If a button is toggled, and it's now active, then show the tasks
+        // and activate that tab. Otherwise, hide the tasks
+        button->signal_toggled().connect([=]() {
+            if(button->get_active()) {
+                set_tasks_visible();
+                set_task_active(i);
+
+                for(auto other_child: tasks_buttons_->get_children()) {
+                    if(other_child == child) continue;
+
+                    Gtk::ToggleButton* other_button = dynamic_cast<Gtk::ToggleButton*>(child);
+                    other_button->set_active(false);
+                }
+            } else {
+                set_tasks_visible(false);
+            }
+        });
+        ++i;
+    }
+
+    /* When the hide button is clicked, find the active button and set it inactive */
+    tasks_hide_button_->signal_clicked().connect([=]() {
+        for(auto child: tasks_buttons_->get_children()) {
+            Gtk::ToggleButton* button = dynamic_cast<Gtk::ToggleButton*>(child);
+            if(button->get_active()) {
+                button->set_active(false);
+                break;
+            }
+        }
+    });
+
+}
+
+void Window::set_task_tabs_visible(bool value) {
+    tasks_buttons_->set_visible(value);
+}
+
+void Window::set_tasks_visible(bool value) {
+    tasks_book_->set_visible(value);
+    tasks_header_->set_visible(value);
+    tasks_progress_->set_visible(task_states_[active_task_].in_progress);
+
+    tasks_book_->set_show_tabs(false);
+    tasks_book_->set_current_page(active_task_);
+}
+
+void Window::set_task_active(uint32_t index) {
+    assert(index < task_states_.size());
+    set_tasks_visible(true);
+    active_task_ = index;
+}
+
+void Window::set_task_in_progress(uint32_t index, bool value) {
+    task_states_[index].in_progress = value;
+    tasks_progress_->set_visible(task_states_[active_task_].in_progress);
 }
 
 void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column) {
@@ -832,6 +909,8 @@ void Window::activate_document(DocumentView::ptr document) {
     Glib::signal_idle().connect_once([document]() {
         document->run_linters_and_stuff(true);
     });
+
+    set_task_tabs_visible(true);
 }
 
 void Window::append_document(DocumentView::ptr new_document) {
@@ -887,6 +966,10 @@ void Window::close_document(DocumentView& document) {
         gtk_container_->remove();
         gtk_container_->add(*no_files_alignment_);
         header_bar_.set_subtitle("");
+
+        set_task_tabs_visible(false);
+        set_tasks_visible(false);
+        find_bar_->hide();
     }
 
     rebuild_open_list();

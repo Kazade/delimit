@@ -52,6 +52,15 @@ private:
                 }
             }
 
+            auto content_type = Gio::File::create_for_path(file_or_folder.encode())->query_info(
+                G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE
+            )->get_content_type();
+
+            if(!_u(content_type).starts_with("text/")) {
+                //Only include text files
+                continue;
+            }
+
             result.push_back(file_or_folder);
         }
 

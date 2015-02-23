@@ -84,7 +84,23 @@ public:
     sigc::signal<void, DocumentView&>& signal_document_switched() { return signal_document_switched_; }
 
     std::shared_ptr<ProjectInfo> info() { return info_; }
+
+    void set_tasks_visible(bool value=true);
+    void set_task_active(uint32_t index);
+    void set_task_in_progress(uint32_t index, bool value=true);
+    void set_task_tabs_visible(bool value=true);
+
 private:
+    struct TaskState {
+        TaskState(unicode title, bool in_progress=false):
+            title(title), in_progress(in_progress) {}
+        unicode title;
+        bool in_progress = false;
+    };
+
+    std::vector<TaskState> task_states_ = { TaskState{ _u("Search Results"), false} };
+    uint32_t active_task_ = 0;
+
     void close_document(DocumentView &document);
     void append_document(DocumentView::ptr document);
 
@@ -119,6 +135,13 @@ private:
 
     Gtk::ScrolledWindow* file_tree_scrolled_window_;
     Gtk::TreeView* window_file_tree_;
+
+
+    Gtk::Notebook* tasks_book_;
+    Gtk::Button* tasks_hide_button_;
+    Gtk::Spinner* tasks_progress_;
+    Gtk::Box* tasks_header_;
+    Gtk::ButtonBox* tasks_buttons_;
 
 
     FileTreeColumns file_tree_columns_;
