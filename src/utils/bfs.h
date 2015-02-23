@@ -1,6 +1,8 @@
 #ifndef BFS_H
 #define BFS_H
 
+#include <gtkmm.h>
+
 #include <queue>
 #include <algorithm>
 #include <kazbase/unicode.h>

@@ -63,21 +63,37 @@ public:
                 continue;
             }
 
-            L_DEBUG(_u("Reading file {0}").format(file));
-            std::string enc;
-            auto data = file_utils::read(file, &enc);
-            L_DEBUG(_u("Read file {0} with encoding {1}").format(file, enc));
+            try {
+                std::string enc;
+                auto data = file_utils::read(file, &enc);
+                auto matches = re.search(data);
+                if(!matches.empty()) {
+                    L_DEBUG(_u("Found search text in file {0}").format(file));
 
-            auto matches = re.search(data);
+                    Result new_result;
+                    new_result.filename = file;
+                    for(auto match: matches) {
 
-            L_DEBUG(_u("Found {0} matches").format(matches.size()));
-            for(auto match: matches) {
-                Result new_result;
+                        //TODO: Populate new_result
+                        Match new_match;
 
-                //TOOD: Populate new_result
-                new_result.filename = file;
+                        auto i = match.start();
+                        while(i--) {
+                            if(data[i] == '\n') {
+                                break;
+                            }
+                        }
 
-                push_result(new_result);
+                        new_match.start_col = match.start() - i;
+                        new_match.end_col = match.end() - i;
+                        new_match.line = data.slice(nullptr, match.start()).count("\n");
+                        new_result.matches.push_back(new_match);
+                    }
+                    push_result(new_result);
+                }
+            } catch(...) {
+                L_INFO(_u("Error searching file {0}").format(file));
+                continue;
             }
         }
 
