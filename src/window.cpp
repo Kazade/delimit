@@ -181,6 +181,8 @@ void Window::begin_search() {
         set_task_tabs_visible();
 
         std::vector<unicode> files_to_search = info()->file_paths();
+        std::sort(files_to_search.begin(), files_to_search.end());
+
         unicode search_text = search_text_entry_->get_text().c_str();
 
         //Start the search thread
@@ -193,6 +195,31 @@ void Window::begin_search() {
                 if(!match) {
                     break;
                 }
+
+                Gtk::Expander* expander = Gtk::manage(new Gtk::Expander(match->filename.encode()));
+                Gtk::ListBox* list_box = Gtk::manage(new Gtk::ListBox());
+                expander->set_margin_bottom(5);
+                expander->add(*list_box);
+                for(auto m: match->matches) {
+                    Gtk::ListBoxRow* row = Gtk::manage(new Gtk::ListBoxRow());
+                    Gtk::HBox* row_box = Gtk::manage(new Gtk::HBox());
+                    Gtk::Label* number_label = Gtk::manage(new Gtk::Label(std::to_string(m.line), 0, 0.5));
+                    Gtk::Label* string_label = Gtk::manage(new Gtk::Label(m.text.encode(), 0, 0.5));
+
+                    number_label->set_size_request(50, -1);
+                    number_label->set_margin_left(15);
+                    number_label->set_margin_right(10);
+                    string_label->set_margin_right(5);
+                    string_label->set_ellipsize(Pango::ELLIPSIZE_END);
+
+                    row_box->set_homogeneous(false);
+                    row_box->pack_start(*number_label, false, false);
+                    row_box->pack_start(*string_label, true, true);
+                    row->add(*row_box);
+                    list_box->add(*row);
+                }
+                search_results_->pack_start(*expander, false, false);
+                search_results_->show_all();
             }
 
             if(search_thread_ && !search_thread_->running()) {
@@ -271,6 +298,7 @@ void Window::build_widgets() {
     builder->get_widget("tasks_progress", tasks_progress_);
     builder->get_widget("tasks_header", tasks_header_);
     builder->get_widget("tasks_buttons", tasks_buttons_);
+    builder->get_widget("search_results", search_results_);
 
     window_file_tree_->set_model(file_tree_store_);
     //window_file_tree_->append_column("Icon", file_tree_columns_.image);
@@ -438,6 +466,13 @@ void Window::set_tasks_visible(bool value) {
 void Window::set_task_active(uint32_t index) {
     assert(index < task_states_.size());
     set_tasks_visible(true);
+
+    Gtk::Widget* widget = tasks_buttons_->get_children().at(index);
+    Gtk::ToggleButton* button = dynamic_cast<Gtk::ToggleButton*>(widget);
+    if(!button->get_active()) {
+        button->set_active(true);
+    }
+
     active_task_ = index;
 }
 

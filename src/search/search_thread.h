@@ -15,6 +15,7 @@ struct Match {
     int line;
     int start_col;
     int end_col;
+    unicode text;
 };
 
 struct Result {
@@ -77,16 +78,25 @@ public:
                         //TODO: Populate new_result
                         Match new_match;
 
-                        auto i = match.start();
-                        while(i--) {
-                            if(data[i] == '\n') {
+                        auto prev_newline = match.start();
+                        while(prev_newline--) {
+                            if(data[prev_newline] == '\n') {
                                 break;
                             }
                         }
 
-                        new_match.start_col = match.start() - i;
-                        new_match.end_col = match.end() - i;
+                        auto next_newline = match.end();
+                        while(next_newline < (signed) data.length()) {
+                            if(data[next_newline] == '\n') {
+                                break;
+                            }
+                            next_newline++;
+                        }
+
+                        new_match.start_col = match.start() - prev_newline;
+                        new_match.end_col = match.end() - prev_newline;
                         new_match.line = data.slice(nullptr, match.start()).count("\n");
+                        new_match.text = data.slice(prev_newline, next_newline).strip();
                         new_result.matches.push_back(new_match);
                     }
                     push_result(new_result);

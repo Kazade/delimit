@@ -142,6 +142,7 @@ private:
     Gtk::Spinner* tasks_progress_;
     Gtk::Box* tasks_header_;
     Gtk::ButtonBox* tasks_buttons_;
+    Gtk::Box* search_results_;
 
 
     FileTreeColumns file_tree_columns_;
