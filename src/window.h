@@ -89,16 +89,19 @@ public:
     void set_task_active(uint32_t index);
     void set_task_in_progress(uint32_t index, bool value=true);
     void set_task_tabs_visible(bool value=true);
-
+    void clear_search_results();
 private:
+    typedef std::function<void ()> TaskCancelFunc;
     struct TaskState {
-        TaskState(unicode title, bool in_progress=false):
-            title(title), in_progress(in_progress) {}
+        TaskState(unicode title, bool in_progress=false, TaskCancelFunc cancel_func=TaskCancelFunc()):
+            title(title), in_progress(in_progress), func(cancel_func) {}
+
         unicode title;
         bool in_progress = false;
+        TaskCancelFunc func;
     };
 
-    std::vector<TaskState> task_states_ = { TaskState{ _u("Search Results"), false} };
+    std::vector<TaskState> task_states_;
     uint32_t active_task_ = 0;
 
     void close_document(DocumentView &document);
@@ -121,6 +124,7 @@ private:
     void on_document_modified(DocumentView &document);
 
     void begin_search();
+    void cancel_search();
 
     Gtk::Dialog* gtk_search_window_;
     std::shared_ptr<SearchThread> search_thread_;
@@ -139,10 +143,12 @@ private:
 
     Gtk::Notebook* tasks_book_;
     Gtk::Button* tasks_hide_button_;
+    Gtk::Button* tasks_stop_button_;
     Gtk::Spinner* tasks_progress_;
     Gtk::Box* tasks_header_;
     Gtk::ButtonBox* tasks_buttons_;
     Gtk::Box* search_results_;
+    sigc::connection tasks_stop_connection_;
 
 
     FileTreeColumns file_tree_columns_;

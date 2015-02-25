@@ -155,6 +155,12 @@ void Window::init_actions() {
     });
 }
 
+void Window::clear_search_results() {
+    for(auto child: search_results_->get_children()) {
+        search_results_->remove(*child);
+    }
+}
+
 void Window::begin_search() {
     gtk_search_window_->set_transient_for(*gtk_window_);
 
@@ -179,6 +185,7 @@ void Window::begin_search() {
         set_task_active(0);
         set_task_in_progress(0);
         set_task_tabs_visible();
+        clear_search_results();
 
         std::vector<unicode> files_to_search = info()->file_paths();
         std::sort(files_to_search.begin(), files_to_search.end());
@@ -190,7 +197,7 @@ void Window::begin_search() {
 
         Glib::signal_idle().connect([&]() -> bool {
             int i = 10;
-            while(i--) {
+            while(i-- && search_thread_) {
                 auto match = search_thread_->pop_result();
                 if(!match) {
                     break;
@@ -233,6 +240,14 @@ void Window::begin_search() {
     }
 
     gtk_search_window_->hide();
+}
+
+void Window::cancel_search() {
+    search_thread_->stop();
+    search_thread_->join();
+    search_thread_.reset();
+
+    set_task_in_progress(0, false);
 }
 
 void Window::add_global_action(const unicode& name, const Gtk::AccelKey& key, std::function<void ()> func) {
@@ -295,10 +310,19 @@ void Window::build_widgets() {
 
     builder->get_widget("tasks_book", tasks_book_);
     builder->get_widget("tasks_hide", tasks_hide_button_);
+    builder->get_widget("tasks_stop", tasks_stop_button_);
     builder->get_widget("tasks_progress", tasks_progress_);
     builder->get_widget("tasks_header", tasks_header_);
     builder->get_widget("tasks_buttons", tasks_buttons_);
     builder->get_widget("search_results", search_results_);
+
+    task_states_ = {
+        TaskState(
+            _u("Search Results"),
+            false,
+            [=]() { this->cancel_search(); }
+        )
+    };
 
     window_file_tree_->set_model(file_tree_store_);
     //window_file_tree_->append_column("Icon", file_tree_columns_.image);
@@ -448,6 +472,9 @@ void Window::build_widgets() {
         }
     });
 
+    Gtk::Paned* content_pane = nullptr;
+    builder->get_widget("content_pane", content_pane);
+    content_pane->set_position(content_pane->get_allocated_height() - 250);
 }
 
 void Window::set_task_tabs_visible(bool value) {
@@ -478,7 +505,22 @@ void Window::set_task_active(uint32_t index) {
 
 void Window::set_task_in_progress(uint32_t index, bool value) {
     task_states_[index].in_progress = value;
-    tasks_progress_->set_visible(task_states_[active_task_].in_progress);
+
+    if(index == active_task_) {
+        if(task_states_[index].func && task_states_[index].in_progress) {
+            tasks_stop_button_->show();
+
+            if(tasks_stop_connection_) {
+                tasks_stop_connection_.disconnect();
+            }
+
+            tasks_stop_connection_ = tasks_stop_button_->signal_clicked().connect(task_states_[index].func);
+        } else {
+            tasks_stop_button_->hide();
+        }
+
+        tasks_progress_->set_visible(task_states_[active_task_].in_progress);
+    }
 }
 
 void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::TreeViewColumn* column) {
