@@ -1,15 +1,11 @@
 src/main.cpp
 src/window.h
-src/frame.h
-src/buffer.h
 CMakeLists.txt
 src/CMakeLists.txt
 src/window.cpp
-src/frame.cpp
 src/utils/sigc_lambda.h
 src/application.h
 src/application.cpp
-src/buffer.cpp
 src/find_bar.h
 src/find_bar.cpp
 src/base/glob.h
