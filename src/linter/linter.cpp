@@ -1,8 +1,6 @@
 #include <iostream>
 #include "linter.h"
 
-#include "../frame.h"
-#include "../buffer.h"
 #include "../window.h"
 #include "../utils.h"
 

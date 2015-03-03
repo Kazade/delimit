@@ -54,6 +54,8 @@ public:
 
     bool completion_visible() const;
     void hide_completion();
+
+    void scroll_to_line(int line);
 private:
     Window& window_;
 

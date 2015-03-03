@@ -1,8 +1,8 @@
 #include <kazbase/unicode.h>
 #include <iostream>
+#include "utils/sigc_lambda.h"
 #include "awesome_bar.h"
 #include "window.h"
-#include "buffer.h"
 #include "project_info.h"
 
 namespace delimit {
@@ -236,9 +236,7 @@ void AwesomeBar::populate(const unicode &text) {
             unicode number_text = text.lstrip(":");
             int line_number = number_text.to_int();
 
-            auto buffer = window_.current_buffer()->buffer();
-            auto iter = buffer->get_iter_at_line(line_number);
-            window_.current_buffer()->view().scroll_to(iter, 0, 0.5, 0.5);
+            window_.current_buffer()->scroll_to_line(line_number);
         } catch(std::exception& e) {
             return;
         }

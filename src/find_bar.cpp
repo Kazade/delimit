@@ -1,7 +1,6 @@
 #include <kazbase/logging.h>
 #include <cassert>
 #include "find_bar.h"
-#include "buffer.h"
 #include "window.h"
 
 namespace delimit {

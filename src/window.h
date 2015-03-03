@@ -11,9 +11,8 @@
 
 #include <gtkmm.h>
 
+#include "awesome_bar.h"
 #include "search/search_thread.h"
-#include "buffer.h"
-#include "frame.h"
 #include "find_bar.h"
 #include "document_view.h"
 #include "gtk/open_files_list.h"

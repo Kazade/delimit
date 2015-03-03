@@ -3,6 +3,7 @@
 #include <gdkmm.h>
 #include <thread>
 
+#include "utils/sigc_lambda.h"
 #include "autocomplete/provider.h"
 #include "window.h"
 #include "application.h"
@@ -205,12 +206,37 @@ void Window::begin_search() {
 
                 Gtk::Expander* expander = Gtk::manage(new Gtk::Expander(match->filename.encode()));
                 Gtk::ListBox* list_box = Gtk::manage(new Gtk::ListBox());
+
+                list_box->signal_row_activated().connect([this](Gtk::ListBoxRow* row) {
+                    Gtk::HBox* row_box = dynamic_cast<Gtk::HBox*>(row->get_children()[0]);
+
+                    Gtk::Label* number_label = dynamic_cast<Gtk::Label*>(row_box->get_children()[0]);
+                    Gtk::Label* string_label = dynamic_cast<Gtk::Label*>(row_box->get_children()[1]);
+
+                    if(number_label && string_label) {
+                        int line = unicode(number_label->get_text().c_str()).to_int();
+                        unicode file = string_label->get_text().c_str();
+
+                        open_document(file);
+                        current_buffer()->scroll_to_line(line);
+                    }
+                });
+
                 expander->set_margin_bottom(5);
                 expander->add(*list_box);
                 for(auto m: match->matches) {
                     Gtk::ListBoxRow* row = Gtk::manage(new Gtk::ListBoxRow());
                     Gtk::HBox* row_box = Gtk::manage(new Gtk::HBox());
                     Gtk::Label* number_label = Gtk::manage(new Gtk::Label(std::to_string(m.line), 0, 0.5));
+
+                    /* This is so hacky! Here I'm adding a label, which contains the file path, then hiding it
+                     * so I can hackily read it in the lambda callback above. I can't figure out how to bind
+                     * this data to the widget. A cleaner way would be to store a map of ListBoxRow -> data
+                     * but that's just as error prone :/
+                     */
+                    Gtk::Label* file_label = Gtk::manage(new Gtk::Label(match->filename.encode()));
+                    file_label->set_no_show_all();
+                    file_label->hide();
                     Gtk::Label* string_label = Gtk::manage(new Gtk::Label(m.text.encode(), 0, 0.5));
 
                     number_label->set_size_request(50, -1);
@@ -221,7 +247,9 @@ void Window::begin_search() {
 
                     row_box->set_homogeneous(false);
                     row_box->pack_start(*number_label, false, false);
+                    row_box->pack_start(*file_label, false, false);
                     row_box->pack_start(*string_label, true, true);
+
                     row->add(*row_box);
                     list_box->add(*row);
                 }

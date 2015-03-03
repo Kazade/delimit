@@ -1,4 +1,5 @@
 #include <kazbase/logging.h>
+#include "utils/sigc_lambda.h"
 #include "document_view.h"
 #include "window.h"
 #include "application.h"
@@ -68,6 +69,11 @@ void DocumentView::hide_completion() {
     if(comp) {
         comp->hide();
     }
+}
+
+void DocumentView::scroll_to_line(int line) {
+    auto iter = buffer()->get_iter_at_line(line);
+    view().scroll_to(iter, 0, 0.5, 0.5);
 }
 
 void DocumentView::build_widgets() {
