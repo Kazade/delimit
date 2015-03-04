@@ -189,8 +189,6 @@ void Window::begin_search() {
         clear_search_results();
 
         std::vector<unicode> files_to_search = info()->file_paths();
-        std::sort(files_to_search.begin(), files_to_search.end());
-
         unicode search_text = search_text_entry_->get_text().c_str();
 
         //Start the search thread
@@ -206,10 +204,9 @@ void Window::begin_search() {
 
                 Gtk::Expander* expander = Gtk::manage(new Gtk::Expander(match->filename.encode()));
                 Gtk::ListBox* list_box = Gtk::manage(new Gtk::ListBox());
-
+                list_box->set_valign(Gtk::ALIGN_START);
                 list_box->signal_row_activated().connect([this](Gtk::ListBoxRow* row) {
                     Gtk::HBox* row_box = dynamic_cast<Gtk::HBox*>(row->get_children()[0]);
-
                     Gtk::Label* number_label = dynamic_cast<Gtk::Label*>(row_box->get_children()[0]);
                     Gtk::Label* string_label = dynamic_cast<Gtk::Label*>(row_box->get_children()[1]);
 
@@ -222,12 +219,25 @@ void Window::begin_search() {
                     }
                 });
 
+                /*
+                list_box->signal_focus_out_event().connect([list_box](GdkEventFocus*) -> bool {
+                    auto selected = list_box->get_selected_row();
+                    if(selected) {
+                        selected->set_state(Gtk::STATE_NORMAL);
+                    }
+
+                    return false;
+                });*/
+
                 expander->set_margin_bottom(5);
                 expander->add(*list_box);
                 for(auto m: match->matches) {
                     Gtk::ListBoxRow* row = Gtk::manage(new Gtk::ListBoxRow());
                     Gtk::HBox* row_box = Gtk::manage(new Gtk::HBox());
                     Gtk::Label* number_label = Gtk::manage(new Gtk::Label(std::to_string(m.line), 0, 0.5));
+
+                    row_box->set_margin_top(5);
+                    row_box->set_margin_bottom(5);
 
                     /* This is so hacky! Here I'm adding a label, which contains the file path, then hiding it
                      * so I can hackily read it in the lambda callback above. I can't figure out how to bind
@@ -249,11 +259,12 @@ void Window::begin_search() {
                     row_box->pack_start(*number_label, false, false);
                     row_box->pack_start(*file_label, false, false);
                     row_box->pack_start(*string_label, true, true);
+                    row_box->set_vexpand();
 
                     row->add(*row_box);
                     list_box->add(*row);
                 }
-                search_results_->pack_start(*expander, false, false);
+                search_results_->pack_start(*expander, true, true);
                 search_results_->show_all();
             }
 
@@ -343,6 +354,11 @@ void Window::build_widgets() {
     builder->get_widget("tasks_header", tasks_header_);
     builder->get_widget("tasks_buttons", tasks_buttons_);
     builder->get_widget("search_results", search_results_);
+    builder->get_widget("content_pane", content_pane_);
+    builder->get_widget("tasks_box", tasks_box_);
+
+    // Remove the tasks box from the content pane at first
+    content_pane_->remove(*tasks_box_);
 
     task_states_ = {
         TaskState(
@@ -498,11 +514,7 @@ void Window::build_widgets() {
                 break;
             }
         }
-    });
-
-    Gtk::Paned* content_pane = nullptr;
-    builder->get_widget("content_pane", content_pane);
-    content_pane->set_position(content_pane->get_allocated_height() - 250);
+    });    
 }
 
 void Window::set_task_tabs_visible(bool value) {
@@ -510,12 +522,22 @@ void Window::set_task_tabs_visible(bool value) {
 }
 
 void Window::set_tasks_visible(bool value) {
-    tasks_book_->set_visible(value);
-    tasks_header_->set_visible(value);
+    if(value && !content_pane_->get_child2()) {
+        content_pane_->pack2(*tasks_box_);
+    } else if(!value && content_pane_->get_child2()) {
+        content_pane_->remove(*tasks_box_);
+    }
+
+    bool headers_were_visible = tasks_buttons_->get_visible();
+    tasks_header_->set_visible(value);        
     tasks_progress_->set_visible(task_states_[active_task_].in_progress);
 
     tasks_book_->set_show_tabs(false);
     tasks_book_->set_current_page(active_task_);
+
+    if(!headers_were_visible) {
+        content_pane_->set_position(main_paned_->get_allocated_height() - 300);
+    }
 }
 
 void Window::set_task_active(uint32_t index) {

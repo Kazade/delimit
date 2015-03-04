@@ -147,7 +147,9 @@ private:
     Gtk::Box* tasks_header_;
     Gtk::ButtonBox* tasks_buttons_;
     Gtk::Box* search_results_;
+    Gtk::Box* tasks_box_;
     sigc::connection tasks_stop_connection_;
+    Gtk::Paned* content_pane_;
 
 
     FileTreeColumns file_tree_columns_;
