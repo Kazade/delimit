@@ -14,6 +14,8 @@ void Coverage::clear_document(delimit::DocumentView* buffer) {
 }
 
 void Coverage::apply_to_document(delimit::DocumentView *buffer) {
+    L_DEBUG("Applying coverage to buffer");
+
     auto gbuf = buffer->buffer();
     clear_document(buffer);
 
@@ -56,6 +58,7 @@ unicode PythonCoverage::find_coverage_file(const unicode& filename, const unicod
 
     unicode final = os::path::join(current_dir, ".coverage");
     if(os::path::exists(final)) {
+        L_DEBUG("Found coverage file");
         return final;
     } else {
         return "";
@@ -79,9 +82,12 @@ std::vector<int32_t> PythonCoverage::find_uncovered_lines(const unicode &filenam
         auto file = Gio::File::create_for_path(coverage_file.encode());
         auto monitor = file->monitor_file();
         monitor->signal_changed().connect([=](const Glib::RefPtr<Gio::File>&, const Glib::RefPtr<Gio::File>&, Gio::FileMonitorEvent evt) {
+            L_DEBUG("Coverage changed event received");
             if(evt == Gio::FILE_MONITOR_EVENT_CHANGES_DONE_HINT || evt == Gio::FILE_MONITOR_EVENT_CREATED) {
+                L_DEBUG("Signaling coverage changed");
                 this->signal_coverage_updated_();
             } else if(evt == Gio::FILE_MONITOR_EVENT_DELETED) {
+                L_DEBUG("Coverage file delted, erasing monitor");
                 this->coverage_monitors_.erase(coverage_file);
             }
         });

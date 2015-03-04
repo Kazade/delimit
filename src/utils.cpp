@@ -33,6 +33,7 @@ unicode call_command(unicode command, unicode cwd) {
 
 
 Glib::RefPtr<Gsv::Language> guess_language_from_file(const Glib::RefPtr<Gio::File>& file) {
+    L_DEBUG("Detecting language...");
     Glib::RefPtr<Gsv::LanguageManager> lm = Gsv::LanguageManager::get_default();
     Glib::RefPtr<Gsv::Language> lang = lm->guess_language(file->get_path(), Glib::ustring());
 
@@ -40,7 +41,7 @@ Glib::RefPtr<Gsv::Language> guess_language_from_file(const Glib::RefPtr<Gio::Fil
         L_DEBUG(_u("Detected {0}").format(lang->get_name()));
     } else {
         //Extra checks
-
+        L_DEBUG("Falling back to manual detection...");
         std::vector<char> buffer(1024);
         file->read()->read(&buffer[0], 1024);
 

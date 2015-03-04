@@ -750,6 +750,7 @@ void Window::on_folder_changed(const Glib::RefPtr<Gio::File> &file, const Glib::
     }
 
     update_vcs_branch_in_tree();
+    L_DEBUG("VCS branch and file tree updated");
 }
 
 void Window::update_vcs_branch_in_tree() {
@@ -882,6 +883,7 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
         }
     }
 
+    L_DEBUG("Processing files");
     for(auto f: files) {
         if(f == "." || f == "..") continue;
 
@@ -953,6 +955,7 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
         }
     }
 
+    L_DEBUG("Processing done");
     for(unicode file: existing_children) {
         L_DEBUG("Found file in need of removal: " + file.encode());
         file_tree_store_->erase(file_tree_store_->get_iter(tree_row_lookup_.at(file).get_path()));

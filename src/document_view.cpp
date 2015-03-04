@@ -370,12 +370,18 @@ void DocumentView::apply_language_to_buffer(const Glib::RefPtr<Gsv::Language>& l
 }
 
 void DocumentView::run_linters_and_stuff(bool force) {
+    L_DEBUG("DocumentView::run_linters_and_stuff");
+
     if(!force && window().current_buffer().get() != this) {
         //Only run linters on the active document
+        L_DEBUG("Document is not active, not running");
         return;
     }
 
+    L_DEBUG("Detecting language");
     apply_language_to_buffer(guess_language_from_file(file_));
+
+    L_DEBUG("Applying settings");
     apply_settings(guess_mimetype()); //Make sure we update the settings when we've reloaded the file
 
     //Check for coverage stats
