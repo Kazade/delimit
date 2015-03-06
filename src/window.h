@@ -122,15 +122,15 @@ private:
     void on_list_signal_row_activated(DocumentView::ptr buffer);
     void on_document_modified(DocumentView &document);
 
-    void begin_search();
+    void begin_search(const std::string& within_directory="");
     void cancel_search();
 
     Gtk::Dialog* gtk_search_window_;
     std::shared_ptr<SearchThread> search_thread_;
     Gtk::Entry* search_text_entry_;
-    Gtk::Box* matching_glob_box_;
-    Gtk::Box* excluding_glob_box_;
-
+    Gtk::Entry* matching_glob_;
+    Gtk::Entry* excluding_glob_;
+    Gtk::FileChooserButton* search_within_;
 
     Gtk::ApplicationWindow* gtk_window_;
     Gtk::Alignment* gtk_container_;

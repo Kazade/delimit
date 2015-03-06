@@ -25,8 +25,12 @@ struct Result {
 
 class SearchThread {
 public:
-    SearchThread(const std::vector<unicode>& files_to_search, const unicode& search_text, bool is_regex):
+    SearchThread(const std::vector<unicode>& files_to_search,
+                 const unicode& search_text,
+                 bool is_regex,
+                 const std::string& within_directory=""):
         files_to_search_(files_to_search),
+        within_directory_(within_directory),
         search_text_(search_text),
         is_regex_(is_regex) {
 
@@ -59,6 +63,11 @@ public:
 
             unicode file = files_to_search_.back();
             files_to_search_.pop_back();
+
+            if(!within_directory_.empty() && !file.starts_with(within_directory_)) {
+                // Ignore files if they aren't within the specified directory
+                continue;
+            }
 
             if(!os::path::exists(file)) {
                 continue;
@@ -126,6 +135,7 @@ private:
     std::mutex lock_;
 
     std::vector<unicode> files_to_search_;
+    std::string within_directory_;
     unicode search_text_;
     bool is_regex_;
     bool is_running_;
