@@ -43,7 +43,13 @@ private:
                 continue;
             }
 
-            unicode abs_path = os::path::real_path(file_or_folder);
+            unicode abs_path;
+            try {
+                abs_path = os::path::real_path(file_or_folder);
+            } catch(...) {
+                std::cout << "Unable to deal with file path " << std::endl;
+                continue;
+            }
 
             if(os::path::is_dir(abs_path)) {
                 auto files = os::path::list_dir(abs_path);
