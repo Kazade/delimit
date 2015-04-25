@@ -565,8 +565,7 @@ void DocumentView::apply_settings(const unicode& mimetype) {
     view_.set_auto_indent(default_settings["auto_indent"].get_bool());
 
     if(!default_settings["detect_indentation"].get_bool()) {
-        view_.set_tab_width(default_settings["tab_width"].get_number());
-        view_.set_insert_spaces_instead_of_tabs(default_settings["insert_spaces_instead_of_tabs"].get_bool());
+        detect_and_apply_indentation();
     }
 
     Gsv::DrawSpacesFlags flags;
