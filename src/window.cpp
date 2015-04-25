@@ -348,7 +348,7 @@ void Window::build_widgets() {
     builder->get_widget("within_directory", search_within_);
 
     builder->get_widget("window_container", gtk_container_);
-    builder->get_widget("window_file_tree", window_file_tree_);
+    builder->get_widget_derived("window_file_tree", window_file_tree_);
     builder->get_widget("file_tree_scrolled_window", file_tree_scrolled_window_);
 
     builder->get_widget("tasks_book", tasks_book_);
@@ -377,6 +377,7 @@ void Window::build_widgets() {
     window_file_tree_->append_column("Name", file_tree_columns_.name);
     window_file_tree_->signal_row_activated().connect(sigc::mem_fun(this, &Window::on_signal_row_activated));
     window_file_tree_->signal_test_expand_row().connect(sigc::mem_fun(this, &Window::on_tree_test_expand_row));
+    window_file_tree_->signal_search_directory().connect(std::bind(&Window::begin_search, this, std::placeholders::_1));
 
     Gtk::ListBox* open_files_list;
     builder->get_widget("open_files_list", open_files_list);

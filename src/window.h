@@ -45,6 +45,72 @@ public:
 
 class ProjectInfo;
 
+class FileTree : public Gtk::TreeView {
+public:
+    FileTree(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& builder):
+        Gtk::TreeView(cobject) {
+
+        Gtk::MenuItem* find_item = Gtk::manage(new Gtk::MenuItem("Search directory...", true));
+        //item->signal_activate().connect(sigc::mem_fun(*this, &TreeView_WithPopup::on_menu_file_popup_generic) );
+        find_item->signal_activate().connect([=]() {
+            auto selection = get_selection();
+            if(selection) {
+                auto iter = selection->get_selected();
+                if(iter) {
+                    Glib::ustring path = (*iter)[FileTreeColumns().full_path];
+                    signal_search_directory_(path);
+                }
+            }
+        });
+
+        folder_menu_.append(*find_item);
+
+        Gtk::MenuItem* delete_item = Gtk::manage(new Gtk::MenuItem("_Delete", true));
+        file_menu_.append(*delete_item);
+
+        Gtk::MenuItem* rename_item = Gtk::manage(new Gtk::MenuItem("_Rename", true));
+        file_menu_.append(*rename_item);
+
+        file_menu_.show_all();
+        folder_menu_.show_all();
+    }
+
+    bool on_button_press_event(GdkEventButton* event) {
+        bool return_value = false;
+
+        //Call base class, to allow normal handling,
+        //such as allowing the row to be selected by the right-click:
+        return_value = TreeView::on_button_press_event(event);
+
+        //Then do our custom stuff:
+        if((event->type == GDK_BUTTON_PRESS) && (event->button == 3)) {
+            auto selection = get_selection();
+            if(selection) {
+                auto iter = selection->get_selected();
+                if(iter) {
+                    bool is_folder = (*iter)[FileTreeColumns().is_folder];
+                    if(is_folder) {
+                        folder_menu_.popup(event->button, event->time);
+                    } else {
+                        file_menu_.popup(event->button, event->time);
+                    }
+                }
+            }
+
+        }
+
+        return return_value;
+    }
+
+    sig::signal<void (std::string)>& signal_search_directory() { return signal_search_directory_; }
+private:
+    Gtk::Menu file_menu_;
+    Gtk::Menu folder_menu_;
+
+    sig::signal<void (std::string)> signal_search_directory_;
+};
+
+
 class Window {
 public:
     typedef std::shared_ptr<Window> ptr;
@@ -137,7 +203,7 @@ private:
     Gtk::Alignment* no_files_alignment_;
 
     Gtk::ScrolledWindow* file_tree_scrolled_window_;
-    Gtk::TreeView* window_file_tree_;
+    FileTree* window_file_tree_;
 
 
     Gtk::Notebook* tasks_book_;
