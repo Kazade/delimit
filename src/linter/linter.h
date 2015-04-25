@@ -32,6 +32,14 @@ private:
     LinterResult find_problematic_lines(const unicode& filename, const unicode& project_root="");
 };
 
+class JavascriptLinter : public Linter {
+public:
+    typedef std::shared_ptr<JavascriptLinter> ptr;
+
+private:
+    LinterResult find_problematic_lines(const unicode& filename, const unicode& project_root="");
+};
+
 }
 
 #endif // LINTER_H

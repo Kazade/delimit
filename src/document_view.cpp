@@ -398,7 +398,9 @@ void DocumentView::run_linters_and_stuff(bool force) {
 
         linter_ = std::make_shared<linter::PythonLinter>();
         linter_->apply_to_document(this);
-
+    } else if(name == "JavaScript") {
+        linter_ = std::make_shared<linter::JavascriptLinter>();
+        linter_->apply_to_document(this);
     } else {
         if(coverage_) {
            coverage_->clear_document(this);

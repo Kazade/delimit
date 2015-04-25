@@ -74,3 +74,33 @@ LinterResult PythonLinter::find_problematic_lines(const unicode& filename, const
 
     return ret;
 }
+
+LinterResult JavascriptLinter::find_problematic_lines(const unicode& filename, const unicode& project_root) {
+    unicode result = call_command(
+        _u("jshint {0}").format(filename)
+    );
+
+    if(result.strip().empty()) {
+        return LinterResult();
+    }
+
+    LinterResult ret;
+
+    for(auto line: result.split("\n")) {
+        try {
+            line = line.slice(line.find(":") + 1, nullptr);
+            auto lineno = line.slice(nullptr, line.find(",")).strip();
+            line = line.slice(line.find(",") + 1, nullptr);
+            unicode message = line.slice(line.find(",") + 1, nullptr).strip();
+
+            int32_t lineno_int = lineno.split(" ")[1].to_int();
+            ret.push_back(std::make_pair(lineno_int, message));
+
+            std::cout << lineno << ": " << message << std::endl;
+        } catch(std::exception& e) {
+            continue;
+        }
+    }
+
+    return ret;
+}
