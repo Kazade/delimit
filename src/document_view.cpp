@@ -553,6 +553,8 @@ void DocumentView::apply_settings(const unicode& mimetype) {
     view_.set_right_margin(4);
     view_.set_show_line_marks(true);
     view_.set_smart_home_end(Gsv::SMART_HOME_END_AFTER);
+    view_.set_show_right_margin();
+    view_.set_right_margin_position(80);
 
     //Load any settings from the settings file
     json::JSON default_settings = window_.settings()["default"];
