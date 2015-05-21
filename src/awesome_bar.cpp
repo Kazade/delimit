@@ -25,42 +25,38 @@ unsigned int levenshtein_distance(const T &s1, const T & s2) {
 }
 
 uint32_t rank(const unicode& str, const unicode& search_text) {
-    //First, find all the locations of the first character in the search
-    std::vector<int> start_positions;
-    for(int j = 0; j < (int) str.length(); ++j) {
-        if(str[j] == search_text[0]) {
-            start_positions.push_back(j);
-        }
+    if(search_text.empty()) {
+        return 0;
     }
 
     int highest_score = 0;
-    for(int start_pos: start_positions) {
-        int score = 0;
+    auto first_c = search_text[0];
+    for(uint32_t i = 0; i < str.length(); ++i) {
+        auto sc = str[i];
+        if(sc == first_c) {
+            int score = 0;
+            for(auto c: search_text) {
+                int since_last = 10;
+                bool this_c_found = false;
+                for(uint32_t j = i; j < str.length(); ++j) {
+                    if(str[j] == c) {
+                        this_c_found = true;
+                        score += std::max(since_last, 0);
+                        ++j;
+                        break;
+                    }
+                    since_last--;
+                }
 
-        unicode to_search = str.slice(start_pos, nullptr);
-
-        int i = 0;
-        for(auto c: search_text) {
-            int since_last = 10;
-            bool this_c_found = false;
-            for(; i < (int) to_search.length(); ++i) {
-                if(to_search[i] == c) {
-                    this_c_found = true;
-                    score += std::max(since_last, 1);
-                    ++i;
+                if(!this_c_found) {
+                    score = 0;
                     break;
                 }
-                since_last--;
             }
 
-            if(!this_c_found) {
-                score = 0;
-                break;
+            if(score > highest_score) {
+                highest_score = score;
             }
-        }
-
-        if(score > highest_score) {
-            highest_score = score;
         }
     }
 
