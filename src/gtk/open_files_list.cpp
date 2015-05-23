@@ -45,12 +45,12 @@ void OpenFilesList::add_entry(const OpenFilesEntry& entry) {
         sigc::bind_return(cb2, false)
     );
 
-    label->set_margin_left(10);
+    label->set_margin_start(10);
 
     box->pack_start(*label, false, false, 0);
     box->pack_end(*button, false, false, 0);
 
-    list_box_->set_margin_left(0);
+    list_box_->set_margin_start(0);
     list_box_->add(*box);
     list_box_->show_all();
 

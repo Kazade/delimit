@@ -253,9 +253,9 @@ void Window::begin_search(const std::string& within_directory) {
                     Gtk::Label* string_label = Gtk::manage(new Gtk::Label(m.text.encode(), 0, 0.5));
 
                     number_label->set_size_request(50, -1);
-                    number_label->set_margin_left(15);
-                    number_label->set_margin_right(10);
-                    string_label->set_margin_right(5);
+                    number_label->set_margin_start(15);
+                    number_label->set_margin_end(10);
+                    string_label->set_margin_end(5);
                     string_label->set_ellipsize(Pango::ELLIPSIZE_END);
 
                     row_box->set_homogeneous(false);

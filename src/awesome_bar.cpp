@@ -113,8 +113,8 @@ void AwesomeBar::repopulate_files() {
 }
 
 void AwesomeBar::build_widgets() { 
-    set_margin_left(20);
-    set_margin_right(20);
+    set_margin_start(20);
+    set_margin_end(20);
     set_margin_top(20);
     set_margin_bottom(20);
     set_no_show_all();
@@ -129,13 +129,40 @@ void AwesomeBar::build_widgets() {
     });
 
     entry_.signal_activate().connect(sigc::mem_fun(this, &AwesomeBar::execute));
+    entry_.signal_focus_out_event().connect([=](GdkEventFocus* evt) -> bool {
+        entry_.hide();
+        entry_.set_text("");
+        return false;
+    });
 
-    Pango::FontDescription desc("sans-serif 26");
+    entry_.signal_key_press_event().connect([=](GdkEventKey* evt) -> bool {
+        if(evt->keyval == GDK_KEY_Down || evt->keyval == GDK_KEY_Up) {
+            /*
+             * If we key up or down, change the selection in the list but
+             * return false so that we don't lose focus on the box
+             */
+            auto row = list_.get_selected_row();
+            auto idx = row->get_index();
+
+            idx += (evt->keyval == GDK_KEY_Down) ? 1 : -1;
+
+            idx = std::max(idx, 0);
+            idx = std::min(idx, (int32_t) displayed_files_.size());
+
+            list_.select_row(*list_.get_row_at_index(idx));
+
+            return true;
+        }
+
+        return false;
+    });
+
+    Pango::FontDescription desc("sans-serif 16");
     entry_.override_font(desc);
 
     pack_start(list_revealer_, false, true, 0);
 
-    list_window_.set_size_request(-1, 500);
+    list_window_.set_size_request(-1, 650);
 
     list_window_.add(list_);
     list_revealer_.add(list_window_);
@@ -150,6 +177,17 @@ void AwesomeBar::build_widgets() {
 }
 
 void AwesomeBar::execute() {
+    if(filter_task_) {
+        // Still waiting for results to come back
+        return;
+    } else {
+        // If we have some results, then activate the first one!
+        if(list_.get_children().size()) {
+            auto row = list_.get_row_at_index(0);
+            auto file = displayed_files_.at(row->get_index());
+            window_.open_document(file);
+        }
+    }
     hide();
     entry_.set_text("");
 }
@@ -217,6 +255,7 @@ void AwesomeBar::populate_results(const std::vector<unicode>& to_add) {
     list_.show_all();
     if(!list_.get_children().empty()) {
         list_revealer_.set_reveal_child(true);
+        list_.select_row(*list_.get_row_at_index(0));
     }
 }
 
