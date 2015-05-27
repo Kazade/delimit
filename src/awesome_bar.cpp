@@ -70,8 +70,8 @@ void AwesomeBar::repopulate_files() {
 }
 
 void AwesomeBar::build_widgets() { 
-    set_margin_start(20);
-    set_margin_end(20);
+    set_margin_left(20);
+    set_margin_right(20);
     set_margin_top(20);
     set_margin_bottom(20);
     set_no_show_all();
