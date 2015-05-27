@@ -64,7 +64,7 @@ private:
                 G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE
             )->get_content_type();
 
-            if(!_u(content_type).starts_with("text/")) {
+            if(!_u(content_type).starts_with("text/") && !_u(content_type).starts_with("application/")) {
                 //Only include text files
                 continue;
             }

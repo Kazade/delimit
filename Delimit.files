@@ -45,3 +45,6 @@ src/project_info.cpp
 tests/test_project_info.h
 src/utils/bfs.h
 tests/test_bfs.h
+tests/test_awesome.h
+src/rank.h
+src/rank.cpp

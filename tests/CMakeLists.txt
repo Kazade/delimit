@@ -16,6 +16,7 @@ set(
     ${CMAKE_SOURCE_DIR}/src/autocomplete/base.cpp
     ${CMAKE_SOURCE_DIR}/src/project_info.cpp
     ${CMAKE_SOURCE_DIR}/src/utils.cpp
+    ${CMAKE_SOURCE_DIR}/src/rank.cpp
 )
 
 ADD_EXECUTABLE(tests ${TEST_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${DELIMIT_SOURCES})

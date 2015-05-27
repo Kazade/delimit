@@ -4,6 +4,7 @@
 #include "awesome_bar.h"
 #include "window.h"
 #include "project_info.h"
+#include "rank.h"
 
 namespace delimit {
 
@@ -24,50 +25,6 @@ unsigned int levenshtein_distance(const T &s1, const T & s2) {
     return prevCol[len2];
 }
 
-uint32_t rank(const unicode& str, const unicode& search_text) {
-    if(search_text.empty()) {
-        return 0;
-    }
-
-    int highest_score = 0;
-    auto first_c = search_text[0];
-    for(uint32_t i = 0; i < str.length(); ++i) {
-        auto sc = str[i];
-        if(sc == first_c) {
-            int score = 0;
-            for(auto c: search_text) {
-                int since_last = 10;
-                bool this_c_found = false;
-                for(uint32_t j = i; j < str.length(); ++j) {
-                    if(str[j] == c) {
-                        this_c_found = true;
-                        score += std::max(since_last, 0);
-                        ++j;
-                        break;
-                    }
-                    since_last--;
-                }
-
-                if(!this_c_found) {
-                    score = 0;
-                    break;
-                }
-            }
-
-            if(score > highest_score) {
-                highest_score = score;
-            }
-        }
-    }
-
-    if(!highest_score) {
-        return 0;
-    }
-
-    auto length_penalty = abs(str.length() - search_text.length());
-    //We scale up the score so that the occurance count and length penalty have little effect
-    return (highest_score * 100) - length_penalty;
-}
 
 AwesomeBar::AwesomeBar(Window &parent):
     window_(parent) {
@@ -121,7 +78,7 @@ void AwesomeBar::build_widgets() {
     set_valign(Gtk::ALIGN_START);
     set_halign(Gtk::ALIGN_CENTER);
 
-    entry_.set_width_chars(32);
+    entry_.set_width_chars(50);
     pack_start(entry_, false, false);
 
     entry_.signal_changed().connect([&]() {
