@@ -94,7 +94,7 @@ void AwesomeBar::build_widgets() {
     entry_.signal_activate().connect(sigc::mem_fun(this, &AwesomeBar::execute));
     entry_.signal_focus_out_event().connect([=](GdkEventFocus* evt) -> bool {
         if(about_to_focus) {
-            about_to_focus = true;
+            about_to_focus = false;
             entry_.grab_focus();
             entry_.set_position(-1);
             return true;
