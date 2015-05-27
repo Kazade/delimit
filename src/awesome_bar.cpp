@@ -143,12 +143,6 @@ void AwesomeBar::build_widgets() {
     list_revealer_.add(list_window_);
 
     list_.set_hexpand(false);
-
-    list_.signal_row_activated().connect([this](Gtk::ListBoxRow* row){
-        auto file = displayed_files_.at(row->get_index());
-        window_.open_document(file);
-        hide();
-    });
 }
 
 void AwesomeBar::execute() {
@@ -158,8 +152,9 @@ void AwesomeBar::execute() {
     } else {
         // If we have some results, then activate the first one!
         if(list_.get_children().size()) {
-            auto row = list_.get_row_at_index(0);
-            auto file = displayed_files_.at(row->get_index());
+            auto selected = list_.get_selected_row();
+            auto index = (selected) ? selected->get_index() : 0;
+            auto file = displayed_files_.at(index);
             window_.open_document(file);
         }
     }
