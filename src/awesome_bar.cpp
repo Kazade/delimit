@@ -69,6 +69,12 @@ void AwesomeBar::repopulate_files() {
     }
 }
 
+// Ubuntu Trusty sucks and ships an ancient Gtk, one that apparently bugily
+// causes focus out events when you select a row in a list box. So we have this stupid
+// flag which controls regrabbing the focus and repositioning the caret so the whole
+// thing doesn't go to shit
+static bool about_to_focus = false;
+
 void AwesomeBar::build_widgets() { 
     set_margin_left(20);
     set_margin_right(20);
@@ -87,6 +93,12 @@ void AwesomeBar::build_widgets() {
 
     entry_.signal_activate().connect(sigc::mem_fun(this, &AwesomeBar::execute));
     entry_.signal_focus_out_event().connect([=](GdkEventFocus* evt) -> bool {
+        if(about_to_focus) {
+            about_to_focus = true;
+            entry_.grab_focus();
+            entry_.set_position(-1);
+            return true;
+        }
         entry_.hide();
         entry_.set_text("");
         return false;
@@ -98,7 +110,12 @@ void AwesomeBar::build_widgets() {
              * If we key up or down, change the selection in the list but
              * return false so that we don't lose focus on the box
              */
+
             auto row = list_.get_selected_row();
+            if(!row) {
+                return false;
+            }
+
             auto idx = row->get_index();
 
             idx += (evt->keyval == GDK_KEY_Down) ? 1 : -1;
@@ -106,6 +123,7 @@ void AwesomeBar::build_widgets() {
             idx = std::max(idx, 0);
             idx = std::min(idx, (int32_t) displayed_files_.size());
 
+            about_to_focus = true;
             list_.select_row(*list_.get_row_at_index(idx));
 
             return true;
@@ -205,6 +223,7 @@ void AwesomeBar::populate_results(const std::vector<unicode>& to_add) {
         label->set_ellipsize(Pango::ELLIPSIZE_MIDDLE);
         label->set_line_wrap(true);
         label->override_font(desc);
+        label->set_can_focus(false);
         list_.append(*label);
         displayed_files_.push_back(file);
     }
@@ -212,7 +231,9 @@ void AwesomeBar::populate_results(const std::vector<unicode>& to_add) {
     list_.show_all();
     if(!list_.get_children().empty()) {
         list_revealer_.set_reveal_child(true);
+        about_to_focus = true;
         list_.select_row(*list_.get_row_at_index(0));
+
     }
 }
 
