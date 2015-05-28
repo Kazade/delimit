@@ -93,7 +93,10 @@ void AwesomeBar::build_widgets() {
 
     entry_.signal_activate().connect(sigc::mem_fun(this, &AwesomeBar::execute));
     entry_.signal_focus_out_event().connect([=](GdkEventFocus* evt) -> bool {
-        if(about_to_focus) {
+        // Horrible hack on old Gtk+
+
+        auto minor_version = gtk_get_minor_version();
+        if(about_to_focus && minor_version < 12) {
             about_to_focus = false;
             entry_.grab_focus();
             entry_.set_position(-1);
@@ -139,10 +142,18 @@ void AwesomeBar::build_widgets() {
 
     list_window_.set_size_request(-1, 650);
 
+    list_.set_activate_on_single_click(true);
     list_window_.add(list_);
     list_revealer_.add(list_window_);
 
     list_.set_hexpand(false);
+
+    list_.signal_row_activated().connect([this](Gtk::ListBoxRow* row){
+        auto idx = row->get_index();
+        auto file = displayed_files_.at(idx);
+        window_.open_document(file);
+        hide();
+    });
 }
 
 void AwesomeBar::execute() {
@@ -218,7 +229,6 @@ void AwesomeBar::populate_results(const std::vector<unicode>& to_add) {
         label->set_ellipsize(Pango::ELLIPSIZE_MIDDLE);
         label->set_line_wrap(true);
         label->override_font(desc);
-        label->set_can_focus(false);
         list_.append(*label);
         displayed_files_.push_back(file);
     }
@@ -228,7 +238,6 @@ void AwesomeBar::populate_results(const std::vector<unicode>& to_add) {
         list_revealer_.set_reveal_child(true);
         about_to_focus = true;
         list_.select_row(*list_.get_row_at_index(0));
-
     }
 }
 
