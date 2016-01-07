@@ -14,10 +14,16 @@ std::pair<IndentType, int> detect_indentation(const unicode& text) {
             continue;
         }
 
-        std::string str = line.encode();
-        auto iter = str.find_first_not_of(" \t\r\n"); //Find the first non-whitespace character
+        unicode whitespace;
 
-        unicode whitespace(std::string(str.begin(), str.begin() + iter)); //Convert back to unicode which is easier to work with
+        for(auto ch: line) {
+            if(ch == '\t' || ch == ' ') {
+                whitespace.push_back(ch);
+                continue;
+            } else {
+                break;
+            }
+        }
 
         if(whitespace.empty()) {
             continue; //Move onto the next line

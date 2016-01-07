@@ -6,7 +6,7 @@
 
   <style name="bracket-match" foreground="#00f000" />
   <style name="bracket-mismatch" underline="true"/>
-  <style name="current-line" background="#2F2F2F"/>
+  <style name="current-line" background="#2B5C80"/>
   <style name="cursor" foreground="#f8f8f0"/>
   <style name="def:base-n-integer" foreground="#ae81ff"/>
   <style name="def:boolean" foreground="#ae81ff"/>
@@ -32,9 +32,9 @@
   <style name="def:statement" foreground="#F9263B"/>
   <style name="def:string" foreground="#F6F568"/>
   <style name="def:type" foreground="#66A7EF" />
-  <style name="draw-spaces" foreground="#3b3a32"/>
-  <style name="line-numbers" foreground="#fcfcfc" background="#2F2F2F"/>
+  <style name="draw-spaces" foreground="#999682"/>
+  <style name="line-numbers" foreground="#fcfcfc" background="#193549"/>
   <style name="search-match" background="#E8DA50" foreground="#999674"/>
   <style name="selection" foreground="#fcfcfc" background="#6C838D"/>
-  <style name="text" foreground="#fcfcfc" background="#191919"/>
+  <style name="text" foreground="#fcfcfc" background="#193549"/>
 </style-scheme>
