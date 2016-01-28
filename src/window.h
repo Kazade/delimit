@@ -45,6 +45,15 @@ public:
 
 class ProjectInfo;
 
+auto is_valid_filename = [=](Glib::ustring& filename) -> bool {
+    unicode f = filename.c_str();
+    if(f.find("/") != std::string::npos) {
+        return false;
+    }
+
+    return true;
+};
+
 class FileTree : public Gtk::TreeView {
 public:
     FileTree(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& builder):
@@ -65,8 +74,7 @@ public:
 
         folder_menu_.append(*find_item);
 
-        Gtk::MenuItem* new_file = Gtk::manage(new Gtk::MenuItem("Add file...", true));
-        new_file->signal_activate().connect([=]() {
+        auto file_or_folder_adder = [=](std::function<void (Glib::ustring, Glib::ustring)> add_func) {
             auto selection = get_selection();
             if(selection) {
                 auto iter = selection->get_selected();
@@ -95,14 +103,7 @@ public:
                     Gtk::Entry* entry = Gtk::manage(new Gtk::Entry());
                     box->add(*entry);
 
-                    auto is_valid_filename = [=](Glib::ustring& filename) -> bool {
-                        unicode f = filename.c_str();
-                        if(f.find("/") != std::string::npos) {
-                            return false;
-                        }
-
-                        return true;
-                    };
+                    auto on_cancel = [=]() { popover->hide(); };
 
                     auto on_add = [=]() {
                         auto filename = entry->get_text();
@@ -110,13 +111,9 @@ public:
                             return;
                         }
                         Glib::ustring path = (*iter)[FileTreeColumns().full_path];
-                        auto final_path = os::path::join(unicode(path.c_str()), unicode(filename.c_str()));
-                        auto file = Gio::File::create_for_path(final_path.encode());
-                        file->create_file();
+                        add_func(path, filename);
                         popover->hide();
                     };
-
-                    auto on_cancel = [=]() { popover->hide(); };
 
                     Gtk::HBox* button_area = Gtk::manage(new Gtk::HBox());
 
@@ -133,7 +130,26 @@ public:
                     popover->show_all();
                 }
             }
-        });
+        };
+
+        auto on_file_add = [=](Glib::ustring path, Glib::ustring filename) {
+            auto final_path = os::path::join(unicode(path.c_str()), unicode(filename.c_str()));
+            auto file = Gio::File::create_for_path(final_path.encode());
+            file->create_file();
+        };
+
+        auto on_folder_add = [=](Glib::ustring path, Glib::ustring filename) {
+            auto final_path = os::path::join(unicode(path.c_str()), unicode(filename.c_str()));
+            auto file = Gio::File::create_for_path(final_path.encode());
+            file->make_directory();
+        };
+
+        Gtk::MenuItem* new_dir = Gtk::manage(new Gtk::MenuItem("Add folder...", true));
+        new_dir->signal_activate().connect(std::bind(file_or_folder_adder, on_folder_add));
+        folder_menu_.append(*new_dir);
+
+        Gtk::MenuItem* new_file = Gtk::manage(new Gtk::MenuItem("Add file...", true));
+        new_file->signal_activate().connect(std::bind(file_or_folder_adder, on_file_add));
 
         folder_menu_.append(*new_file);
 
