@@ -746,8 +746,11 @@ void Window::on_folder_changed(const Glib::RefPtr<Gio::File> &file, const Glib::
 
         unicode folder_path = os::path::dir_name(file->get_path());
 
-        Gtk::TreeRow node = *(file_tree_store_->get_iter(tree_row_lookup_.at(folder_path).get_path()));
-        dirwalk(folder_path, &node);
+        auto it = tree_row_lookup_.find(folder_path);
+        if(it != tree_row_lookup_.end()) {
+            Gtk::TreeRow node = *(file_tree_store_->get_iter(it->second.get_path()));
+            dirwalk(folder_path, &node);
+        }
     }
 
     update_vcs_branch_in_tree();
