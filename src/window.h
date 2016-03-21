@@ -5,7 +5,7 @@
 #include <vector>
 #include <set>
 #include <cassert>
-
+#include <memory>
 #include <kazbase/unicode.h>
 #include <kazbase/json/json.h>
 
@@ -135,7 +135,7 @@ public:
                     popover->add(*box);
                     popover->show_all();
 #else
-                    Gtk::Dialog* dialog = new Gtk::Dialog("Add file/folder", true);
+                    auto dialog = std::make_shared<Gtk::Dialog>("Add file/folder", true);
                     Gtk::Box* box = dialog->get_content_area();
                     Gtk::Entry* entry = Gtk::manage(new Gtk::Entry());
                     box->add(*entry);
@@ -158,7 +158,6 @@ public:
                         Glib::ustring path = (*iter)[FileTreeColumns().full_path];
                         add_func(path, filename);
                     }
-                    delete dialog;
 #endif
                 }
             }
