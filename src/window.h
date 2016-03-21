@@ -47,6 +47,10 @@ class ProjectInfo;
 
 auto is_valid_filename = [=](Glib::ustring& filename) -> bool {
     unicode f = filename.c_str();
+    if(f.empty()) {
+        return false;
+    }
+
     if(f.find("/") != std::string::npos) {
         return false;
     }
@@ -88,6 +92,7 @@ public:
                         rect
                     );
 
+#if GTK_CHECK_VERSION(3, 18, 0)
                     Gtk::Popover* popover = Gtk::manage(new Gtk::Popover());
                     popover->set_relative_to(*this);
                     popover->set_pointing_to(rect);
@@ -95,6 +100,7 @@ public:
 
                     Gtk::VBox* box = Gtk::manage(new Gtk::VBox());
                     box->set_margin_top(5);
+
                     box->set_margin_start(5);
                     box->set_margin_end(5);
                     box->set_margin_bottom(5);
@@ -128,6 +134,32 @@ public:
                     box->add(*button_area);
                     popover->add(*box);
                     popover->show_all();
+#else
+                    Gtk::Dialog* dialog = new Gtk::Dialog("Add file/folder", true);
+                    Gtk::Box* box = dialog->get_content_area();
+                    Gtk::Entry* entry = Gtk::manage(new Gtk::Entry());
+                    box->add(*entry);
+                    box->set_margin_bottom(5);
+                    box->set_margin_top(5);
+                    box->set_margin_left(5);
+                    box->set_margin_right(5);
+
+                    dialog->add_button(Gtk::Stock::OK, Gtk::RESPONSE_OK);
+                    dialog->add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
+
+                    dialog->show_all();
+                    int response_id = dialog->run();
+
+                    if(response_id == Gtk::RESPONSE_OK) {
+                        auto filename = entry->get_text();
+                        if(!is_valid_filename(filename)) {
+                            return;
+                        }
+                        Glib::ustring path = (*iter)[FileTreeColumns().full_path];
+                        add_func(path, filename);
+                    }
+                    delete dialog;
+#endif
                 }
             }
         };
@@ -145,11 +177,11 @@ public:
         };
 
         Gtk::MenuItem* new_dir = Gtk::manage(new Gtk::MenuItem("Add folder...", true));
-        new_dir->signal_activate().connect(std::bind(file_or_folder_adder, on_folder_add));
+        new_dir->signal_activate().connect([=]() { file_or_folder_adder(on_folder_add); });
         folder_menu_.append(*new_dir);
 
         Gtk::MenuItem* new_file = Gtk::manage(new Gtk::MenuItem("Add file...", true));
-        new_file->signal_activate().connect(std::bind(file_or_folder_adder, on_file_add));
+        new_file->signal_activate().connect([=]() { file_or_folder_adder(on_file_add); });
 
         folder_menu_.append(*new_file);
 
