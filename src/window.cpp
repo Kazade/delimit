@@ -443,6 +443,12 @@ void Window::build_widgets() {
     }
 
     error_counter_->set_no_show_all();
+    error_counter_->signal_activate().connect([&]() {
+        Gtk::Popover* popover = Gtk::manage(new Gtk::Popover());
+        popover->set_relative_to(*error_counter_);
+        popover->set_position(Gtk::POS_TOP);
+    });
+
     clear_error_panel();
 
     std::string icon_file = fdo::xdg::find_data_file("delimit/delimit.svg").encode();
