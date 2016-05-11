@@ -47,8 +47,8 @@ public:
 
     Window& window() { return window_; }
 
-    void set_error_count(uint32_t error_count) { error_count_ = error_count; }
-    uint32_t error_count() const { return error_count_; }
+    void set_lint_errors(const ErrorList& errors) { lint_errors_ = errors; }
+    ErrorList lint_errors() const { return lint_errors_; }
 
     void run_linters_and_stuff(bool force=false);
 
@@ -79,7 +79,7 @@ private:
     coverage::Coverage::ptr coverage_;
     linter::Linter::ptr linter_;
 
-    uint32_t error_count_ = 0;
+    ErrorList lint_errors_;
 
     void trim_trailing_newlines();
     void trim_trailing_whitespace();

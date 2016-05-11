@@ -44,27 +44,27 @@ void Linter::apply_to_document(delimit::DocumentView *buffer) {
         mark->set_visible(true);
     }
 
-    buffer->set_error_count(result.size());
-    buffer->window().set_error_count(buffer->error_count());
+    buffer->set_lint_errors(result);
+    buffer->window().update_error_panel(result);
 }
 
-LinterResult PythonLinter::find_problematic_lines(const unicode& filename, const unicode& project_root) {
+delimit::ErrorList PythonLinter::find_problematic_lines(const unicode& filename, const unicode& project_root) {
     unicode result = call_command(
         _u("pyflakes {0}").format(filename)
     );
 
     if(result.strip().empty()) {
-        return LinterResult();
+        return delimit::ErrorList();
     }
 
-    LinterResult ret;
+    delimit::ErrorList ret;
 
     for(auto line: result.split("\n")) {
         try {
             auto parts = line.split(":");
             unicode message = parts[parts.size()-1];
             int32_t lineno = parts.at(1).to_int() - 1;
-            ret.push_back(std::make_pair(lineno, message));
+            ret.insert(std::make_pair(lineno, message));
 
             std::cout << lineno << ": " << message << std::endl;
         } catch(std::exception& e) {
@@ -75,16 +75,16 @@ LinterResult PythonLinter::find_problematic_lines(const unicode& filename, const
     return ret;
 }
 
-LinterResult JavascriptLinter::find_problematic_lines(const unicode& filename, const unicode& project_root) {
+delimit::ErrorList JavascriptLinter::find_problematic_lines(const unicode& filename, const unicode& project_root) {
     unicode result = call_command(
         _u("jshint {0}").format(filename)
     );
 
     if(result.strip().empty()) {
-        return LinterResult();
+        return delimit::ErrorList();
     }
 
-    LinterResult ret;
+    delimit::ErrorList ret;
 
     for(auto line: result.split("\n")) {
         try {
@@ -94,7 +94,7 @@ LinterResult JavascriptLinter::find_problematic_lines(const unicode& filename, c
             unicode message = line.slice(line.find(",") + 1, nullptr).strip();
 
             int32_t lineno_int = lineno.split(" ")[1].to_int();
-            ret.push_back(std::make_pair(lineno_int, message));
+            ret.insert(std::make_pair(lineno_int, message));
 
             std::cout << lineno << ": " << message << std::endl;
         } catch(std::exception& e) {

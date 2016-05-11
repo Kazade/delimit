@@ -33,7 +33,7 @@ void OpenFilesList::add_entry(const OpenFilesEntry& entry) {
 
     label->set_ellipsize(Pango::EllipsizeMode::ELLIPSIZE_MIDDLE);
 
-    close_icon->set_from_icon_name("gtk-close", Gtk::ICON_SIZE_MENU);
+    close_icon->set_from_icon_name("window-close", Gtk::ICON_SIZE_MENU);
     button->add(*close_icon);
 
     auto buffer = entry.buffer;

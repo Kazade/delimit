@@ -229,7 +229,6 @@ private:
     sig::signal<void (std::string)> signal_search_directory_;
 };
 
-
 class Window {
 public:
     typedef std::shared_ptr<Window> ptr;
@@ -254,7 +253,8 @@ public:
 
     unicode project_path() const { return path_; }
 
-    void set_error_count(int32_t count);
+    void clear_error_panel() { update_error_panel(ErrorList()); }
+    void update_error_panel(const ErrorList& errors);
 
     int new_file_count() const;
 
@@ -343,7 +343,7 @@ private:
     std::shared_ptr<_Gtk::OpenFilesList> open_files_list_;
     std::vector<_Gtk::OpenFilesEntry> open_files_store_;
 
-    Gtk::HeaderBar header_bar_;
+    Gtk::HeaderBar* header_bar_ = nullptr;
 
     //Toolbar
     Gtk::ToolButton* buffer_new_;
@@ -355,7 +355,7 @@ private:
     Gtk::Paned* main_paned_;
     GtkOverlay* overlay_;
 
-    Gtk::Label* error_counter_;
+    Gtk::ToggleButton* error_counter_;
 
     Glib::RefPtr<Gtk::ActionGroup> actions_;
 

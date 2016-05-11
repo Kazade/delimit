@@ -106,7 +106,7 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
         file_tree_scrolled_window_->get_parent()->remove(*file_tree_scrolled_window_);
     }
 
-    header_bar_.set_title(_u("Delimit{0}").format((project_path().empty() ? "" : _u(" - ") + this->project_path())).encode());
+    header_bar_->set_title(_u("Delimit{0}").format((project_path().empty() ? "" : _u(" - ") + this->project_path())).encode());
 }
 
 void Window::show_awesome_bar(bool value) {
@@ -395,6 +395,7 @@ void Window::build_widgets() {
     builder->get_widget("buffer_redo", buffer_redo_);
     builder->get_widget("error_counter", error_counter_);
     builder->get_widget("window_pane", main_paned_);
+    builder->get_widget("header_bar", header_bar_);
     builder->get_widget("no_files_alignment", no_files_alignment_);
 
     //THIS SUCKS SO BAD, 3.12 doesn't have a binding for GtkOverlay
@@ -417,34 +418,14 @@ void Window::build_widgets() {
     folder_open_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_open_folder_clicked));
     buffer_undo_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_undo_clicked));
     buffer_redo_->signal_clicked().connect(sigc::mem_fun(this, &Window::toolbutton_redo_clicked));
-
-    //Convert to headerbar - until glade supports it :/
-
-    header_bar_.set_show_close_button();
-    header_bar_.set_title("Delimit");
-
-    buffer_new_->reparent(header_bar_);
-    buffer_open_->reparent(header_bar_);
-    folder_open_->reparent(header_bar_);
-    buffer_save_->reparent(header_bar_);
-    buffer_undo_->reparent(header_bar_);
-    buffer_redo_->reparent(header_bar_);
-
-    auto original = error_counter_->get_parent(); //Store the container
-
-    original->remove(*error_counter_);
-    header_bar_.pack_end(*error_counter_);
-
-    original->get_parent()->remove(*original); //Remove the original container
-
-    gtk_window_->set_titlebar(header_bar_);
-
     buffer_new_->set_icon_name("document-new");
     buffer_save_->set_icon_name("document-save");
     buffer_open_->set_icon_name("document-open");
     folder_open_->set_icon_name("folder-open");
     buffer_undo_->set_icon_name("edit-undo");
     buffer_redo_->set_icon_name("edit-redo");
+
+    header_bar_->set_show_close_button();
 
     assert(gtk_window_);
 
@@ -462,7 +443,7 @@ void Window::build_widgets() {
     }
 
     error_counter_->set_no_show_all();
-    set_error_count(0);
+    clear_error_panel();
 
     std::string icon_file = fdo::xdg::find_data_file("delimit/delimit.svg").encode();
     gtk_window_->set_icon_from_file(icon_file);
@@ -728,12 +709,13 @@ bool Window::on_tree_test_expand_row(const Gtk::TreeModel::iterator& iter, const
     return false;
 }
 
-void Window::set_error_count(int32_t count) {
+void Window::update_error_panel(const ErrorList &errors) {
+    auto count = errors.size();
     if(count == 0) {
-        error_counter_->set_text("0");
+        error_counter_->set_label("0");
         error_counter_->hide();
     } else {
-        error_counter_->set_text(_u("{0}").format(count).encode());
+        error_counter_->set_label(_u("{0}").format(count).encode());
         error_counter_->show();
     }
 }
@@ -1024,7 +1006,7 @@ void Window::on_document_modified(DocumentView& document) {
         to_display = os::path::rel_path(to_display, path_);
     }
 
-    header_bar_.set_subtitle(
+    header_bar_->set_subtitle(
         _u("{0}{1}").format(
             to_display, document.buffer()->get_modified() ? "*": ""
         ).encode().c_str()
@@ -1103,7 +1085,7 @@ void Window::close_document(DocumentView& document) {
     if(documents_.empty()) {
         gtk_container_->remove();
         gtk_container_->add(*no_files_alignment_);
-        header_bar_.set_subtitle("");
+        header_bar_->set_subtitle("");
 
         set_task_tabs_visible(false);
         set_tasks_visible(false);

@@ -1,17 +1,18 @@
 #ifndef LINTER_H
 #define LINTER_H
 
+#include <map>
 #include <memory>
 #include <vector>
 #include <kazbase/unicode.h>
 
 namespace delimit {
     class DocumentView;
+
+    typedef std::map<int32_t, unicode> ErrorList;
 }
 
 namespace linter {
-
-typedef std::vector<std::pair<int32_t, unicode>> LinterResult;
 
 class Linter {
 public:
@@ -21,7 +22,7 @@ public:
     void clear_document(delimit::DocumentView* buffer);
 
 private:
-    virtual LinterResult find_problematic_lines(const unicode& filename, const unicode& project_root="") = 0;
+    virtual delimit::ErrorList find_problematic_lines(const unicode& filename, const unicode& project_root="") = 0;
 };
 
 class PythonLinter : public Linter {
@@ -29,7 +30,7 @@ public:
     typedef std::shared_ptr<PythonLinter> ptr;
 
 private:
-    LinterResult find_problematic_lines(const unicode& filename, const unicode& project_root="");
+    delimit::ErrorList find_problematic_lines(const unicode& filename, const unicode& project_root="");
 };
 
 class JavascriptLinter : public Linter {
@@ -37,7 +38,7 @@ public:
     typedef std::shared_ptr<JavascriptLinter> ptr;
 
 private:
-    LinterResult find_problematic_lines(const unicode& filename, const unicode& project_root="");
+    delimit::ErrorList find_problematic_lines(const unicode& filename, const unicode& project_root="");
 };
 
 }
