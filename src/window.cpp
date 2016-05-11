@@ -432,7 +432,7 @@ void Window::build_widgets() {
     init_actions();
 
     //Style the error counter
-    Glib::ustring style = "GtkLabel#error_counter { color: white; background-color: #ff0000; border-radius: 3px; font-weight: bold; }";
+    Glib::ustring style = "#error_counter { color: white; background-color: #ff0000; border-radius: 3px; font-weight: bold; }";
     auto css = Gtk::CssProvider::create();
     if(css->load_from_data(style)) {
         auto screen = Gdk::Screen::get_default();
@@ -443,10 +443,18 @@ void Window::build_widgets() {
     }
 
     error_counter_->set_no_show_all();
-    error_counter_->signal_activate().connect([&]() {
+    error_counter_->signal_toggled().connect([&]() {
         Gtk::Popover* popover = Gtk::manage(new Gtk::Popover());
         popover->set_relative_to(*error_counter_);
-        popover->set_position(Gtk::POS_TOP);
+        popover->set_position(Gtk::POS_BOTTOM);
+
+        Gtk::ListBox* box = Gtk::manage(new Gtk::ListBox());
+        for(auto& error: displayed_errors_) {
+            box->add(*Gtk::manage(new Gtk::Label(error.second.encode())));
+        }
+
+        popover->add(*box);
+        popover->show_all();
     });
 
     clear_error_panel();
@@ -724,6 +732,8 @@ void Window::update_error_panel(const ErrorList &errors) {
         error_counter_->set_label(_u("{0}").format(count).encode());
         error_counter_->show();
     }
+
+    displayed_errors_ = errors;
 }
 
 void Window::on_folder_changed(const Glib::RefPtr<Gio::File> &file, const Glib::RefPtr<Gio::File> &other, Gio::FileMonitorEvent event_type) {

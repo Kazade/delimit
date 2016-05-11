@@ -394,6 +394,8 @@ private:
     void update_vcs_branch_in_tree();
 
     std::shared_ptr<ProjectInfo> info_;
+
+    std::map<int32_t, unicode> displayed_errors_;
 };
 
 }
