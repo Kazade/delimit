@@ -918,7 +918,7 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
         bool is_folder = os::path::is_dir(os::path::real_path(full_name));
 
         auto image = Gtk::IconTheme::get_default()->load_icon(
-            (is_folder) ? "folder" : "document",
+            (is_folder) ? "folder" : "document-new",
             Gtk::ICON_SIZE_MENU
         );
 
