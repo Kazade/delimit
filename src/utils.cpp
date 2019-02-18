@@ -1,9 +1,9 @@
 #include <vector>
 #include <fstream>
 #include <string>
-#include <kazbase/logging.h>
 
 #include "utils.h"
+#include "utils/kazlog.h"
 
 unicode call_command(unicode command, unicode cwd) {
     char tmpname [L_tmpnam];
@@ -38,7 +38,7 @@ Glib::RefPtr<Gsv::Language> guess_language_from_file(const Glib::RefPtr<Gio::Fil
     Glib::RefPtr<Gsv::Language> lang = lm->guess_language(file->get_path(), Glib::ustring());
 
     if(lang) {
-        L_DEBUG(_u("Detected {0}").format(lang->get_name()));
+        L_DEBUG(_F("Detected {0}").format(lang->get_name()));
     } else {
         //Extra checks
         L_DEBUG("Falling back to manual detection...");
@@ -52,7 +52,7 @@ Glib::RefPtr<Gsv::Language> guess_language_from_file(const Glib::RefPtr<Gio::Fil
             if(line.contains("python")) {
                 lang = lm->get_language("python");
             } else {
-                L_INFO(_u("Unrecognized #! {}").format(line));
+                L_INFO(_F("Unrecognized #! {}").format(line));
             }
         }
     }

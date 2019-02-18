@@ -1,15 +1,18 @@
 #include <cassert>
-#include <kazbase/exceptions.h>
-#include <kazbase/regex.h>
-#include <kazbase/list_utils.h>
+
+#include <set>
+#include <map>
+#include <regex>
 
 #include "python.h"
+#include "../../utils/kazlog.h"
+#include "../../utils/kfs.h"
 
 namespace delimit {
 namespace parser {
 
 std::string group(const std::vector<std::string>& choices) {
-    return _u("({0})").format(_u("|").join(choices)).encode();
+    return _F("({0})").format(_u("|").join(choices));
 }
 
 std::string any(const std::vector<std::string>& choices) {
@@ -81,14 +84,14 @@ const std::string PseudoToken = Whitespace + group({PseudoExtras, Number, Funny,
 }
 int i = print();*/
 
-const regex::Regex tokenprog = regex::Regex(TokenRE);
-const regex::Regex pseudoprog = regex::Regex(PseudoToken);
-const regex::Regex single3prog = regex::Regex(Single3);
-const regex::Regex double3prog = regex::Regex(Double3);
+const std::regex tokenprog = std::regex(TokenRE);
+const std::regex pseudoprog = std::regex(PseudoToken);
+const std::regex single3prog = std::regex(Single3);
+const std::regex double3prog = std::regex(Double3);
 
-const std::map<std::string, regex::Regex> endprogs = {
-    {"'", regex::Regex(Single)},
-    {"\"", regex::Regex(Double)},
+const std::map<std::string, std::regex> endprogs = {
+    {"'", std::regex(Single)},
+    {"\"", std::regex(Double)},
     {"'''", single3prog},
     {"\"\"\"", double3prog},
     {"r'''", single3prog},
@@ -146,10 +149,10 @@ const std::set<std::string> single_quoted = {
 
 const int tabsize = 8;
 
-class TokenizationError : public ValueError {
+class TokenizationError : public std::logic_error {
 public:
     TokenizationError(const unicode& what):
-        ValueError(what.encode()) {}
+        std::logic_error(what.encode()) {}
 };
 
 void handle_newline(const unicode& line, int lnum, uint32_t pos, std::vector<Token>& result) {
@@ -205,7 +208,7 @@ std::vector<Token> Python::tokenize(const unicode& data) {
 
     int tabsize = 0;
 
-    regex::Regex endprog;
+    std::regex endprog;
 
     std::vector<Token> result;
     std::pair<int, int> strstart;
@@ -226,10 +229,11 @@ std::vector<Token> Python::tokenize(const unicode& data) {
                 throw TokenizationError("EOF in multiline string");
             }
 
-            auto endmatch = endprog.match(line);
-            if(endmatch) {
+            std::smatch endmatch;
+            auto partial = line.encode();
+            if(std::regex_match(partial, endmatch, endprog)) {
                 //Continue
-                pos = end = endmatch.end(0);
+                pos = end = endmatch.position() + endmatch.length();
               //  std::cout << "Found STRING token: " << contstr + line.slice(nullptr, end) << std::endl;
                 result.push_back(Token({TokenType::STRING, contstr + line.slice(nullptr, end), strstart, std::make_pair(lnum, end)}));
                 contstr = "";
@@ -315,9 +319,14 @@ std::vector<Token> Python::tokenize(const unicode& data) {
         std::pair<int, int> spos;
         std::pair<int, int> epos;
         while(pos < max) {
-            auto pseudomatch = pseudoprog.match(line, pos);
-            if(pseudomatch) {
-                std::pair<int, int> start_end = pseudomatch.span(1);
+            auto partial = line.slice(pos, nullptr).encode();
+            std::smatch pseudomatch;
+            if(std::regex_match(partial, pseudomatch, pseudoprog)) {
+                std::pair<int, int> start_end = std::make_pair(
+                    pos + pseudomatch.position(),
+                    pos + pseudomatch.position() + pseudomatch.length()
+                );
+
                 start = start_end.first;
                 end = start_end.second;
                 spos = std::make_pair(lnum, start);
@@ -346,9 +355,11 @@ std::vector<Token> Python::tokenize(const unicode& data) {
                 } else if(triple_quoted.count(token.encode())) {
                     auto tok_str = token.encode();
                     endprog = endprogs.at(tok_str);
-                    auto endmatch = endprog.match(line, pos);
-                    if(endmatch) {
-                        pos = endmatch.end(0);
+
+                    auto partial = line.slice(pos, nullptr).encode();
+                    std::smatch endmatch;
+                    if(std::regex_match(partial, endmatch, endprog)) {
+                        pos = pos + endmatch.position() + endmatch.length();
                         token = line.slice(start, pos);
                         result.push_back(Token({TokenType::STRING, token, spos, std::make_pair(lnum, pos)}));
                     } else {
@@ -506,11 +517,11 @@ unicode guess_scope_from_assigned_token(const Token& tok) {
 unicode Python::base_scope_from_filename(const unicode &filename) {
     //FIXME: UGLY TEMPORARY HACK! Given a filename, go up the tree until we find the first directory without an __init__.py
 
-    auto parent = os::path::abs_path(os::path::dir_name(filename));
+    auto parent = kfs::path::abs_path(kfs::path::dir_name(filename.encode()));
 
     while(true) {
         bool has_init = false;
-        for(auto file: os::path::list_dir(parent)) {
+        for(auto file: kfs::path::list_dir(parent)) {
             if(file == "__init__.py") {
                 has_init = true;
                 break;
@@ -520,14 +531,14 @@ unicode Python::base_scope_from_filename(const unicode &filename) {
         if(!has_init) {
             //No init file, strip this path from the filename
             auto rel = filename.slice(parent.length(), nullptr).lstrip("/");
-            auto without_ext = os::path::split_ext(rel).first;
+            unicode without_ext = kfs::path::split_ext(rel.encode()).first;
             return without_ext.replace("/", ".");
         }
 
-        parent = os::path::abs_path(os::path::dir_name(parent));
+        parent = kfs::path::abs_path(kfs::path::dir_name(parent));
     }
 
-    throw RuntimeError("Wat?");
+    throw std::runtime_error("Wat?");
 }
 
 std::pair<std::vector<ScopePtr>, bool> Python::parse(const unicode& data, const unicode& base_scope)  {

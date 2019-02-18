@@ -2,11 +2,12 @@
 #define PROJECT_INFO_H
 
 #include <unordered_map>
-#include <kazbase/unicode.h>
 #include <unordered_set>
 #include <gtksourceviewmm.h>
 #include <mutex>
 #include <future>
+
+#include "utils/unicode.h"
 
 namespace delimit {
 

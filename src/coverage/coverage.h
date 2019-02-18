@@ -4,9 +4,8 @@
 #include <vector>
 #include <cstdint>
 #include <memory>
-#include <kazbase/unicode.h>
+#include "../utils/unicode.h"
 #include <gtksourceviewmm.h>
-#include <kazbase/signals.h>
 #include <unordered_map>
 
 namespace delimit {
@@ -22,11 +21,11 @@ public:
     void apply_to_document(delimit::DocumentView* buffer);
     void clear_document(delimit::DocumentView* buffer);
 
-    sig::signal<void ()>& signal_coverage_updated() { return signal_coverage_updated_; }
+    sigc::signal<void ()>& signal_coverage_updated() { return signal_coverage_updated_; }
 
     virtual ~Coverage() {}
 protected:
-    sig::signal<void ()> signal_coverage_updated_;
+    sigc::signal<void ()> signal_coverage_updated_;
 
 private:
     virtual std::vector<int32_t> find_uncovered_lines(const unicode& filename, const unicode& project_root="") = 0;

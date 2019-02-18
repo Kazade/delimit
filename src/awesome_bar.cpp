@@ -1,10 +1,11 @@
-#include <kazbase/unicode.h>
 #include <iostream>
 #include "utils/sigc_lambda.h"
 #include "awesome_bar.h"
 #include "window.h"
 #include "project_info.h"
 #include "rank.h"
+
+#include "utils/unicode.h"
 
 namespace delimit {
 
@@ -35,12 +36,12 @@ AwesomeBar::AwesomeBar(Window &parent):
 void recursive_populate(std::vector<unicode>* output, const unicode& directory)  {
     const int CYCLES_UNTIL_REFRESH = 15;
     int cycles_until_gtk_update = CYCLES_UNTIL_REFRESH;
-    for(auto thing: os::path::list_dir(directory)) {
+    for(unicode thing: kfs::path::list_dir(directory.encode())) {
         //FIXME: Should use gitignore
         if(thing.starts_with(".") || thing.ends_with(".pyc")) continue;
 
-        auto full_path = os::path::join(directory, thing);
-        if(os::path::is_dir(full_path)) {
+        auto full_path = kfs::path::join(directory.encode(), thing.encode());
+        if(kfs::path::is_dir(full_path)) {
             Glib::signal_idle().connect_once(sigc::bind(&recursive_populate, output, full_path));
         } else {
             output->push_back(full_path);

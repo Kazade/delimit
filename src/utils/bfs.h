@@ -2,12 +2,11 @@
 #define BFS_H
 
 #include <gtkmm.h>
-
 #include <queue>
 #include <algorithm>
-#include <kazbase/unicode.h>
-#include <kazbase/os.h>
-#include <kazbase/signals.h>
+
+#include "unicode.h"
+#include "kfs.h"
 
 class BFS {
 public:
@@ -24,7 +23,7 @@ public:
         return result;
     }
 
-    sig::signal<void (const std::vector<unicode>&, int)>& signal_level_complete() { return signal_level_complete_; }
+    sigc::signal<void (const std::vector<unicode>&, int)>& signal_level_complete() { return signal_level_complete_; }
 
 private:
     void process_level(std::vector<unicode>& result, int level_num) {
@@ -45,17 +44,17 @@ private:
 
             unicode abs_path;
             try {
-                abs_path = os::path::real_path(file_or_folder);
+                abs_path = kfs::path::real_path(file_or_folder.encode());
             } catch(...) {
                 std::cout << "Unable to deal with file path " << std::endl;
                 continue;
             }
 
-            if(os::path::is_dir(abs_path)) {
-                auto files = os::path::list_dir(abs_path);
-                for(auto file: files) {
+            if(kfs::path::is_dir(abs_path.encode())) {
+                auto files = kfs::path::list_dir(abs_path.encode());
+                for(unicode file: files) {
                     if(!file.starts_with(".")) {
-                        temp_.push(os::path::join(file_or_folder, file));
+                        temp_.push(kfs::path::join(file_or_folder.encode(), file.encode()));
                     }
                 }
             }
@@ -79,7 +78,7 @@ private:
     unicode root_;
     std::queue<unicode> temp_;
 
-    sig::signal<void (const std::vector<unicode>&, int)> signal_level_complete_;
+    sigc::signal<void (const std::vector<unicode>&, int)> signal_level_complete_;
 };
 
 #endif // BFS_H

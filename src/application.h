@@ -4,6 +4,8 @@
 #include <gtkmm.h>
 #include <memory>
 
+#include "utils/unicode.h"
+
 namespace delimit {
 
 void clear_tempfiles_directory();

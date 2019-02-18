@@ -1,8 +1,7 @@
 #ifndef DOCUMENT_VIEW_H
 #define DOCUMENT_VIEW_H
 
-#include <kazbase/unicode.h>
-#include <kazbase/json/json.h>
+#include "utils/unicode.h"
 
 #include <memory>
 #include <gtkmm.h>
@@ -10,6 +9,8 @@
 
 #include "coverage/coverage.h"
 #include "linter/linter.h"
+
+#include "utils/jsonic.h"
 
 namespace delimit {
 
@@ -105,7 +106,7 @@ private:
     void detect_and_apply_indentation();
     void apply_settings(const unicode& mimetype);
     std::pair<unicode, int> get_font_name_and_size_from_dconf();
-    json::JSON current_settings_;
+    jsonic::Node current_settings_;
 
     void populate_popup(Gtk::Menu* menu);
 };

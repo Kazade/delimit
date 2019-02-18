@@ -4,7 +4,7 @@
 #include <map>
 #include <memory>
 #include <vector>
-#include <kazbase/unicode.h>
+#include "../utils/unicode.h"
 
 namespace delimit {
     class DocumentView;

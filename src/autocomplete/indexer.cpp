@@ -1,7 +1,8 @@
-#include <kazbase/os/path.h>
-
 #include "indexer.h"
 #include "datastore.h"
+
+#include "../utils/kfs.h"
+#include "../utils/files.h"
 
 namespace delimit {
 
@@ -26,7 +27,7 @@ unicode Indexer::guess_type(const unicode& filename) {
      *  loading file data twice.
      */
 
-    auto ext = os::path::split_ext(filename).second;
+    auto ext = kfs::path::split_ext(filename.encode()).second;
     auto it = MIMETYPES.find(ext);
     if(it == MIMETYPES.end()) {
         return "text/plain";
@@ -71,7 +72,7 @@ std::vector<ScopePtr> Indexer::index_file(const unicode &path) {
      *  resulting scopes in the database
      */
 
-    return index_file(path, os::path::read_file_contents(path));
+    return index_file(path, read_file_contents(path));
 }
 
 void Indexer::index_directory(const unicode &dir_path) {
@@ -79,10 +80,10 @@ void Indexer::index_directory(const unicode &dir_path) {
      *  Recursively indexes the files in a directory
      */
 
-    for(auto file: os::path::list_dir(dir_path)) {
-        auto full_path = os::path::join(dir_path, file);
+    for(auto file: kfs::path::list_dir(dir_path.encode())) {
+        auto full_path = kfs::path::join(dir_path.encode(), file);
 
-        if(os::path::is_dir(full_path)) {
+        if(kfs::path::is_dir(full_path)) {
             index_directory(full_path);
         } else {
             index_file(full_path);

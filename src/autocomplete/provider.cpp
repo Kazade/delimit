@@ -7,10 +7,8 @@
 #include "parsers/plain.h"
 #include "parsers/python.h"
 
-#include <kazbase/logging.h>
-#include <kazbase/hash/md5.h>
-#include <kazbase/os.h>
-#include <kazbase/fdo/base_directory.h>
+#include "../utils/kfs.h"
+#include "../utils/base_directory.h"
 
 namespace delimit {
 
@@ -24,7 +22,7 @@ Provider::Provider(Window* window):
     Gsv::CompletionProvider() {
 
     unicode folder = fdo::xdg::make_dir_in_data_home("delimit");
-    unicode database_file = os::path::join(folder, "completions.db");
+    unicode database_file = kfs::path::join(folder.encode(), "completions.db");
 
     indexer_ = std::make_shared<Indexer>(database_file);
 

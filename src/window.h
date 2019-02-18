@@ -6,8 +6,8 @@
 #include <set>
 #include <cassert>
 #include <memory>
-#include <kazbase/unicode.h>
-#include <kazbase/json/json.h>
+
+#include "utils/unicode.h"
 
 #include <gtkmm.h>
 
@@ -164,14 +164,14 @@ public:
         };
 
         auto on_file_add = [=](Glib::ustring path, Glib::ustring filename) {
-            auto final_path = os::path::join(unicode(path.c_str()), unicode(filename.c_str()));
-            auto file = Gio::File::create_for_path(final_path.encode());
+            auto final_path = kfs::path::join(path.c_str(), filename.c_str());
+            auto file = Gio::File::create_for_path(final_path);
             file->create_file();
         };
 
         auto on_folder_add = [=](Glib::ustring path, Glib::ustring filename) {
-            auto final_path = os::path::join(unicode(path.c_str()), unicode(filename.c_str()));
-            auto file = Gio::File::create_for_path(final_path.encode());
+            auto final_path = kfs::path::join(path.c_str(), filename.c_str());
+            auto file = Gio::File::create_for_path(final_path);
             file->make_directory();
         };
 
@@ -221,12 +221,12 @@ public:
         return return_value;
     }
 
-    sig::signal<void (std::string)>& signal_search_directory() { return signal_search_directory_; }
+    sigc::signal<void (std::string)>& signal_search_directory() { return signal_search_directory_; }
 private:
     Gtk::Menu file_menu_;
     Gtk::Menu folder_menu_;
 
-    sig::signal<void (std::string)> signal_search_directory_;
+    sigc::signal<void (std::string)> signal_search_directory_;
 };
 
 class Window {
@@ -258,7 +258,7 @@ public:
 
     int new_file_count() const;
 
-    const json::JSON settings() { return settings_; }
+    const jsonic::Node& settings() { return settings_; }
 
     DocumentView::ptr current_buffer() { return current_document_; }
 
@@ -387,7 +387,7 @@ private:
 
     void add_global_action(const unicode& name, const Gtk::AccelKey& key, std::function<void ()> func);
 
-    json::JSON settings_;
+    jsonic::Node settings_;
 
     sigc::signal<void, DocumentView&> signal_document_switched_;
 

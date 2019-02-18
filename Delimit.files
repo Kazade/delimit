@@ -1,4 +1,12 @@
 src/main.cpp
+src/utils/base_directory.cpp
+src/utils/base_directory.h
+src/utils/files.h
+src/utils/jsonic.h
+src/utils/regex.cpp
+src/utils/regex.h
+src/utils/unicode.cpp
+src/utils/unicode.h
 src/window.h
 CMakeLists.txt
 src/CMakeLists.txt

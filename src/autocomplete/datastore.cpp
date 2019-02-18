@@ -1,10 +1,9 @@
-#include <kazbase/unicode.h>
-#include <kazbase/os/path.h>
-#include <kazbase/exceptions.h>
-#include <kazbase/hash/md5.h>
 #include <cassert>
 #include <gtkmm.h>
 #include "datastore.h"
+
+#include "../utils/kfs.h"
+#include "../utils/kazlog.h"
 
 namespace delimit {
 
@@ -18,7 +17,8 @@ std::vector<unicode> INITIAL_DATA_SQL = {
 };
 
 unicode version() {
-    return hashlib::MD5(_u("\n").join(INITIAL_DATA_SQL).encode()).hex_digest();
+    // FIXME:
+    return "1"; //return hashlib::MD5(_u("\n").join(INITIAL_DATA_SQL).encode()).hex_digest();
 }
 
 Datastore::Datastore(const unicode &path_to_datastore):
@@ -28,23 +28,23 @@ Datastore::Datastore(const unicode &path_to_datastore):
 }
 
 void Datastore::open_and_recreate_if_necessary(const unicode &path_to_datastore) {
-    bool create_tables = !os::path::exists(path_to_datastore);
+    bool create_tables = !kfs::path::exists(path_to_datastore.encode());
 
     int rc = sqlite3_open(path_to_datastore.encode().c_str(), &db_);
     if(rc) {
         sqlite3_close(db_);
-        throw IOError("Unable to create database");
+        throw std::runtime_error("Unable to create database");
     }
 
     if(query_database_version() != version()) {
         L_DEBUG("Deleting existing database as version differs");
         sqlite3_close(db_);
-        os::remove(path_to_datastore);
+        kfs::remove(path_to_datastore.encode());
 
         rc = sqlite3_open(path_to_datastore.encode().c_str(), &db_);
         if(rc) {
             sqlite3_close(db_);
-            throw IOError("Unable to create database");
+            throw std::runtime_error("Unable to create database");
         }
         create_tables = true;
     }
@@ -77,21 +77,21 @@ void Datastore::initialize_tables() {
     std::string final_statement = _u("; ").join(INITIAL_DATA_SQL).encode();
     int ret = sqlite3_exec(db_, final_statement.c_str(), 0, 0, 0);
     if(ret) {
-        throw IOError("Unable to create database tables");
+        throw std::runtime_error("Unable to create database tables");
     }
 
     unicode version_sql = "INSERT INTO version (version) VALUES (?);";
     sqlite3_stmt* stmt;
     ret = sqlite3_prepare(db_, version_sql.encode().c_str(), -1, &stmt, 0);
     if(ret) {
-        throw RuntimeError("Unable to prep statement to insert version");
+        throw std::runtime_error("Unable to prep statement to insert version");
     }
 
     std::string vers = version().encode();
     sqlite3_bind_text(stmt, 1, vers.c_str(), vers.length(), SQLITE_TRANSIENT);
 
     if(sqlite3_step(stmt) != SQLITE_DONE) {
-        throw RuntimeError("Unable to insert version");
+        throw std::runtime_error("Unable to insert version");
     }
 
     sqlite3_finalize(stmt);
@@ -113,7 +113,7 @@ void Datastore::delete_scopes_by_filename(const unicode& path) {
 
     sqlite3_bind_text(stmt, 1, path.encode().c_str(), path.encode().length(), SQLITE_TRANSIENT);
     if(sqlite3_step(stmt) != SQLITE_DONE) {
-        throw RuntimeError(_u("Unable to delete the selected scopes: {0}").format(sqlite3_errmsg(db_)).encode());
+        throw std::runtime_error(_u("Unable to delete the selected scopes: {0}").format(sqlite3_errmsg(db_)).encode());
     }
     sqlite3_finalize(stmt);
 }
@@ -136,7 +136,7 @@ void Datastore::save_scopes(const unicode &parser_name, const std::vector<ScopeP
         sqlite3_bind_text(stmt, 7, parser_name.encode().c_str(), parser_name.encode().length(), SQLITE_TRANSIENT);
 
         if(sqlite3_step(stmt) != SQLITE_DONE) {
-            throw RuntimeError("Unable to insert a scope");
+            throw std::runtime_error("Unable to insert a scope");
         }
 
         int pk = sqlite3_last_insert_rowid(db_);
@@ -147,7 +147,7 @@ void Datastore::save_scopes(const unicode &parser_name, const std::vector<ScopeP
             sqlite3_bind_int(stmt, 1, pk);
             sqlite3_bind_text(stmt, 2, path.encode().c_str(), path.encode().length(), SQLITE_TRANSIENT);
             if(sqlite3_step(stmt) != SQLITE_DONE) {
-                throw RuntimeError("Unable to insert an inherited scope");
+                throw std::runtime_error("Unable to insert an inherited scope");
             }
         }
 

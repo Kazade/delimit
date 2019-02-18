@@ -1,29 +1,29 @@
 #include <glibmm/i18n.h>
-#include <kazbase/logging.h>
-#include <kazbase/fdo/base_directory.h>
 
+#include "utils/kfs.h"
 #include "application.h"
 #include "window.h"
 #include "autocomplete/provider.h"
-
+#include "utils/base_directory.h"
+#include "utils/kazlog.h"
 
 namespace delimit {
 
 void clear_tempfiles_directory() {
     auto tempfiles_dir = tempfiles_directory();
-    for(auto file: os::path::list_dir(tempfiles_dir)) {
-        auto path = os::path::join(tempfiles_dir, file);
-        if(!os::path::is_dir(path)) {
-            os::remove(path);
+    for(auto file: kfs::path::list_dir(tempfiles_dir.encode())) {
+        auto path = kfs::path::join(tempfiles_dir.encode(), file);
+        if(!kfs::path::is_dir(path)) {
+            kfs::remove(path);
         }
     }
 }
 
 unicode tempfiles_directory() {
     auto data_home = fdo::xdg::get_data_home();
-    auto temp_files = os::path::join({data_home, "delimit", "tempfiles"});
+    auto temp_files = kfs::path::join(data_home.encode(), "delimit/tempfiles");
 
-    os::make_dirs(temp_files);
+    kfs::make_dirs(temp_files);
 
     return temp_files;
 }
@@ -37,7 +37,7 @@ Application::Application(int& argc, char**& argv, const Glib::ustring& applicati
         "gtk-application-prefer-dark-theme", TRUE,
         NULL);
 
-    logging::get_logger("/")->add_handler(logging::Handler::ptr(new logging::StdIOHandler));
+    kazlog::get_logger("/")->add_handler(kazlog::Handler::ptr(new kazlog::StdIOHandler));
 
     signal_startup().connect(sigc::mem_fun(this, &Application::on_signal_startup));
     signal_open().connect(sigc::mem_fun(this, &Application::on_signal_open));
@@ -64,7 +64,7 @@ void Application::add_window(Window::ptr window) {
 }
 
 void Application::on_signal_open(const Gio::Application::type_vec_files& files, const Glib::ustring& line) {
-    L_INFO(_u("on_signal_open {0}").format(line));
+    L_INFO(_F("on_signal_open {0}").format(line));
 
     if(files.empty()) {
         return;
@@ -150,11 +150,11 @@ void Application::on_startup() {
 }
 
 void Application::on_signal_startup() {
-    L_INFO(_u("on_signal_startup"));
+    L_INFO("on_signal_startup");
 
     //Add our schemes to the list of available ones
     auto manager = Gsv::StyleSchemeManager::get_default();
-    std::string ui_file = fdo::xdg::find_data_file("delimit/schemes").encode();
+    std::string ui_file = fdo::xdg::find_data_file("delimit/schemes").first.encode();
     manager->prepend_search_path(ui_file);
 
     if(args_.size() == 1) {

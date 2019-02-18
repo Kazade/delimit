@@ -10,7 +10,13 @@ set(
     ${CMAKE_SOURCE_DIR}/src/rank.cpp
     ${CMAKE_SOURCE_DIR}/src/project_info.cpp
     ${CMAKE_SOURCE_DIR}/src/utils.cpp
+    ${CMAKE_SOURCE_DIR}/src/utils/base_directory.cpp
     ${CMAKE_SOURCE_DIR}/src/utils/indentation.cpp
+    ${CMAKE_SOURCE_DIR}/src/utils/unicode.cpp
+    ${CMAKE_SOURCE_DIR}/src/utils/jsonic.cpp
+    ${CMAKE_SOURCE_DIR}/src/utils/kazlog.cpp
+    ${CMAKE_SOURCE_DIR}/src/utils/kfs.cpp
+    ${CMAKE_SOURCE_DIR}/src/utils/regex.cpp
     ${CMAKE_SOURCE_DIR}/src/gtk/open_files_list.cpp
     ${CMAKE_SOURCE_DIR}/src/coverage/coverage.cpp
     ${CMAKE_SOURCE_DIR}/src/linter/linter.cpp

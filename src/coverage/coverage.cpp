@@ -4,6 +4,7 @@
 #include "../window.h"
 #include "../utils.h"
 #include "../document_view.h"
+#include "../utils/kfs.h"
 
 using namespace coverage;
 
@@ -40,14 +41,14 @@ void Coverage::apply_to_document(delimit::DocumentView *buffer) {
 
 unicode PythonCoverage::find_coverage_file(const unicode& filename, const unicode& project_root) {
     //Search up to the project root, to find the coverage file
-    unicode current_dir = os::path::abs_path(os::path::dir_name(filename));
+    unicode current_dir = kfs::path::abs_path(kfs::path::dir_name(filename.encode()));
     while(current_dir != project_root) {
-        unicode coverage = os::path::join(current_dir, ".coverage");
-        if(os::path::exists(coverage)) {
+        auto coverage = kfs::path::join(current_dir.encode(), ".coverage");
+        if(kfs::path::exists(coverage)) {
             break;
         }
 
-        unicode next_level = os::path::abs_path(os::path::dir_name(current_dir));
+        unicode next_level = kfs::path::abs_path(kfs::path::dir_name(current_dir.encode()));
         if(next_level == current_dir) {
             break;
         }
@@ -56,8 +57,8 @@ unicode PythonCoverage::find_coverage_file(const unicode& filename, const unicod
     }
 
 
-    unicode final = os::path::join(current_dir, ".coverage");
-    if(os::path::exists(final)) {
+    auto final = kfs::path::join(current_dir.encode(), ".coverage");
+    if(kfs::path::exists(final)) {
         L_DEBUG("Found coverage file");
         return final;
     } else {
@@ -94,12 +95,12 @@ std::vector<int32_t> PythonCoverage::find_uncovered_lines(const unicode &filenam
         coverage_monitors_[coverage_file] = monitor;
     }
 
-    unicode current_dir = os::path::dir_name(coverage_file);
+    unicode current_dir = kfs::path::dir_name(coverage_file.encode());
 
     unicode coverage_command;
 
     for(auto command: { "python-coverage", "coverage"}) {
-        coverage_command = call_command(_u("which {0}").format(command));
+        coverage_command = call_command(_F("which {0}").format(command));
         if(!coverage_command.empty()) {
             break;
         }

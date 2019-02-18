@@ -11,12 +11,8 @@
 #include "utils.h"
 #include "project_info.h"
 
-#include <kazbase/exceptions.h>
-#include <kazbase/unicode.h>
-#include <kazbase/fdo/base_directory.h>
-#include <kazbase/logging.h>
-#include <kazbase/glob.h>
-#include <kazbase/file_utils.h>
+#include "utils/unicode.h"
+#include "utils/base_directory.h"
 
 namespace delimit {
 
@@ -81,13 +77,13 @@ Window::Window(const std::vector<Glib::RefPtr<Gio::File>>& files):
         //awesome_bar_->repopulate_files();
 
         //Look for a .gitignore file in the directory
-        auto ignore_file = os::path::join(path_, ".gitignore");
-        L_DEBUG(_u("Checking for .gitignore at {0}...").format(ignore_file));
-        if(os::path::exists(ignore_file)) {
-            auto lines = file_utils::read_lines(ignore_file);
+        auto ignore_file = kfs::path::join(path_.encode(), ".gitignore");
+        L_DEBUG(_F("Checking for .gitignore at {0}...").format(ignore_file));
+        if(kfs::path::exists(ignore_file)) {
+            auto lines = read_file_lines(ignore_file);
             for(auto line: lines) {
                 if(!line.strip().empty()) {
-                    L_DEBUG(_u("Adding ignore glob: '{0}', length: {1}").format(line.strip(), line.strip().length()));
+                    L_DEBUG(_F("Adding ignore glob: '{0}', length: {1}").format(line.strip(), line.strip().length()));
                     ignored_globs_.insert(line.strip());
                 }
             }
@@ -301,32 +297,32 @@ void Window::add_global_action(const unicode& name, const Gtk::AccelKey& key, st
 }
 
 void Window::load_settings() {
-    unicode master_settings_file = fdo::xdg::find_data_file("delimit/settings.json");
+    unicode master_settings_file = fdo::xdg::find_data_file("delimit/settings.json").first;
     std::vector<unicode> paths;
-    try {
-        paths.push_back(fdo::xdg::find_user_data_file("delimit/settings.json"));
-    } catch(std::exception& e) {
 
+    auto ret = fdo::xdg::find_user_data_file("delimit/settings.json");
+    if(ret.second) {
+        paths.push_back(ret.first);
     }
-
 
     if(this->type() == WINDOW_TYPE_FOLDER) {
-        paths.push_back(os::path::join(project_path(), ".delimit"));
+        paths.push_back(kfs::path::join(project_path().encode(), ".delimit"));
     }
 
-    if(!os::path::exists(master_settings_file)) {
-        throw RuntimeError(_u("Unable to locate master settings at {0}").format(master_settings_file).encode());
+    if(!kfs::path::exists(master_settings_file.encode())) {
+        throw std::runtime_error(_F("Unable to locate master settings at {0}").format(master_settings_file));
     }
 
-    json::JSON settings = json::loads(file_utils::read(master_settings_file));
+    jsonic::loads(read_file_contents(master_settings_file).encode(), settings_);
 
+    /* FIXME: Implement jsonic::Node::update
     for(auto path: paths) {
-        if(os::path::exists(path)) {
-            settings.update(json::loads(file_utils::read(path)));
+        if(kfs::path::exists(path)) {
+            jsonic::Node local;
+            jsonic::loads(local, read_file_contents(path));
+            settings_.update(local);
         }
-    }
-
-    settings_ = settings;
+    } */
 }
 
 void close_current_document(Window* window) {
@@ -334,7 +330,7 @@ void close_current_document(Window* window) {
 }
 
 void Window::build_widgets() {
-    std::string ui_file = fdo::xdg::find_data_file(UI_FILE).encode();
+    std::string ui_file = fdo::xdg::find_data_file(UI_FILE).first.encode();
     auto builder = Gtk::Builder::create_from_file(ui_file);
 
     find_bar_ = std::make_shared<FindBar>(*this, builder);
@@ -459,12 +455,12 @@ void Window::build_widgets() {
 
     clear_error_panel();
 
-    std::string icon_file = fdo::xdg::find_data_file("delimit/delimit.svg").encode();
+    std::string icon_file = fdo::xdg::find_data_file("delimit/delimit.svg").first.encode();
     gtk_window_->set_icon_from_file(icon_file);
 
     gtk_window_->maximize();
 
-    gtk_window_->signal_delete_event().connect([&](GdkEventAny* evt) -> bool {
+    gtk_window_->signal_delete_event().connect([&](GdkEventAny*) -> bool {
         auto copy = documents_;
         for(auto document: copy) {
             document->close();
@@ -580,7 +576,7 @@ void Window::on_signal_row_activated(const Gtk::TreeModel::Path& path, Gtk::Tree
         Glib::ustring full_path = row[file_tree_columns_.full_path];
 
         if(Gio::File::create_for_path(full_path)->query_file_type() == Gio::FILE_TYPE_REGULAR) {
-            open_document(os::path::real_path(full_path.c_str()).encode());
+            open_document(kfs::path::real_path(full_path.c_str()));
         }
     }
 }
@@ -742,7 +738,7 @@ void Window::on_folder_changed(const Glib::RefPtr<Gio::File> &file, const Glib::
     if(event_type == Gio::FILE_MONITOR_EVENT_CHANGES_DONE_HINT || event_type == Gio::FILE_MONITOR_EVENT_DELETED || event_type == Gio::FILE_MONITOR_EVENT_CREATED) {
         L_INFO("Detected folder change: " + file->get_path());
 
-        unicode folder_path = os::path::dir_name(file->get_path());
+        unicode folder_path = kfs::path::dir_name(file->get_path());
 
         auto it = tree_row_lookup_.find(folder_path);
         if(it != tree_row_lookup_.end()) {
@@ -765,7 +761,7 @@ void Window::update_vcs_branch_in_tree() {
     }
 
     unicode path = std::string(row.get_value(file_tree_columns_.full_path));
-    if(os::path::exists(os::path::join(path, ".git"))) {
+    if(kfs::path::exists(kfs::path::join(path.encode(), ".git"))) {
         unicode result = call_command(
             _u("git rev-parse --abbrev-ref HEAD"),
             path
@@ -773,8 +769,8 @@ void Window::update_vcs_branch_in_tree() {
 
         if(!result.empty()) {
             unicode new_name = _u("{0} [{1}]").format(
-                os::path::split(path).second,
-                result
+                kfs::path::split(path.encode()).second,
+                result.encode()
             );
             row.set_value(file_tree_columns_.name, Glib::ustring(new_name.encode()));
         }
@@ -804,9 +800,9 @@ void Window::unwatch_directory(const unicode& path) {
 }
 
 void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
-    std::vector<unicode> files;
+    std::vector<std::string> files;
 
-    bool path_is_dir = os::path::is_dir(os::path::real_path(path));
+    bool path_is_dir = kfs::path::is_dir(kfs::path::real_path(path.encode()));
     if(!path_is_dir) {
         L_DEBUG("Not walking file: " + path.encode());
         return;
@@ -814,25 +810,25 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
 
     watch_directory(path);
 
-    files = os::path::list_dir(os::path::real_path(path));
+    files = kfs::path::list_dir(kfs::path::real_path(path.encode()));
     std::sort(files.begin(), files.end());
 
-    std::vector<unicode> directories;
+    std::vector<std::string> directories;
 
     for(auto it = files.begin(); it != files.end();) {
         unicode f = (*it);
-        unicode real_path = os::path::real_path(os::path::join(path, f));
+        auto real_path = kfs::path::real_path(kfs::path::join(path.encode(), f.encode()));
 
         if(real_path.empty()) {
             //Broken symlink or something
             it = files.erase(it);
-            L_DEBUG(_u("Skipping broken file {0}").format(f));
+            L_DEBUG(_F("Skipping broken file {0}").format(f));
             continue;
         }
 
-        L_DEBUG(_u("Adding file: {0}").format(real_path));
-        if(os::path::is_dir(real_path)) {
-            L_DEBUG(_u("...Is directory"));
+        L_DEBUG(_F("Adding file: {0}").format(real_path));
+        if(kfs::path::is_dir(real_path)) {
+            L_DEBUG("...Is directory");
             directories.push_back((*it));
             it = files.erase(it);
         } else {
@@ -861,7 +857,7 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
         assert(root_iter);
 
         node = &(*root_iter);
-        node->set_value(file_tree_columns_.name, Glib::ustring(os::path::split(path).second.encode()));
+        node->set_value(file_tree_columns_.name, Glib::ustring(kfs::path::split(path.encode()).second));
         node->set_value(file_tree_columns_.full_path, Glib::ustring(path.encode()));
         node->set_value(file_tree_columns_.image, image);
         node->set_value(file_tree_columns_.is_folder, true);
@@ -886,7 +882,7 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
     }
 
     L_DEBUG("Processing files");
-    for(auto f: files) {
+    for(unicode f: files) {
         if(f == "." || f == "..") continue;
 
         if(f.starts_with(".") || f.ends_with(".pyc")) {
@@ -894,11 +890,11 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
             continue;
         }
 
-        unicode full_name = os::path::join(path, f);
+        unicode full_name = kfs::path::join(path.encode(), f.encode());
 
         //We've found one of the existing children, so remove it from the list
         existing_children.erase(std::remove(existing_children.begin(), existing_children.end(), full_name), existing_children.end());
-
+/*
         bool ignore = false;
         for(auto gl: ignored_globs_) {
             if(glob::match(full_name, gl)) {
@@ -907,13 +903,14 @@ void Window::dirwalk(const unicode& path, const Gtk::TreeRow* node) {
                 break;
             }
         }
-
+*/
+        bool ignore = false;
         if(ignore) {
             L_DEBUG("Ignoring file as it's in .gitignore or similar: " + full_name.encode());
             continue;
         }
 
-        bool is_folder = os::path::is_dir(os::path::real_path(full_name));
+        bool is_folder = kfs::path::is_dir(kfs::path::real_path(full_name.encode()));
 
         auto image = Gtk::IconTheme::get_default()->load_icon(
             (is_folder) ? "folder" : "document-new",
@@ -1000,7 +997,7 @@ void Window::rebuild_open_list() {
         unicode name = buffer->name();
 
         if(occurrance_count[name] > 1) {
-            name = _u("{0} ({1})").format(name, os::path::dir_name(buffer->path().replace(path_, "").lstrip("/")));
+            name = _F("{0} ({1})").format(name, kfs::path::dir_name(buffer->path().replace(path_, "").lstrip("/").encode()));
         }
 
         _Gtk::OpenFilesEntry entry;
@@ -1019,13 +1016,13 @@ void Window::on_document_modified(DocumentView& document) {
     unicode to_display = (document.is_new_file()) ? document.name() : document.path();
 
     if(type_ == WINDOW_TYPE_FOLDER && !path_.empty() && !document.path().empty()) {
-        to_display = os::path::rel_path(to_display, path_);
+        to_display = kfs::path::rel_path(to_display.encode(), path_.encode());
     }
 
     header_bar_->set_subtitle(
-        _u("{0}{1}").format(
+        _F("{0}{1}").format(
             to_display, document.buffer()->get_modified() ? "*": ""
-        ).encode().c_str()
+        ).c_str()
     );
 }
 
@@ -1120,7 +1117,7 @@ void Window::open_document(const unicode& file_path) {
         }
     }
 
-    unicode name = os::path::split(file_path).second;
+    unicode name = kfs::path::split(file_path.encode()).second;
 
     DocumentView::ptr buffer = std::make_shared<DocumentView>(*this, file_path);
 

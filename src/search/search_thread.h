@@ -4,12 +4,14 @@
 #include <vector>
 #include <queue>
 #include <mutex>
-#include <kazbase/unicode.h>
 #include <thread>
-#include <kazbase/file_utils.h>
-#include <kazbase/regex.h>
-#include <kazbase/os.h>
-#include <kazbase/logging.h>
+#include <regex>
+
+#include "../utils/unicode.h"
+#include "../utils/regex.h"
+#include "../utils/kfs.h"
+#include "../utils/files.h"
+#include "../utils/kazlog.h"
 
 struct Match {
     int line;
@@ -50,18 +52,18 @@ public:
          */
         unicode search = search_text_;
 
-        if(is_regex_) {
-            search = regex::escape(search);
+        if(!is_regex_) {
+            search = regex_escape(search);
         }
 
-        regex::Regex re(search);
+        uregex re(search.to_ustring());
 
         while(!files_to_search_.empty()) {
             if(!is_running_) {
                 break;
             }
 
-            unicode file = files_to_search_.back();
+            auto file = files_to_search_.back();
             files_to_search_.pop_back();
 
             if(!within_directory_.empty() && !file.starts_with(within_directory_)) {
@@ -69,16 +71,16 @@ public:
                 continue;
             }
 
-            if(!os::path::exists(file)) {
+            if(!kfs::path::exists(file.encode())) {
                 continue;
             }
 
             try {
                 std::string enc;
-                auto data = file_utils::read(file, &enc);
-                auto matches = re.search(data);
+                auto data = read_file_contents(file, &enc);
+                auto matches = regex_search_all(data, re);
                 if(!matches.empty()) {
-                    L_DEBUG(_u("Found search text in file {0}").format(file));
+                    L_DEBUG(_F("Found search text in file {0}").format(file));
 
                     Result new_result;
                     new_result.filename = file;
@@ -87,14 +89,14 @@ public:
                         //TODO: Populate new_result
                         Match new_match;
 
-                        auto prev_newline = match.start();
+                        auto prev_newline = match.position();
                         while(prev_newline--) {
                             if(data[prev_newline] == '\n') {
                                 break;
                             }
                         }
 
-                        auto next_newline = match.end();
+                        auto next_newline = match.position() + match.length();
                         while(next_newline < (signed) data.length()) {
                             if(data[next_newline] == '\n') {
                                 break;
@@ -102,16 +104,16 @@ public:
                             next_newline++;
                         }
 
-                        new_match.start_col = match.start() - prev_newline;
-                        new_match.end_col = match.end() - prev_newline;
-                        new_match.line = data.slice(nullptr, match.start()).count("\n");
+                        new_match.start_col = match.position() - prev_newline;
+                        new_match.end_col = (match.position() + match.length()) - prev_newline;
+                        new_match.line = data.slice(nullptr, match.position()).count("\n");
                         new_match.text = data.slice(prev_newline, next_newline).strip();
                         new_result.matches.push_back(new_match);
                     }
                     push_result(new_result);
                 }
             } catch(...) {
-                L_INFO(_u("Error searching file {0}").format(file));
+                L_INFO(_F("Error searching file {0}").format(file));
                 continue;
             }
         }

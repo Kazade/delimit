@@ -1,4 +1,3 @@
-#include <kazbase/exceptions.h>
 #include "open_files_list.h"
 
 namespace _Gtk {
@@ -10,7 +9,7 @@ OpenFilesList::OpenFilesList(delimit::Window& parent, Gtk::ListBox* list_box):
     list_box_->signal_row_activated().connect([&](Gtk::ListBoxRow* row) {
         auto it = row_to_entry_index_.find(row);
         if(it == row_to_entry_index_.end()) {
-            throw RuntimeError("Something went horribly wrong with the open files list");
+            throw std::runtime_error("Something went horribly wrong with the open files list");
         }
 
         signal_row_activated_(entries_.at((*it).second).buffer);

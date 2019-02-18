@@ -1,7 +1,7 @@
 #ifndef INDENTATION_H
 #define INDENTATION_H
 
-#include <kazbase/unicode.h>
+#include "unicode.h"
 
 namespace delimit {
 

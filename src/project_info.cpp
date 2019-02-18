@@ -2,13 +2,11 @@
 #include <iostream>
 #include <queue>
 
-#include <kazbase/os.h>
-#include <kazbase/logging.h>
-
 #include "project_info.h"
 #include "utils.h"
 #include "utils/bfs.h"
 #include "utils/sigc_lambda.h"
+#include "utils/kazlog.h"
 #include "autocomplete/parsers/python.h"
 #include "autocomplete/parsers/plain.h"
 
@@ -115,7 +113,7 @@ void ProjectInfo::offline_update(const unicode& filename) {
             // Insert all the found symbols
             symbols_.insert(symbols_.end(), symbols.begin(), symbols.end());
         } catch (std::exception& e) {
-            L_ERROR(_u("An error occurred while indexing: {0}").format(filename));
+            L_ERROR(_F("An error occurred while indexing: {0}").format(filename));
             return;
         }
     }

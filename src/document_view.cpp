@@ -1,9 +1,9 @@
-#include <kazbase/logging.h>
 #include "utils/sigc_lambda.h"
 #include "document_view.h"
 #include "window.h"
 #include "application.h"
 #include "utils/indentation.h"
+#include "utils/kazlog.h"
 #include "utils.h"
 
 namespace delimit {
@@ -30,7 +30,7 @@ DocumentView::DocumentView(Window& window, const unicode& filename):
 }
 
 unicode DocumentView::name() const {
-    return os::path::split(path()).second;
+    return kfs::path::split(path().encode()).second;
 }
 
 unicode DocumentView::path() const {
@@ -174,7 +174,7 @@ void DocumentView::build_widgets() {
 void DocumentView::handle_file_deleted() {
     L_DEBUG("Processing deleted file");
 
-    if(!os::path::exists(path())) {
+    if(!kfs::path::exists(path().encode())) {
         Gtk::MessageDialog dialog(window_._gtk_window(), "File Deleted", true, Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_YES_NO, true);
         dialog.set_message(_u("The file <i>{0}</i> has been deleted").format(name()).encode(), true);
         dialog.set_secondary_text("Do you want to close this file?");
@@ -220,7 +220,7 @@ void DocumentView::handle_file_change_signal(const GioFilePtr& file, const GioFi
 
             Gtk::MessageDialog dialog(window_._gtk_window(), "File Changed", true, Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_YES_NO, true);
 
-            dialog.set_message(_u("The file <i>{0}</i> has changed outside Delimit").format(os::path::split(file->get_path()).second).encode(), true);
+            dialog.set_message(_u("The file <i>{0}</i> has changed outside Delimit").format(kfs::path::split(file->get_path()).second).encode(), true);
             dialog.set_secondary_text("Do you want to reload?");
             dialog.add_button("Close", Gtk::RESPONSE_CLOSE);
 
@@ -260,7 +260,7 @@ void DocumentView::connect_signals() {
 }
 
 bool DocumentView::is_new_file() const {
-    return !os::path::exists(file_->get_path());
+    return !kfs::path::exists(file_->get_path());
 }
 
 void DocumentView::set_file(GioFilePtr file) {
@@ -338,7 +338,7 @@ void DocumentView::save(const unicode& path) {
         connect_file_monitor();
     } else {
         auto file = Gio::File::create_for_path(path.encode());
-        if(!os::path::exists(path)) {
+        if(!kfs::path::exists(path.encode())) {
             file->create_file();
         }
         file->replace_contents(text, "", file_etag_);
@@ -415,7 +415,7 @@ void DocumentView::run_linters_and_stuff(bool force) {
 }
 
 void DocumentView::detect_and_apply_indentation() {
-    if(current_settings_.has_key("detect_indentation") && current_settings_["detect_indentation"].get_bool()) {
+    if(current_settings_.has_key("detect_indentation") && (bool) current_settings_["detect_indentation"]) {
         auto indent = detect_indentation(std::string(buffer_->get_text()));
 
         if(indent.first == INDENT_TABS) {
@@ -477,8 +477,8 @@ void DocumentView::create_new_file() {
     //files in two windows. I'm not sure if this is a problem or not considering these
     //paths are just placeholders. In future it may be!
     auto untitled_filename = _u("Untitled {0}").format(existing_count + 1);
-    auto full_path = os::path::join(temp_files, untitled_filename);
-    auto file = Gio::File::create_for_path(full_path.encode());
+    auto full_path = kfs::path::join(temp_files.encode(), untitled_filename.encode());
+    auto file = Gio::File::create_for_path(full_path);
 
     set_file(file);
 
@@ -547,7 +547,7 @@ unicode DocumentView::guess_mimetype() const {
 }
 
 void DocumentView::apply_settings(const unicode& mimetype) {
-    L_INFO(_u("Applying settings for: ") + mimetype);
+    L_INFO(_F("Applying settings for: {0}").format(mimetype));
 
     view_.set_left_margin(4);
     view_.set_right_margin(4);
@@ -557,29 +557,30 @@ void DocumentView::apply_settings(const unicode& mimetype) {
     view_.set_right_margin_position(80);
 
     //Load any settings from the settings file
-    json::JSON default_settings = window_.settings()["default"];
+    const auto& default_settings = window_.settings()["default"];
 
+    /*
     if(window_.settings().has_key(mimetype)) {
         default_settings.update(window_.settings()[mimetype]);
-    }
+    } */
 
-    view_.set_show_line_numbers(default_settings["show_line_numbers"].get_bool());
-    view_.set_auto_indent(default_settings["auto_indent"].get_bool());
+    view_.set_show_line_numbers(default_settings["show_line_numbers"].as_boolean());
+    view_.set_auto_indent(default_settings["auto_indent"].as_boolean());
 
-    if(!default_settings["detect_indentation"].get_bool()) {
+    if(!default_settings["detect_indentation"].as_boolean()) {
         detect_and_apply_indentation();
     }
 
     Gsv::DrawSpacesFlags flags;
-    if(default_settings["draw_whitespace_spaces"].get_bool()) {
+    if(default_settings["draw_whitespace_spaces"].as_boolean()) {
         flags |= Gsv::DRAW_SPACES_SPACE;
     }
-    if(default_settings["draw_whitespace_tabs"].get_bool()) {
+    if(default_settings["draw_whitespace_tabs"].as_boolean()) {
         flags |= Gsv::DRAW_SPACES_TAB;
     }
 
     view_.set_draw_spaces(flags);
-    view_.set_highlight_current_line(default_settings["highlight_current_line"].get_bool());
+    view_.set_highlight_current_line(default_settings["highlight_current_line"].as_boolean());
 
     //Load any font setting overrides
     Pango::FontDescription fdesc;
@@ -589,15 +590,15 @@ void DocumentView::apply_settings(const unicode& mimetype) {
     fdesc.set_size(font_details.second);
 
     if(default_settings.has_key("override_font_family")) {
-        fdesc.set_family(default_settings["override_font_family"].get().encode());
+        fdesc.set_family(std::string(default_settings["override_font_family"]));
     }
 
     if(default_settings.has_key("override_font_size")) {
-        fdesc.set_size(default_settings["override_font_size"].get_number() * PANGO_SCALE);
+        fdesc.set_size(int(default_settings["override_font_size"]) * PANGO_SCALE);
     }
 
     view_.override_font(fdesc);
-    current_settings_ = default_settings;
+    // current_settings_ = default_settings;
 }
 
 void DocumentView::populate_popup(Gtk::Menu* menu) {

@@ -36,7 +36,7 @@ void Linter::apply_to_document(delimit::DocumentView *buffer) {
         mark->set_data(
             "linter_message",
             new unicode(message),
-            [=](void* data) {
+            [](void* data) {
                 delete (unicode*) data;
             }
         );

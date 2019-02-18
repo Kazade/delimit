@@ -2,14 +2,10 @@
 #include <gtksourceviewmm.h>
 
 #include <cassert>
-#include <kazbase/os.h>
-#include <kazbase/logging.h>
 
 #include "utils/sigc_lambda.h"
 
 #include "application.h"
-
-#include <kazbase/glob.h>
 
 int main(int argc, char* argv[]) {
     Glib::RefPtr<Gtk::Application> app =
